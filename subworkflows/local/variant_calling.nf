@@ -1,8 +1,8 @@
 /*
  * subworkflows/local/variant_calling.nf
  *
- * Stage 2: Mutect2 + U2AF1 rescue + VarDict + VarScan + FreeBayes + Strelka.
- * Platypus, Pindel, DeepSomatic, SomaticSeq still to wire.
+ * Stage 2: Mutect2 + U2AF1 rescue + VarDict + VarScan + FreeBayes + Strelka
+ *          + Platypus. Pindel, DeepSomatic, SomaticSeq still to wire.
  */
 
 include { GATK4_MUTECT2       } from '../../modules/local/mutect2'
@@ -11,7 +11,7 @@ include { VARDICT             } from '../../modules/local/vardict'
 include { VARSCAN             } from '../../modules/local/varscan'
 include { FREEBAYES           } from '../../modules/local/freebayes'
 include { STRELKA             } from '../../modules/local/strelka'
-// include { PLATYPUS            } from '../../modules/local/platypus'
+include { PLATYPUS            } from '../../modules/local/platypus'
 // include { DEEPSOMATIC         } from '../../modules/local/deepsomatic'
 // include { SOMATICSEQ_ENSEMBLE } from '../../modules/local/somaticseq'
 // include { PINDEL              } from '../../modules/local/pindel'
@@ -32,6 +32,7 @@ workflow VARIANT_CALLING {
         VARSCAN(bam_ch, reference_ch, bed_ch)
         FREEBAYES(bam_ch, reference_ch, bed_ch)
         STRELKA(bam_ch, reference_ch, bed_ch)
+        PLATYPUS(bam_ch, reference_ch, bed_ch)
 
     emit:
         mutect2_vcf   = GATK4_MUTECT2.out.vcf
@@ -40,4 +41,5 @@ workflow VARIANT_CALLING {
         varscan_vcf   = VARSCAN.out.vcf
         freebayes_vcf = FREEBAYES.out.vcf
         strelka_vcf   = STRELKA.out.vcf
+        platypus_vcf  = PLATYPUS.out.vcf
 }
