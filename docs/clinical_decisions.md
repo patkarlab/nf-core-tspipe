@@ -38,3 +38,25 @@ must be called by new pipeline. Novel calls at U2AF1 are expected gains.
 **Why**: ID=AML literal violates SAM spec (RG IDs should be unique per
 sequencing unit). LB=LIB-MIPS is a historical artifact from when the lab used
 Molecular Inversion Probes; current protocol is hybrid capture.
+
+
+## VarScan VAF threshold (3% instead of 0.3%)
+
+**Production behaviour**: `varscan mpileup2snp/mpileup2indel --min-var-freq 0.003` (0.3%).
+
+**This pipeline**: 3% VAF threshold via `conf/gandalf.config` ext.min_var_freq = '0.03'.
+
+**Why**: clinical interest below 3% VAF is rare on the myeloid panel.
+Production's 0.3% threshold generated significant noise that the SomaticSeq
+ensemble had to filter out. Raising the threshold at the caller stage produces
+cleaner intermediate VCFs without measurable loss of clinically reviewed
+calls.
+
+**Expected impact**: VarScan will report fewer low-VAF variants. Variants at
+1-3% VAF that were called by VarScan alone in production may not appear in
+new pipeline. Variants supported by 2+ callers above their respective
+thresholds are unaffected.
+
+**Override**: set `ext.min_var_freq = '0.003'` in the gandalf.config VARSCAN
+block to restore production behaviour. Default module behaviour is 0.003 so
+fresh servers without site config get production's setting.
