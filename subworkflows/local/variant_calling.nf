@@ -1,20 +1,18 @@
 /*
  * subworkflows/local/variant_calling.nf
  *
- * Stage 2: Mutect2 + U2AF1 rescue + VarDict + VarScan + FreeBayes + Strelka
- *          + Platypus. Pindel, DeepSomatic, SomaticSeq still to wire.
+ * Stage 2: Mutect2, U2AF1_rescue, VarDict, VarScan, FreeBayes, Strelka,
+ *          Platypus, Pindel. SomaticSeq ensemble to follow.
  */
 
-include { GATK4_MUTECT2       } from '../../modules/local/mutect2'
-include { U2AF1_RESCUE        } from '../../modules/local/u2af1_rescue'
-include { VARDICT             } from '../../modules/local/vardict'
-include { VARSCAN             } from '../../modules/local/varscan'
-include { FREEBAYES           } from '../../modules/local/freebayes'
-include { STRELKA             } from '../../modules/local/strelka'
-include { PLATYPUS            } from '../../modules/local/platypus'
-// include { DEEPSOMATIC         } from '../../modules/local/deepsomatic'
-// include { SOMATICSEQ_ENSEMBLE } from '../../modules/local/somaticseq'
-// include { PINDEL              } from '../../modules/local/pindel'
+include { GATK4_MUTECT2 } from '../../modules/local/mutect2'
+include { U2AF1_RESCUE  } from '../../modules/local/u2af1_rescue'
+include { VARDICT       } from '../../modules/local/vardict'
+include { VARSCAN       } from '../../modules/local/varscan'
+include { FREEBAYES     } from '../../modules/local/freebayes'
+include { STRELKA       } from '../../modules/local/strelka'
+include { PLATYPUS      } from '../../modules/local/platypus'
+include { PINDEL        } from '../../modules/local/pindel'
 
 workflow VARIANT_CALLING {
 
@@ -22,6 +20,7 @@ workflow VARIANT_CALLING {
         bam_ch
         reference_ch
         bed_ch
+        pindel_bed_ch
         gnomad_ch
         gnomad_tbi_ch
 
@@ -33,6 +32,7 @@ workflow VARIANT_CALLING {
         FREEBAYES(bam_ch, reference_ch, bed_ch)
         STRELKA(bam_ch, reference_ch, bed_ch)
         PLATYPUS(bam_ch, reference_ch, bed_ch)
+        PINDEL(bam_ch, reference_ch, pindel_bed_ch)
 
     emit:
         mutect2_vcf   = GATK4_MUTECT2.out.vcf
@@ -42,4 +42,5 @@ workflow VARIANT_CALLING {
         freebayes_vcf = FREEBAYES.out.vcf
         strelka_vcf   = STRELKA.out.vcf
         platypus_vcf  = PLATYPUS.out.vcf
+        pindel_vcf    = PINDEL.out.vcf
 }

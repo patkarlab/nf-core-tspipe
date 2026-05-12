@@ -35,6 +35,7 @@ workflow TSPIPE {
         file(params.reference.replaceFirst(/\.fa(sta)?$/, '.dict'), checkIfExists: true)
     ])
     ch_bed       = Channel.fromPath(params.bed,        checkIfExists: true)
+    ch_pindel_bed = Channel.fromPath(params.pindel_bed, checkIfExists: true)
     ch_blacklist = params.snv_blacklist
                        ? Channel.fromPath(params.snv_blacklist, checkIfExists: true)
                        : Channel.value([])
@@ -71,7 +72,7 @@ workflow TSPIPE {
     ch_final_bam = PREPROCESSING.out.final_bam   // [meta, bam, bai]
 
     // ----- 2. Variant calling: Mutect2 first (others to follow) --------
-    VARIANT_CALLING(ch_final_bam, ch_reference, ch_bed, ch_gnomad, ch_gnomad_tbi)
+    VARIANT_CALLING(ch_final_bam, ch_reference, ch_bed, ch_pindel_bed, ch_gnomad, ch_gnomad_tbi)
     ch_mutect2_vcf = VARIANT_CALLING.out.mutect2_vcf
 
     // ----- 3. FLT3-ITD 4-tool ensemble ----------------------------------
