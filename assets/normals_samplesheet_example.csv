@@ -1,0 +1,5 @@
+sample,fastq_1,fastq_2,sex,exclude
+BNC1,/data/normals/BNC1_R1.fastq.gz,/data/normals/BNC1_R2.fastq.gz,female,false
+BNC2,/data/normals/BNC2_R1.fastq.gz,/data/normals/BNC2_R2.fastq.gz,male,false
+BNC3,/data/normals/BNC3_R1.fastq.gz,/data/normals/BNC3_R2.fastq.gz,female,false
+OCIAML3,/data/normals/OCIAML3_R1.fastq.gz,/data/normals/OCIAML3_R2.fastq.gz,female,true

@@ -1,0 +1,33 @@
+# Nextflow runtime artifacts
+work/
+.nextflow/
+.nextflow.log*
+.nextflow.history
+
+# Test run outputs (BAMs, reports, results)
+test_run/
+results/
+
+# Singularity cache (shared between projects, never commit)
+singularity_cache/
+
+# Editor temp files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Local secrets/credentials
+.env
+.secrets
+
+# OS-generated junk
+Thumbs.db
+
+# tmux debug logs
+tmux-*.log

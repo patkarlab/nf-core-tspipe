@@ -1,0 +1,37 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/your-org/nf-core-tspipe/master/assets/schema_input_normals.json",
+    "title": "nf-core-tspipe normals samplesheet schema (BUILD_PON workflow)",
+    "description": "Same as the main samplesheet plus an optional `exclude` column to keep contaminated/aberrant normals out of the PoN.",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "sample": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "Sample ID required, no spaces."
+            },
+            "fastq_1": {
+                "type": "string",
+                "pattern": "^\\S+\\.f(ast)?q\\.gz$"
+            },
+            "fastq_2": {
+                "type": "string",
+                "pattern": "^\\S+\\.f(ast)?q\\.gz$"
+            },
+            "sex": {
+                "type": "string",
+                "enum": ["male", "female", "unknown"],
+                "default": "unknown"
+            },
+            "exclude": {
+                "type": "string",
+                "enum": ["true", "false"],
+                "default": "false",
+                "description": "If 'true', this normal is preprocessed but excluded from the PoN build (e.g. OCIAML3 which has known aberrations)."
+            }
+        },
+        "required": ["sample", "fastq_1", "fastq_2"]
+    }
+}

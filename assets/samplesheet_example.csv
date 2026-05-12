@@ -1,0 +1,3 @@
+sample,fastq_1,fastq_2,sex
+25NGS1307,/path/to/25NGS1307_R1.fastq.gz,/path/to/25NGS1307_R2.fastq.gz,unknown
+26CGH40,/path/to/26CGH40_R1.fastq.gz,/path/to/26CGH40_R2.fastq.gz,female

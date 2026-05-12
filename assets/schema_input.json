@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/your-org/nf-core-tspipe/master/assets/schema_input.json",
+    "title": "nf-core-tspipe samplesheet schema",
+    "description": "Schema for the input samplesheet.csv",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "sample": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "Sample ID must be provided and may not contain spaces."
+            },
+            "fastq_1": {
+                "type": "string",
+                "pattern": "^\\S+\\.f(ast)?q\\.gz$",
+                "errorMessage": "fastq_1 must end in .fq.gz or .fastq.gz"
+            },
+            "fastq_2": {
+                "type": "string",
+                "pattern": "^\\S+\\.f(ast)?q\\.gz$",
+                "errorMessage": "fastq_2 must end in .fq.gz or .fastq.gz"
+            },
+            "sex": {
+                "type": "string",
+                "enum": ["male", "female", "unknown"],
+                "default": "unknown"
+            }
+        },
+        "required": ["sample", "fastq_1", "fastq_2"]
+    }
+}
