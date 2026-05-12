@@ -49,6 +49,10 @@ workflow TSPIPE {
         file(params.mills_vcf + '.tbi', checkIfExists: true)
     ])
 
+    // gnomAD for Mutect2 germline filtering
+    ch_gnomad     = Channel.fromPath(params.gnomad_af_only, checkIfExists: true)
+    ch_gnomad_tbi = Channel.fromPath(params.gnomad_af_only + '.tbi', checkIfExists: true)
+
     // ----- Parse the samplesheet ----------------------------------------
     ch_input = Channel.fromPath(params.input, checkIfExists: true)
         .splitCsv(header: true)
@@ -66,10 +70,9 @@ workflow TSPIPE {
     PREPROCESSING(ch_input, ch_reference, ch_bed, ch_dbsnp, ch_mills)
     ch_final_bam = PREPROCESSING.out.final_bam   // [meta, bam, bai]
 
-    // ----- 2. Variant calling + somaticseq ensemble + pindel ------------
-    // VARIANT_CALLING(ch_final_bam, ch_reference, ch_bed)
-    // ch_somaticseq = VARIANT_CALLING.out.somaticseq_vcf
-    // ch_pindel_vcf = VARIANT_CALLING.out.pindel_vcf
+    // ----- 2. Variant calling: Mutect2 first (others to follow) --------
+    VARIANT_CALLING(ch_final_bam, ch_reference, ch_bed, ch_gnomad, ch_gnomad_tbi)
+    ch_mutect2_vcf = VARIANT_CALLING.out.mutect2_vcf
 
     // ----- 3. FLT3-ITD 4-tool ensemble ----------------------------------
     // FLT3_ITD(ch_final_bam, ch_pindel_vcf)
