@@ -60,3 +60,61 @@ thresholds are unaffected.
 **Override**: set `ext.min_var_freq = '0.003'` in the gandalf.config VARSCAN
 block to restore production behaviour. Default module behaviour is 0.003 so
 fresh servers without site config get production's setting.
+
+
+## FreeBayes conservative tuning
+
+**Production behaviour**: `freebayes -f ref -b bam -t bed` (bare defaults: MQ>=1,
+BQ>=0, no multi-allele cap, no complex-gap limit).
+
+**This pipeline (gandalf)**: adds `--min-mapping-quality 20 --min-base-quality 20
+--use-best-n-alleles 4 --max-complex-gap 3` via `conf/gandalf.config` ext.args.
+
+**Why**: production's bare-default FreeBayes emits ~1800 raw variants per
+panel sample, the vast majority of which are noise that SomaticSeq filters
+out. The conservative flags match the MQ/BQ filtering applied by Mutect2
+(--minimum-mapping-quality 20, --min-base-quality-score 25) and produce
+typically 600-800 calls per panel sample - same real variants, much less noise
+for the ensemble to wade through. The --use-best-n-alleles 4 cap prevents
+multi-allelic blow-up at hypermutated/repetitive sites.
+
+**Expected impact**:
+  - Total FreeBayes variant count drops ~50-60%
+  - Real variants supported by 2+ callers: unchanged
+  - Low-VAF noise-only-in-FreeBayes calls: dropped
+  - Downstream SomaticSeq runtime: faster
+
+**Override**: leave `ext.args` unset (or empty string) in site config to
+restore production defaults. Module default is production behaviour.
+
+
+### FreeBayes tuning - REVERTED 2026-05-12
+
+The conservative tuning above was applied, validated against 25NGS1307,
+and **reverted** the same day. Cross-caller analysis revealed that the
+BQ20/MQ20 cutoffs dropped 15 real subclonal mutations in known AML/MDS
+driver genes:
+
+  - KMT2A (28.2% VAF)
+  - DNMT3A (20.3%)
+  - SETD2 x2 (25.5%, 21.2%)
+  - CTCF (24.6%)
+  - EED (21.6%)
+  - GATA1 (16.6%)
+  - CSF1R (14.0%)
+  - KIT (13.7%)
+  - NF1 (12.7%)
+  - BRAF (12.0%)
+  - TET2 (9.3%)
+  - chr1, chr16, chr3, chrX positions in driver-panel regions
+
+All 15 were supported by another somatic caller (Mutect2/VarDict/VarScan),
+confirming they were real biology, not 8-oxoguanine artifacts.
+
+The 909 FreeBayes-only G>T/C>A calls (1.6% of the total being 80% of dropped
+variants) appear to be 8-oxoG artifacts that the SomaticSeq ensemble vote
+would have filtered anyway. Pre-filtering them at the caller stage was
+not worth the cost in driver-gene sensitivity.
+
+**Current behaviour**: FreeBayes runs with production's bare defaults. Trust
+the ensemble to filter downstream.
