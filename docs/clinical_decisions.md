@@ -118,3 +118,40 @@ not worth the cost in driver-gene sensitivity.
 
 **Current behaviour**: FreeBayes runs with production's bare defaults. Trust
 the ensemble to filter downstream.
+
+
+## DeepSomatic v1.10 WES_TUMOR_ONLY: GERMLINE-flag interpretation
+
+DeepSomatic is included as the 8th somatic caller. Two quirks worth knowing:
+
+**1. GERMLINE-flagged calls are still in the VCF.**
+The FILTER column flag is informational, not a drop. DeepSomatic's built-in
+PoN (PON_dbsnp138_gnomad_ILMN1000g_pon.vcf.gz) labels positions where the
+variant appears in dbSNP/gnomAD/1000G as GERMLINE. This includes recurrent
+somatic hotspots like U2AF1 p.S34F (rs371769427, also COSV52341059) and the
+FLT3-ITD region.
+
+For 25NGS1307 on this pipeline:
+  - U2AF1 chr21:43104346 G>A   -> GERMLINE (in dbSNP as rs371769427)
+  - FLT3-ITD chr13:28034132    -> GERMLINE (region noise in 1000G)
+
+These are NOT dropped. They appear in the VCF with FILTER=GERMLINE. SomaticSeq
+ingests them as evidence and votes alongside other callers' PASS/FAIL.
+
+**2. WES_TUMOR_ONLY model has limited PASS sensitivity on panel data.**
+On 25NGS1307, the model returned 5 PASS variants out of 532 candidates - all
+in C>A/G>T pattern (8-oxoguanine signature), all unsupported by the other
+6 callers, all called as 1/1 homozygous-alt despite VAF 6-16%. These are
+DeepSomatic artifacts that the SomaticSeq ensemble vote will discount.
+
+**Net contribution to the ensemble**: positive when SomaticSeq is used,
+because the 191 GERMLINE calls + 70 NoCall + 265 RefCall provide independent
+neural-net evidence at every panel position. SomaticSeq's ML model handles
+the cross-caller disagreements.
+
+**Future improvements to consider**:
+  - Custom PoN that excludes oncogenic hotspots (U2AF1, IDH1, IDH2, NPM1,
+    FLT3, KRAS, NRAS, etc.) so DeepSomatic doesn't flag them as GERMLINE
+  - Investigate WGS_TUMOR_ONLY vs WES_TUMOR_ONLY performance on this panel
+  - Try --use_default_pon_filtering=false and see if SomaticSeq downstream
+    filtering is enough on its own

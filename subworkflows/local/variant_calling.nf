@@ -1,8 +1,10 @@
 /*
  * subworkflows/local/variant_calling.nf
  *
- * Stage 2: Mutect2, U2AF1_rescue, VarDict, VarScan, FreeBayes, Strelka,
- *          Platypus, Pindel. SomaticSeq ensemble to follow.
+ * Stage 2: 8 somatic callers + U2AF1 rescue.
+ *   Mutect2, U2AF1_rescue, VarDict, VarScan, FreeBayes,
+ *   Strelka, Platypus, Pindel, DeepSomatic.
+ * SomaticSeq ensemble is the next (final) step.
  */
 
 include { GATK4_MUTECT2 } from '../../modules/local/mutect2'
@@ -13,6 +15,7 @@ include { FREEBAYES     } from '../../modules/local/freebayes'
 include { STRELKA       } from '../../modules/local/strelka'
 include { PLATYPUS      } from '../../modules/local/platypus'
 include { PINDEL        } from '../../modules/local/pindel'
+include { DEEPSOMATIC   } from '../../modules/local/deepsomatic'
 
 workflow VARIANT_CALLING {
 
@@ -33,14 +36,16 @@ workflow VARIANT_CALLING {
         STRELKA(bam_ch, reference_ch, bed_ch)
         PLATYPUS(bam_ch, reference_ch, bed_ch)
         PINDEL(bam_ch, reference_ch, pindel_bed_ch)
+        DEEPSOMATIC(bam_ch, reference_ch, bed_ch)
 
     emit:
-        mutect2_vcf   = GATK4_MUTECT2.out.vcf
-        u2af1_tsv     = U2AF1_RESCUE.out.tsv
-        vardict_vcf   = VARDICT.out.vcf
-        varscan_vcf   = VARSCAN.out.vcf
-        freebayes_vcf = FREEBAYES.out.vcf
-        strelka_vcf   = STRELKA.out.vcf
-        platypus_vcf  = PLATYPUS.out.vcf
-        pindel_vcf    = PINDEL.out.vcf
+        mutect2_vcf     = GATK4_MUTECT2.out.vcf
+        u2af1_tsv       = U2AF1_RESCUE.out.tsv
+        vardict_vcf     = VARDICT.out.vcf
+        varscan_vcf     = VARSCAN.out.vcf
+        freebayes_vcf   = FREEBAYES.out.vcf
+        strelka_vcf     = STRELKA.out.vcf
+        platypus_vcf    = PLATYPUS.out.vcf
+        pindel_vcf      = PINDEL.out.vcf
+        deepsomatic_vcf = DEEPSOMATIC.out.vcf
 }
