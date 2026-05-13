@@ -4,22 +4,27 @@
  * Main workflow. Replaces run_sample_pipeline.py end-to-end.
  *
  * Step ordering matches the original runner:
- *     PREPROCESSING -> VARIANT_CALLING -> FLT3_ITD
+ *     PREPROCESSING -> VARIANT_CALLING -> SOMATICSEQ_ENSEMBLE -> FLT3_ITD
  *                   -> CNV_CALLING -> SV_CALLING
  *                   -> ANNOTATION -> REPORTING
  *
  * As in the original, U2AF1 rescue branches off the final ABRA2 BAM in parallel
  * with variant calling; FLT3 consensus depends on Pindel (step 08) too, so it
  * runs after variant calling.
+ *
+ * SomaticSeq design: 8-caller ensemble (port goes beyond production's 6-caller
+ * setup; adds Pindel + DeepSomatic via --arbitrary). See modules/local/somaticseq.nf
+ * for the rationale.
  */
 
-include { PREPROCESSING   } from '../subworkflows/local/preprocessing'
-include { VARIANT_CALLING } from '../subworkflows/local/variant_calling'
-include { FLT3_ITD        } from '../subworkflows/local/flt3_itd'
-include { CNV_CALLING     } from '../subworkflows/local/cnv_calling'
-include { SV_CALLING      } from '../subworkflows/local/sv_calling'
-include { ANNOTATION      } from '../subworkflows/local/annotation'
-include { REPORTING       } from '../subworkflows/local/reporting'
+include { PREPROCESSING       } from '../subworkflows/local/preprocessing'
+include { VARIANT_CALLING     } from '../subworkflows/local/variant_calling'
+include { SOMATICSEQ_ENSEMBLE } from '../modules/local/somaticseq'
+include { FLT3_ITD            } from '../subworkflows/local/flt3_itd'
+include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
+include { SV_CALLING          } from '../subworkflows/local/sv_calling'
+include { ANNOTATION          } from '../subworkflows/local/annotation'
+include { REPORTING           } from '../subworkflows/local/reporting'
 
 workflow TSPIPE {
 
@@ -50,6 +55,9 @@ workflow TSPIPE {
         file(params.mills_vcf + '.tbi', checkIfExists: true)
     ])
 
+    // dbsnp VCF only (path, no .tbi) - SomaticSeq's --dbsnp-vcf expects the path
+    ch_dbsnp_vcf = Channel.fromPath(params.dbsnp_vcf, checkIfExists: true)
+
     // gnomAD for Mutect2 germline filtering
     ch_gnomad     = Channel.fromPath(params.gnomad_af_only, checkIfExists: true)
     ch_gnomad_tbi = Channel.fromPath(params.gnomad_af_only + '.tbi', checkIfExists: true)
@@ -71,12 +79,34 @@ workflow TSPIPE {
     PREPROCESSING(ch_input, ch_reference, ch_bed, ch_dbsnp, ch_mills)
     ch_final_bam = PREPROCESSING.out.final_bam   // [meta, bam, bai]
 
-    // ----- 2. Variant calling: Mutect2 first (others to follow) --------
+    // ----- 2. Variant calling: 8 callers + U2AF1 rescue ----------------
     VARIANT_CALLING(ch_final_bam, ch_reference, ch_bed, ch_pindel_bed, ch_gnomad, ch_gnomad_tbi)
-    ch_mutect2_vcf = VARIANT_CALLING.out.mutect2_vcf
+
+    // ----- 2b. SomaticSeq ensemble (8-caller) --------------------------
+    // Join all 8 per-caller VCF channels on meta. Each .out.X_vcf is
+    // [meta, path]; .join(by: 0) accumulates the paths keyed on meta.
+    ch_somaticseq_in = VARIANT_CALLING.out.mutect2_vcf
+        .join(VARIANT_CALLING.out.vardict_vcf,     by: 0)
+        .join(VARIANT_CALLING.out.varscan_vcf,     by: 0)
+        .join(VARIANT_CALLING.out.strelka_vcf,     by: 0)
+        .join(VARIANT_CALLING.out.freebayes_vcf,   by: 0)
+        .join(VARIANT_CALLING.out.platypus_vcf,    by: 0)
+        .join(VARIANT_CALLING.out.pindel_vcf,      by: 0)
+        .join(VARIANT_CALLING.out.deepsomatic_vcf, by: 0)
+    // Result tuple shape: [meta, mutect2, vardict, varscan, strelka,
+    //                     freebayes, platypus, pindel, deepsomatic]
+
+    SOMATICSEQ_ENSEMBLE(
+        ch_somaticseq_in,
+        ch_final_bam,
+        ch_reference,
+        ch_bed,
+        ch_dbsnp_vcf,
+    )
+    ch_somaticseq_vcf = SOMATICSEQ_ENSEMBLE.out.vcf
 
     // ----- 3. FLT3-ITD 4-tool ensemble ----------------------------------
-    // FLT3_ITD(ch_final_bam, ch_pindel_vcf)
+    // FLT3_ITD(ch_final_bam, VARIANT_CALLING.out.pindel_vcf)
     // ch_flt3_consensus = FLT3_ITD.out.consensus_tsv
 
     // ----- 4. CNV calling (CNVKit + Z-score + concordance) --------------
@@ -87,18 +117,19 @@ workflow TSPIPE {
 
     // ----- 6. Annotation: VEP -> ANNOVAR -> filter -> validator -> oncovi
     // ANNOTATION(
-    // ch_somaticseq,
-    // ch_flt3_consensus,
-    // ch_blacklist,
-    // ch_reference
+    //     ch_somaticseq_vcf,
+    //     ch_flt3_consensus,
+    //     VARIANT_CALLING.out.u2af1_tsv,
+    //     ch_blacklist,
+    //     ch_reference,
     // )
 
     // ----- 7. Reporting: IGV reports + organize_output ------------------
     // REPORTING(
-    // ANNOTATION.out.clinical_tsv,
-    // ch_final_bam,
-    // CNV_CALLING.out.clinical_report,
-    // SV_CALLING.out.annotated,
-    // FLT3_ITD.out.consensus_tsv
+    //     ANNOTATION.out.clinical_tsv,
+    //     ch_final_bam,
+    //     CNV_CALLING.out.clinical_report,
+    //     SV_CALLING.out.annotated,
+    //     FLT3_ITD.out.consensus_tsv,
     // )
 }
