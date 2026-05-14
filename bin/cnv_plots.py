@@ -26,6 +26,7 @@ from collections import defaultdict
 
 import matplotlib
 matplotlib.use("Agg")
+import matplotlib.backends.backend_pdf
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
@@ -44,6 +45,9 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PIPELINE_DIR = os.path.dirname(SCRIPT_DIR)
 DEFAULT_BED = os.path.join(PIPELINE_DIR, "bedfiles", "MYOPOOL_240125_UBTF_hg38.bed")
 DEFAULT_CYTOBAND = os.path.join(PIPELINE_DIR, "references", "cytoBand_hg38.txt")
+DEFAULT_SCATTER_REGIONS = os.path.join(
+    PIPELINE_DIR, "references", "myeloid", "cnv_scatter_regions.txt"
+)
 
 # --- Thresholds ---
 THRESH_GAIN = 0.55
@@ -100,6 +104,13 @@ def parse_args():
                     help="LOO per-gene FP summary TSV (references/cnvkit_loo_summary.tsv)")
     ap.add_argument("--genemetrics", default=None,
                     help="Annotated genemetrics TSV with LOO_FP_rate and confidence")
+    ap.add_argument("--scatter-regions", default=DEFAULT_SCATTER_REGIONS,
+                    help="Per-chromosome regions file for chr-gene-scatter PDF "
+                         "(default: %(default)s)")
+    ap.add_argument("--no-chr-gene-scatter", dest="chr_gene_scatter",
+                    action="store_false", default=True,
+                    help="Disable the resident-facing chr-gene-scatter PDF "
+                         "(default: enabled)")
     return ap.parse_args()
 
 
@@ -1485,6 +1496,205 @@ def plot_combined_chromosome(cnr, cnr_target, cns, call_cns, genes, sample,
 # Main
 # ---------------------------------------------------------------------------
 
+
+# ---------------------------------------------------------------------------
+# Per-chromosome exon-level scatter PDF (resident-facing)
+# Port of patkarlab/MyOPool's custom_scatter_chrwise.py, refactored to use
+# pandas vectorized filtering instead of per-region file re-reads.
+# Tag: CHR_GENE_SCATTER_INTEGRATION_2026_05_14
+# ---------------------------------------------------------------------------
+def _norm_chr_for_scatter(c):
+    """Strip 'chr' prefix and lowercase X/Y. Matches original behavior."""
+    c = str(c)
+    c = re.sub(r"^chr", "", c, flags=re.IGNORECASE)
+    c = re.sub(r"X", "x", c, flags=re.IGNORECASE)
+    c = re.sub(r"Y", "y", c, flags=re.IGNORECASE)
+    return c
+
+
+def plot_chr_gene_scatter(cnr, cns, regions_path, sample, plot_dir):
+    """Generate per-chromosome exon-level scatter PDF.
+
+    Each line of regions_path defines one PDF page:
+      Col 1: comma-separated 'chrN:start-stop' regions
+      Col 2: comma-separated 'GENE_Ex_N' band labels (one per region)
+
+    Output: <plot_dir>/<sample>_chr_gene_scatter.pdf
+    Returns True on success, False if regions_path is missing or empty.
+    """
+    if not os.path.isfile(regions_path):
+        log.warning(
+            "Scatter regions file not found: %s -- skipping chr-gene-scatter",
+            regions_path,
+        )
+        return False
+
+    # Work on copies so we don't mutate 12b's loaded DataFrames
+    df_cnr = cnr.copy()
+    df_cns = cns.copy()
+
+    if "gene" in df_cnr.columns:
+        df_cnr = df_cnr[
+            ~df_cnr["gene"].astype(str).str.contains("Antitarget", case=False, na=False)
+        ].copy()
+
+    df_cnr["_chr_norm"] = df_cnr["chromosome"].map(_norm_chr_for_scatter)
+    df_cns["_chr_norm"] = df_cns["chromosome"].map(_norm_chr_for_scatter)
+    df_cnr["_midpoint"] = ((df_cnr["start"] + df_cnr["end"]) // 2).astype(int)
+
+    output_pdf = os.path.join(plot_dir, f"{sample}_chr_gene_scatter.pdf")
+    pdf = matplotlib.backends.backend_pdf.PdfPages(output_pdf)
+    page_count = 0
+
+    with open(regions_path) as f:
+        for raw_line in f:
+            if raw_line.startswith("#") or not raw_line.strip():
+                continue
+            columns = raw_line.split()
+            if len(columns) < 2:
+                log.warning("chr-gene-scatter: skipping malformed line: %.50s",
+                            raw_line)
+                continue
+
+            chr_start_stop_list = columns[0].split(",")
+            band_list = columns[1].split(",")
+            no_of_regions = len(chr_start_stop_list)
+
+            if no_of_regions != len(band_list):
+                log.warning(
+                    "chr-gene-scatter: region/band count mismatch on page %d "
+                    "(%d regions vs %d bands) -- skipping",
+                    page_count + 1, no_of_regions, len(band_list),
+                )
+                continue
+
+            X_axis_list = []
+            X_axis_values = []
+            Y_axis_list = []
+            weights_list = []
+            color_list = []
+            x_tick_list = []
+            x_tick_labels_list = []
+            start_val_list = []
+            stop_val_list = []
+            ci_chrstart_list = []
+            ci_chrend_list = []
+            cns_log2_list = []
+
+            x_index = 0
+            chromosome = chr_start_stop_list[0].split(":")[0]
+
+            for region_idx, region_str in enumerate(chr_start_stop_list):
+                chr_part, pos_part = region_str.split(":")
+                chr_name_norm = _norm_chr_for_scatter(chr_part)
+                start_val, stop_val = map(int, pos_part.split("-"))
+                band_name = band_list[region_idx]
+
+                x_index_start = x_index
+
+                mask = (
+                    (df_cnr["_chr_norm"] == chr_name_norm)
+                    & (df_cnr["start"] >= start_val)
+                    & (df_cnr["end"] <= stop_val)
+                )
+                sub = df_cnr.loc[mask].sort_values("start")
+
+                tick_regions_list = []
+                band_name_list_region = []
+                for probe_idx, (_, row) in enumerate(sub.iterrows(), start=1):
+                    x_index += 1
+                    X_axis_values.append(int(row["_midpoint"]))
+                    X_axis_list.append(x_index)
+                    Y_axis_list.append(float(row["log2"]))
+                    weights_list.append(float(row["weight"]) * 50.0)
+                    color_list.append("gray")
+                    tick_regions_list.append(x_index)
+                    band_name_list_region.append(f"{band_name}_{probe_idx}")
+
+                if x_index > x_index_start:
+                    start_val_list.append(x_index_start + 1)
+                    stop_val_list.append(x_index)
+                    if no_of_regions > 1:
+                        x_tick_list.extend(tick_regions_list)
+                        x_tick_labels_list.extend(band_name_list_region)
+                    else:
+                        x_tick_list.append((x_index_start + 1 + x_index) / 2)
+                        x_tick_labels_list.append(band_name)
+
+                cns_chr_mask = df_cns["_chr_norm"] == chr_name_norm
+                for _, seg in df_cns.loc[cns_chr_mask].iterrows():
+                    seg_start = int(seg["start"])
+                    seg_end = int(seg["end"])
+                    seg_log2 = float(seg["log2"])
+
+                    matched = [
+                        idx + 1
+                        for idx, mid in enumerate(X_axis_values)
+                        if seg_start <= mid <= seg_end
+                    ]
+                    if matched:
+                        ci_chrstart_list.append(matched[0])
+                        ci_chrend_list.append(matched[-1])
+                        cns_log2_list.append(seg_log2)
+
+            if no_of_regions <= 20:
+                plot_length = 7
+            elif no_of_regions <= 90:
+                plot_length = 15
+            elif no_of_regions <= 150:
+                plot_length = 18
+            else:
+                plot_length = 24
+
+            fig = plt.figure(figsize=(plot_length, 5))
+            plt.subplots_adjust(bottom=0.3)
+
+            if no_of_regions == 1:
+                title = f"{chromosome}:{' '.join(band_list)}"
+            else:
+                title = chromosome
+            plt.title(title)
+
+            if X_axis_list:
+                plt.scatter(X_axis_list, Y_axis_list,
+                            s=weights_list, alpha=0.5, color=color_list)
+
+            ylower, yupper = -3.0, 3.0
+            for yv in Y_axis_list:
+                if yv < ylower:
+                    ylower = yv
+                if yv > yupper:
+                    yupper = yv
+            plt.ylim(ylower, yupper)
+
+            plt.axhline(y=0.0, color="black")
+            plt.axhline(y=0.5, color="red")
+            plt.axhline(y=-0.5, color="red")
+
+            for sv in start_val_list:
+                plt.axvline(x=sv, color="gray", linestyle="dashed")
+            for sv in stop_val_list:
+                plt.axvline(x=sv, color="gray", linestyle="dashed")
+
+            for ci_s, ci_e, lv in zip(ci_chrstart_list, ci_chrend_list, cns_log2_list):
+                plt.plot([ci_s, ci_e], [lv, lv],
+                         color="darkorange", linewidth=3, solid_capstyle="round")
+
+            plt.xticks(x_tick_list, x_tick_labels_list,
+                       rotation="vertical", fontsize=7)
+            plt.yticks(np.arange(ylower, yupper, 0.5))
+            plt.ylabel("Copy ratio (log2)")
+
+            pdf.savefig(fig, bbox_inches="tight")
+            plt.close(fig)
+            page_count += 1
+
+    pdf.close()
+    log.info("chr-gene-scatter PDF written (%d pages): %s",
+             page_count, output_pdf)
+    return True
+
+
 def main():
     t0 = time.time()
     args = parse_args()
@@ -1540,6 +1750,9 @@ def main():
     plot_gene_summary_heatmap(cnr_target, cns, call_cns, genes, sample, overview_dir)
     plot_combined_chromosome(cnr, cnr_target, cns, call_cns, genes, sample,
                              combined_dir, bands_dict, gene_annot)
+
+    if args.chr_gene_scatter:
+        plot_chr_gene_scatter(cnr, cns, args.scatter_regions, sample, plot_dir)
 
     elapsed = time.time() - t0
     log.info("All plots generated in %.0fs", elapsed)
