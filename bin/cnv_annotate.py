@@ -37,6 +37,21 @@ _BOTH_GENES = {
 # All cancer genes (union of all three sets)
 _ALL_CANCER_GENES = _TSG_GENES | _ONCOGENES | _BOTH_GENES
 
+# Clinical flag promotion: 12g_exon_cnv.py emits these labels for known
+# clinically actionable patterns. Without this map, every flag defaults to
+# VUS in assign_heme_significance because that function does not see the
+# exon_clinical_flag column.
+#
+# Edit these mappings if your clinical interpretation differs.
+CLINICAL_FLAG_SIGNIFICANCE = {
+    "KMT2A-PTD":                  "Pathogenic",
+    "IKZF1-Ik6":                  "Pathogenic",
+    "IKZF1-del":                  "Pathogenic",
+    "CDKN2A-del":                 "Likely Pathogenic",
+    "CDKN2B-del":                 "Likely Pathogenic",
+    "CDKN2A/CDKN2B_co-deletion":  "Pathogenic",
+}
+
 
 def parse_bed_genes(bed_path: str) -> set:
     """Extract unique gene names from panel BED file."""
@@ -252,8 +267,9 @@ def main():
     )
     parser.add_argument(
         "--loo-summary",
-        default="references/cnvkit_loo_summary.tsv",
-        help="Path to LOO false-positive summary",
+        default="references/myeloid/cnvkit_loo_summary.tsv",
+        help="Path to LOO false-positive summary (panel-namespaced; "
+             "override --loo-summary for non-myeloid panels)",
     )
     parser.add_argument(
         "--cytoband",
@@ -298,9 +314,29 @@ def main():
     cytoband_df = load_cytoband(args.cytoband)
     clingen = load_clingen(args.clingen)
 
-    # Load LOO summary for FP rates (keyed by gene)
-    loo_df = pd.read_csv(args.loo_summary, sep="\t")
-    loo_fp = dict(zip(loo_df["gene"], loo_df["fp_any_rate"]))
+    # Load LOO summary for FP rates (keyed by gene). Missing or unreadable
+    # file is non-fatal: LOO_FP_Rate will be empty for every gene, and
+    # downstream FP-based filtering simply does not fire. This is safer
+    # than the previous behavior (crash) when the myeloid LOO has not yet
+    # been rebuilt at the new namespaced path.
+    loo_fp = {}
+    if os.path.isfile(args.loo_summary):
+        try:
+            loo_df = pd.read_csv(args.loo_summary, sep="\t")
+            if "gene" in loo_df.columns and "fp_any_rate" in loo_df.columns:
+                loo_fp = dict(zip(loo_df["gene"], loo_df["fp_any_rate"]))
+                print(f"LOO summary: {len(loo_fp)} genes loaded from {args.loo_summary}")
+            else:
+                print(f"WARNING: LOO summary {args.loo_summary} missing 'gene' "
+                      f"or 'fp_any_rate' column; LOO_FP_Rate will be blank.",
+                      file=sys.stderr)
+        except Exception as e:
+            print(f"WARNING: could not read LOO summary {args.loo_summary} "
+                  f"({type(e).__name__}: {e}); LOO_FP_Rate will be blank.",
+                  file=sys.stderr)
+    else:
+        print(f"WARNING: LOO summary not found at {args.loo_summary}; "
+              f"LOO_FP_Rate will be blank for every gene.", file=sys.stderr)
 
     # Determine CNV direction from consensus_type column
     def get_direction(row):
@@ -355,6 +391,29 @@ def main():
 
     # Assign heme significance (needs whole-sample view for co-deletion check)
     out_df["Heme_Significance"] = assign_heme_significance(out_df, cancer_genes_on_panel)
+
+    # Promote Heme_Significance for 12g clinical flags (KMT2A-PTD, IKZF1-Ik6,
+    # etc.). assign_heme_significance does not look at exon_clinical_flag,
+    # so without this step those patterns get labelled VUS.
+    if "exon_clinical_flag" in df.columns:
+        gene_flag = dict(zip(df["gene"], df["exon_clinical_flag"].fillna("")))
+        for idx in out_df.index:
+            gene = out_df.at[idx, "Gene"]
+            tier = str(out_df.at[idx, "Tier"])
+            # Do not promote FILTERED rows (likely artefact).
+            if tier == "FILTERED":
+                continue
+            flag = str(gene_flag.get(gene, "")).strip()
+            if flag and flag in CLINICAL_FLAG_SIGNIFICANCE:
+                out_df.at[idx, "Heme_Significance"] = CLINICAL_FLAG_SIGNIFICANCE[flag]
+                existing = str(out_df.at[idx, "Comment"]) if out_df.at[idx, "Comment"] else ""
+                if existing == "nan":
+                    existing = ""
+                note = f"12g clinical pattern: {flag}"
+                if note not in existing:
+                    out_df.at[idx, "Comment"] = (
+                        f"{existing}; {note}" if existing else note
+                    )
 
     # Sort: non-neutral first (by tier), then neutral
     tier_order = {"TIER_1": 0, "TIER_2": 1, "TIER_3": 2, "FILTERED": 3, "NEUTRAL": 4}

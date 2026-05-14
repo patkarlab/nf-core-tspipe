@@ -88,12 +88,36 @@ def parse_args():
 # ---------------------------------------------------------------------------
 
 def parse_bed_gene_exon(name_field):
-    m = re.search(r"([A-Za-z][A-Za-z0-9_-]+?)_Ex_?(\w+)", name_field)
+    """Extract (gene, exon) from a BED row name field.
+
+    Handles three formats observed in production panel BEDs:
+      'Target=N;ProbeIdx=N;GENE_Ex_N'    -> (GENE, 'N')
+      '<num>_<num>_GENE_Ex_N_M'          -> (GENE, 'N_M')
+      '<num>_<num>_GENE'  (tiling probe) -> (GENE, None)
+      'GENE..N'           (tiling probe) -> (GENE, None)
+    """
+    # Pull off semicolon-prefixed metadata; take the last token.
+    # Also strip stray quotes that occasionally appear in some BED files.
+    last = name_field.split(";")[-1].strip().strip('"').strip("'")
+
+    # Strip leading numeric-id prefixes like '926535_53648197_'
+    while True:
+        m = re.match(r"^\d+_", last)
+        if not m:
+            break
+        last = last[m.end():]
+
+    # Now look for a gene name followed by _Ex_<exon>
+    m = re.match(r"^([A-Za-z][A-Za-z0-9-]*)_[Ee][Xx]_?(\w+)$", last)
     if m:
         return m.group(1), m.group(2)
-    # Strip ..N suffix for tiling regions (BCL2..2 -> BCL2)
-    gene = re.sub(r"\.\.\d+$", "", name_field.strip())
-    return (gene, None) if gene else (None, None)
+
+    # Tiling probe (no _Ex_): clean up trailing junk
+    last = re.sub(r"\.\.\d+$", "", last)        # ..N tiling suffix
+    last = re.sub(r"_[Ee][Xx]_?\w+$", "", last)    # stray _Ex_ at end
+    last = re.sub(r"(_\d+)+$", "", last)           # trailing _N_M repetitions
+
+    return (last, None) if last else (None, None)
 
 
 def load_bed_genes(bed_path):

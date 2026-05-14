@@ -100,11 +100,24 @@ def collect_coverage_files(cov_dir: Path, samples: list[str]) -> list[str]:
     return files
 
 
-def build_reference(cov_files: list[str], output: Path, label: str):
-    """Run cnvkit.py reference to build a PON."""
+def build_reference(cov_files: list[str], output: Path, label: str,
+                     male_reference: bool = False):
+    """Run cnvkit.py reference to build a PON.
+
+    When male_reference is True, -y is passed to cnvkit reference so the
+    haploid X expectation is baked into the PoN's stored log2 values.
+    Without it, cnvkit median-centers each input as if chrX were diploid,
+    washing out the haploid signal and producing a PoN that yields
+    systematic chrX 'loss' for any male sample run against it.
+    """
     cmd = ["cnvkit.py", "reference", "-o", str(output)] + cov_files
-    log.info("Building %s PON with %d coverage files -> %s", label, len(cov_files), output)
-    log.info("  cmd: cnvkit.py reference -o %s <+%d files>", output, len(cov_files))
+    if male_reference:
+        cmd.append("-y")
+    log.info("Building %s PON with %d coverage files -> %s%s",
+             label, len(cov_files), output,
+             " (-y, haploid X)" if male_reference else "")
+    log.info("  cmd: cnvkit.py reference -o %s <+%d files>%s",
+             output, len(cov_files), " -y" if male_reference else "")
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         log.error("cnvkit.py reference (%s) failed:\n%s", label, result.stderr)
@@ -164,7 +177,7 @@ def main():
         male_cov = collect_coverage_files(cov_dir, males)
         if male_cov:
             male_out = out_dir / "cnvkit_hg38_pon_male.cnn"
-            build_reference(male_cov, male_out, "male")
+            build_reference(male_cov, male_out, "male", male_reference=True)
         else:
             log.warning("No male coverage files found; skipping male PON.")
     else:

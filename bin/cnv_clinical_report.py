@@ -368,9 +368,22 @@ def main():
         f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("=" * 80 + "\n\n")
 
+        # Read the actual normal cohort size from the sex assignment TSV if
+        # available. Hard-coding '55 samples' was misleading (the actual cohort
+        # is 56, and the file can change without the report keeping up).
+        sex_tsv = (Path(__file__).resolve().parent.parent
+                   / "references" / "cnvkit_pon_sex_assignment.tsv")
+        n_normals = 0
+        if sex_tsv.is_file():
+            try:
+                n_normals = max(0, len(sex_tsv.read_text().splitlines()) - 1)
+            except OSError:
+                pass
+
         f.write("METHODS:\n")
         f.write("  CNV callers: CNVKit (segment-based) + Z-score (bin-level, LOO-calibrated)\n")
-        f.write("  Reference:   Sex-matched panel-of-normals (55 samples)\n")
+        f.write("  Reference:   Panel-of-normals%s, sex-matched when sample sex is determined\n"
+                % (f" ({n_normals} normals)" if n_normals else ""))
         f.write("  QC:          Leave-one-out noise profiling, per-gene FP rates\n\n")
 
         # Arm-level event summary
