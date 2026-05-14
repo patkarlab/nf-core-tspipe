@@ -68,8 +68,17 @@ def parse_bed_genes(bed_path: str) -> set:
             # or just GENE_Ex_N or GENE_EX_N
             tokens = name.split(";")
             last = tokens[-1].strip()
+            # Compound sub-isoform names: take the first comma alternative.
+            if "," in last:
+                last = last.split(",", 1)[0]
+            # Strip leading "<num>_<num>_" probe-coordinate prefix.
+            last = re.sub(r"^(?:\d+_)+", "", last)
+            # Intron-feature suffix (e.g. CSF1R_Intron_17-18): fold into parent gene.
+            last = re.sub(r"_Intron_\d+(?:-\d+)?(?:_part)?$", "", last)
             # Remove exon suffix: GENE_Ex_N or GENE_EX_N or GENE_ExN
-            m = re.match(r'^(.+?)_[Ee][Xx]_?\d+', last)
+            # Match _Ex_/_EX_ followed by ANY word chars (digits or text),
+            # e.g. NPM1_Ex_intr_10_part folds to NPM1.
+            m = re.match(r'^(.+?)_[Ee][Xx]_?\w+', last)
             if m:
                 genes.add(m.group(1))
             else:

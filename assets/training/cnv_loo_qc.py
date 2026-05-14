@@ -31,7 +31,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import matplotlib
@@ -80,6 +80,9 @@ def parse_args():
                     help="Reference FASTA (optional; cnvkit reference works without it)")
     ap.add_argument("-y", "--male-reference", action="store_true",
                     help="Use male reference (haploid X) for CNVKit calls")
+    ap.add_argument("--panel", default="myeloid",
+                    help="Panel name; outputs land in references/<panel>/ "
+                         "(default: myeloid)")
     return ap.parse_args()
 
 
@@ -107,22 +110,38 @@ def parse_bed_gene_exon(name_field):
             break
         last = last[m.end():]
 
+    # Compound sub-isoform names (e.g. SETBP1_Ex_4D,SETBP1_Ex_4,...):
+    # take the first comma-separated alternative.
+    if "," in last:
+        last = last.split(",", 1)[0]
+
+    # Intron-feature suffix (e.g. CSF1R_Intron_17-18): fold into parent gene.
+    last = re.sub(r"_Intron_\d+(?:-\d+)?(?:_part)?$", "", last)
+
     # Now look for a gene name followed by _Ex_<exon>
-    m = re.match(r"^([A-Za-z][A-Za-z0-9-]*)_[Ee][Xx]_?(\w+)$", last)
+    m = re.match(r"^([A-Za-z][A-Za-z0-9-]*)_[Ee][Xx]_?([\w']+)$", last)
     if m:
         return m.group(1), m.group(2)
 
     # Tiling probe (no _Ex_): clean up trailing junk
     last = re.sub(r"\.\.\d+$", "", last)        # ..N tiling suffix
-    last = re.sub(r"_[Ee][Xx]_?\w+$", "", last)    # stray _Ex_ at end
+    last = re.sub(r"_[Ee][Xx]_?[\w']+$", "", last)    # stray _Ex_ at end (incl. UTR labels)
     last = re.sub(r"(_\d+)+$", "", last)           # trailing _N_M repetitions
 
     return (last, None) if last else (None, None)
 
 
 def load_bed_genes(bed_path):
-    """Load panel BED -> dict gene -> {chrom, start, end}."""
-    genes = defaultdict(lambda: {"chrom": None, "start": float("inf"), "end": 0})
+    """Load panel BED -> dict gene -> {chrom, start, end}.
+
+    For genes that appear on multiple chromosomes in the BED (e.g.
+    SETBP1 with a stray chr3 probe alongside the canonical chr18
+    rows), the MAJORITY chromosome wins and start/end are computed
+    using only rows on that chromosome. A warning is logged for each
+    gene with off-chrom rows so they can be reviewed.
+    """
+    # Track all rows per gene: gene -> list of (chrom, start, end)
+    gene_rows = defaultdict(list)
     with open(bed_path) as f:
         for line in f:
             if line.startswith(("#", "track")):
@@ -131,13 +150,32 @@ def load_bed_genes(bed_path):
             if len(parts) < 4:
                 continue
             chrom, start, end = parts[0], int(parts[1]), int(parts[2])
-            gene, exon = parse_bed_gene_exon(parts[3])
+            gene, _exon = parse_bed_gene_exon(parts[3])
             if gene:
-                g = genes[gene]
-                g["chrom"] = chrom
-                g["start"] = min(g["start"], start)
-                g["end"] = max(g["end"], end)
-    return dict(genes)
+                gene_rows[gene].append((chrom, start, end))
+
+    # Resolve majority chromosome per gene; warn on mixed-chrom genes.
+    genes = {}
+    for gene, rows in gene_rows.items():
+        chrom_counts = Counter(c for c, _s, _e in rows)
+        if len(chrom_counts) > 1:
+            majority_chrom, majority_n = chrom_counts.most_common(1)[0]
+            stray = {c: n for c, n in chrom_counts.items() if c != majority_chrom}
+            log.warning(
+                "Gene %s spans multiple chromosomes in BED: "
+                "majority=%s (%d rows), stray=%s. "
+                "Using majority for gene-level rollup.",
+                gene, majority_chrom, majority_n, stray,
+            )
+        else:
+            majority_chrom = next(iter(chrom_counts))
+        on_chrom = [(s, e) for c, s, e in rows if c == majority_chrom]
+        genes[gene] = {
+            "chrom": majority_chrom,
+            "start": min(s for s, _ in on_chrom),
+            "end":   max(e for _, e in on_chrom),
+        }
+    return genes
 
 
 # ---------------------------------------------------------------------------
@@ -564,8 +602,10 @@ def main():
 
     # Create output directories
     os.makedirs(args.outdir, exist_ok=True)
-    ref_dir = os.path.join(PIPELINE_DIR, "references")
+    # Panel-namespaced reference directory (e.g. references/myeloid/).
+    ref_dir = os.path.join(PIPELINE_DIR, "references", args.panel)
     os.makedirs(ref_dir, exist_ok=True)
+    log.info("Reference output directory: %s", ref_dir)
 
     # Use a persistent temp directory under outdir for LOO results
     loo_work_dir = os.path.join(args.outdir, "loo_iterations")

@@ -28,20 +28,27 @@ process CNV_LOO_QC {
         path  bed
 
     output:
-        path  "loo_qc/loo_summary.tsv",          emit: summary
+        // Panel-namespaced reference outputs (consumed by downstream sample analysis)
+        path  "references/${params.panel}/cnvkit_loo_summary.tsv", emit: summary
+        path  "references/${params.panel}/cnvkit_noisy_bins.bed",  emit: noisy_bins
+        // Per-run QC artifacts (informational; not consumed downstream)
         path  "loo_qc/loo_bin_noise_profile.tsv",emit: noise_profile
-        path  "loo_qc/cnvkit_noisy_bins.bed",    emit: noisy_bins
         path  "loo_qc/loo_iterations",           emit: iterations  // per-sample LOO .cnr files
-        path  "loo_qc/loo_heatmap.png",          emit: heatmap, optional: true
-        path  "loo_qc",                          emit: dir
+        path  "loo_qc/plots/loo_summary_heatmap.png", emit: heatmap, optional: true
+        path  "references/${params.panel}", emit: refs_dir
+        path  "loo_qc",                          emit: qc_dir
 
     script:
+        def panel    = params.panel
+        def male_ref = params.male_reference ? '-y' : ''
         """
-        mkdir -p loo_qc
+        mkdir -p loo_qc references/${panel}
         cnv_loo_qc.py \\
             --cov-dir ${cov_dir} \\
             --bed ${bed} \\
             --outdir loo_qc \\
+            --panel ${panel} \\
+            ${male_ref} \\
             -j ${task.cpus}
         """
 }
