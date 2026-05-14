@@ -48,6 +48,16 @@ process DEEPSOMATIC {
         // Filter accounting (one row per FILTER tag, for QC roll-ups)
         tuple val(meta), path("${meta.id}.deepsomatic.filter_counts.tsv"), emit: filter_counts
         path  "versions.yml",                                              emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.deepsomatic.vcf.gz ${meta.id}.deepsomatic.vcf.gz.tbi ${meta.id}.deepsomatic.raw.vcf.gz ${meta.id}.deepsomatic.raw.vcf.gz.tbi ${meta.id}.deepsomatic.filter_counts.tsv versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         def model = task.ext.model_type ?: 'WES_TUMOR_ONLY'

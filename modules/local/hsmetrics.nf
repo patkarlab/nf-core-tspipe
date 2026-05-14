@@ -21,6 +21,12 @@ process HSMETRICS {
 
     output:
         tuple val(meta), path("${meta.id}_hsmetrics.txt"), emit: metrics
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}_hsmetrics.txt
+        """
+
 
     script:
         """

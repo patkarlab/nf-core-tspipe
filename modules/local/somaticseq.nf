@@ -69,6 +69,17 @@ process SOMATICSEQ_ENSEMBLE {
         tuple val(meta), path("${meta.id}.somaticseq.consensus_indel.vcf.gz"),    emit: indel_vcf
         path  "${meta.id}.somaticseq_workdir",                                    emit: workdir
         path  "versions.yml",                                                     emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        mkdir -p ${meta.id}.somaticseq_workdir
+        touch ${meta.id}.somaticseq.vcf ${meta.id}.somaticseq.consensus_snv.vcf.gz ${meta.id}.somaticseq.consensus_indel.vcf.gz versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         def algo    = task.ext.algorithm ?: 'xgboost'

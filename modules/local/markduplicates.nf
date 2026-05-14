@@ -19,6 +19,16 @@ process PICARD_MARKDUPLICATES {
         tuple val(meta), path("${meta.id}_markdups.bam"), path("${meta.id}_markdups.bam.bai"), emit: bam
         path  "${meta.id}_markdup_metrics.txt",                                                  emit: metrics
         path  "versions.yml",                                                                    emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}_markdups.bam ${meta.id}_markdups.bam.bai ${meta.id}_markdup_metrics.txt versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         def args = task.ext.args ?: ''

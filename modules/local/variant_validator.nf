@@ -19,6 +19,12 @@ process VARIANT_VALIDATOR {
 
     output:
         tuple val(meta), path("${meta.id}.validated.tsv"), emit: tsv
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.validated.tsv
+        """
+
 
     script:
         """

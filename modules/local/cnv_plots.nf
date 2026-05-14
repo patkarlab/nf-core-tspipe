@@ -1,30 +1,63 @@
 /*
  * modules/local/cnv_plots.nf
  *
- * CNV plots
+ * nf-core CNV wiring v1 (apply_nfcore_cnv_wiring_part1)
  *
- * Note: Diagnostic CNV plots. See scripts/12b_cnv_plots.py.
+ * Clinical-grade CNV plots. Produces a `plots/` subtree with combined,
+ * overview, per_chromosome, and per_gene subdirectories. The chr-gene
+ * scatter PDF (added in 2026-05-14, commit a84ba72) is surfaced as a
+ * top-level deliverable for clinical review; the rest of the tree is for
+ * case-by-case browsing under cnv/plots/details/.
  *
- * TODO: this is a stub. Fill in the script: block with the actual command line.
- * The original Python wrapper in scripts/ shows the exact invocation -- this
- * module just needs to translate that to a Nextflow process body.
+ * Note: top-level scatter PDFs/PNGs (final-diagram.pdf, final-scatter.png,
+ * per-chromosome panel-gene PNGs) are produced by CNVKIT, not by CNV_PLOTS.
+ *
+ * Replaces scripts/12b_cnv_plots.py (bin/cnv_plots.py).
  */
 
 process CNV_PLOTS {
     tag        "${meta.id}"
     label      'process_medium'
 
+    conda      'bioconda::cnvkit=0.9.10 conda-forge::matplotlib=3.8.2 conda-forge::pandas=2.1.4 conda-forge::numpy=1.26'
+    container  'quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0'
+
     input:
-        tuple val(meta), path(cnr)
+        // From subworkflow:
+        //   CNVKIT.out.cnr
+        //     .join(CNVKIT.out.cns,         by: 0)
+        //     .join(CNVKIT.out.call_cns,    by: 0)
+        //     .join(CNVKIT.out.genemetrics, by: 0)
+        tuple val(meta),
+              path(cnr),
+              path(cns),
+              path(call_cns),
+              path(genemetrics)
+        path  bed
+        path  cytoband
+        path  loo_summary
+        path  scatter_regions
 
     output:
-        tuple val(meta), path("${meta.id}_cnv_plot.pdf"), emit: pdf
+        tuple val(meta), path("plots"),                  emit: plots_dir
+        tuple val(meta), path("${meta.id}*.pdf"),        emit: pdfs, optional: true
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        mkdir -p plots
+        touch ${meta.id}stub.pdf
+        """
+
 
     script:
         """
-        # TODO: replace this stub with the tool invocation from the source script.
-        echo "STUB: CNV_PLOTS for ${meta.id}" >&2
-        # Touch output filename(s) so downstream channels don't break during DAG validation:
-        touch ${meta.id}_cnv_plot.pdf
+        cnv_plots.py \\
+            -s ${meta.id} \\
+            -o . \\
+            --bed ${bed} \\
+            --cytoband ${cytoband} \\
+            --loo-summary ${loo_summary} \\
+            --genemetrics ${genemetrics} \\
+            --scatter-regions ${scatter_regions}
         """
 }

@@ -29,6 +29,16 @@ process VARDICT {
     output:
         tuple val(meta), path("${meta.id}.vardict.vcf"), emit: vcf
         path  "versions.yml",                             emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.vardict.vcf versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         // gandalf.config sets ext.vardict_helpers_dir for site-specific paths

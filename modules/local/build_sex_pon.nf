@@ -27,6 +27,12 @@ process BUILD_SEX_PON {
         path  "cnvkit_pon_male.cnn",            emit: pon_male
         path  "cnvkit_pon_female.cnn",          emit: pon_female
         path  "cnvkit_pon_sex_assignment.tsv",  emit: sex_assignment
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch cnvkit_pon_male.cnn cnvkit_pon_female.cnn cnvkit_pon_sex_assignment.tsv
+        """
+
 
     script:
         def excludes = task.ext.exclude_samples ?: 'OCIAML3'

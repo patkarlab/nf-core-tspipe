@@ -28,6 +28,12 @@ process GETITD {
 
     output:
         tuple val(meta), path("${meta.id}_getitd"), emit: calls, optional: true
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        mkdir -p ${meta.id}_getitd
+        """
+
 
     script:
         def min_bqs   = task.ext.min_bqs   ?: 20    // see header note

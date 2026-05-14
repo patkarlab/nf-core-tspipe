@@ -24,6 +24,16 @@ process VARIANT_FILTER {
         tuple val(meta), path("${meta.id}.filtered.tsv"), emit: filtered
         tuple val(meta), path("${meta.id}.clinical.tsv"), emit: clinical
         path  "versions.yml",                              emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.filtered.tsv ${meta.id}.clinical.tsv versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         def bl_arg = blacklist ? "--blacklist ${blacklist}" : ''

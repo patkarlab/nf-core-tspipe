@@ -19,6 +19,12 @@ process BAM_TO_FLT3_FASTQ {
 
     output:
         tuple val(meta), path("${meta.id}_flt3_R1.fastq.gz"), path("${meta.id}_flt3_R2.fastq.gz"), emit: reads
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}_flt3_R1.fastq.gz ${meta.id}_flt3_R2.fastq.gz
+        """
+
 
     script:
         // chr13:28,034,000-28,036,000 hg38 (covers FLT3 exons 13-15 with margin)

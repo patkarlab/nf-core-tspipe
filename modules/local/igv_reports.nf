@@ -19,6 +19,12 @@ process IGV_REPORTS {
 
     output:
         tuple val(meta), path("${meta.id}_igv_reports.html"), emit: html
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}_igv_reports.html
+        """
+
 
     script:
         """

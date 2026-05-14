@@ -22,6 +22,12 @@ process SV_CALLERS {
     output:
         tuple val(meta), path("${meta.id}.sv.vcf.gz"), emit: vcf
         tuple val(meta), path("${meta.id}.sv.txt"), emit: txt
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.sv.vcf.gz ${meta.id}.sv.txt
+        """
+
 
     script:
         """

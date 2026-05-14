@@ -26,6 +26,12 @@ process U2AF1_RESCUE {
     output:
         tuple val(meta), path("${meta.id}_u2af1_rescue.tsv"),        emit: tsv
         tuple val(meta), path("${meta.id}_u2af1_pileup_report.txt"), emit: report
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}_u2af1_rescue.tsv ${meta.id}_u2af1_pileup_report.txt
+        """
+
 
     script:
         def min_vaf   = task.ext.min_vaf   ?: '0.01'

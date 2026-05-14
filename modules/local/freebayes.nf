@@ -23,6 +23,16 @@ process FREEBAYES {
     output:
         tuple val(meta), path("${meta.id}.freebayes.vcf"), emit: vcf
         path  "versions.yml",                               emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.freebayes.vcf versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         def args = task.ext.args ?: ''

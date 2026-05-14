@@ -37,6 +37,13 @@ process CNV_LOO_QC {
         path  "loo_qc/plots/loo_summary_heatmap.png", emit: heatmap, optional: true
         path  "references/${params.panel}", emit: refs_dir
         path  "loo_qc",                          emit: qc_dir
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        mkdir -p references/${params.panel} loo_qc loo_qc/loo_iterations loo_qc/plots
+        touch references/${params.panel}/cnvkit_loo_summary.tsv references/${params.panel}/cnvkit_noisy_bins.bed loo_qc/loo_bin_noise_profile.tsv loo_qc/plots/loo_summary_heatmap.png
+        """
+
 
     script:
         def panel    = params.panel

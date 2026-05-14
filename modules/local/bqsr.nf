@@ -25,6 +25,16 @@ process GATK4_BQSR {
         tuple val(meta), path("${meta.id}_final.bam"), path("${meta.id}_final.bam.bai"), emit: bam
         path  "${meta.id}_recal.table",                                                    emit: table
         path  "versions.yml",                                                              emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}_final.bam ${meta.id}_final.bam.bai ${meta.id}_recal.table versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         def mem = task.memory ? "-Xmx${task.memory.toGiga()}g" : ''

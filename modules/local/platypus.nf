@@ -32,6 +32,16 @@ process PLATYPUS {
     output:
         tuple val(meta), path("${meta.id}.platypus.vcf"), emit: vcf
         path  "versions.yml",                              emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.platypus.vcf versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         """

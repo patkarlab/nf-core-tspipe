@@ -19,6 +19,12 @@ process FLT3_TO_VARIANTS {
 
     output:
         tuple val(meta), path("${meta.id}.final.tsv"), emit: tsv
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.final.tsv
+        """
+
 
     script:
         """

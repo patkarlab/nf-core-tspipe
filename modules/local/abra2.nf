@@ -21,6 +21,16 @@ process ABRA2 {
     output:
         tuple val(meta), path("${meta.id}.final.bam"), path("${meta.id}.final.bam.bai"), emit: bam
         path  "versions.yml",                                                             emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.final.bam ${meta.id}.final.bam.bai versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         def args = task.ext.args ?: '--mer 0.025 --mad 5000'

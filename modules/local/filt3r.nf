@@ -27,6 +27,12 @@ process FILT3R {
     output:
         tuple val(meta), path("${meta.id}_filt3r.json"), emit: calls, optional: true
         tuple val(meta), path("${meta.id}_filt3r.vcf"),  emit: vcf,   optional: true
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}_filt3r.json ${meta.id}_filt3r.vcf
+        """
+
 
     script:
         def kmer = task.ext.kmer ?: 12

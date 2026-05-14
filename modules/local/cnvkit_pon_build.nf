@@ -35,6 +35,17 @@ process CNVKIT_PON_BUILD {
         path  "cnvkit_pon_build/*.antitargetcoverage.cnn",                 emit: antitarget_cov
         path  "cnvkit_pon_build",                                          emit: build_dir
         path  "versions.yml",                                              emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        mkdir -p cnvkit_pon_build
+        touch cnvkit_pon_build/pon_reference.cnn cnvkit_pon_build/stub.targetcoverage.cnn cnvkit_pon_build/stub.antitargetcoverage.cnn versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         """

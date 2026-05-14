@@ -49,6 +49,16 @@ process GATK4_MUTECT2 {
         tuple val(meta), path("${meta.id}.mutect2.raw.vcf.gz.stats"),      emit: stats
         tuple val(meta), path("${meta.id}.mutect2.filteringStats.tsv"),    emit: filtering_stats
         path  "versions.yml",                                              emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.mutect2.vcf.gz ${meta.id}.mutect2.vcf.gz.tbi ${meta.id}.mutect2.raw.vcf.gz ${meta.id}.mutect2.raw.vcf.gz.tbi ${meta.id}.mutect2.raw.vcf.gz.stats ${meta.id}.mutect2.filteringStats.tsv versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         def mem = task.memory ? "-Xmx${task.memory.toGiga()}g" : ''

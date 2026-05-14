@@ -19,6 +19,13 @@ process ORGANIZE_OUTPUT {
 
     output:
         path "deliverables/*", emit: bundle
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        mkdir -p deliverables
+        touch deliverables/stub.txt
+        """
+
 
     script:
         """

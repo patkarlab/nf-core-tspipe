@@ -25,6 +25,16 @@ process VARSCAN {
     output:
         tuple val(meta), path("${meta.id}.varscan.vcf"), emit: vcf
         path  "versions.yml",                             emit: versions
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        touch ${meta.id}.varscan.vcf versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
+        """
+
 
     script:
         def min_cov  = task.ext.min_coverage ?: '10'

@@ -32,6 +32,13 @@ process FLT3_ITD_EXT {
 
     output:
         tuple val(meta), path("flt3_itd_ext_out/*"), emit: calls, optional: true
+    stub:
+        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        """
+        mkdir -p flt3_itd_ext_out
+        touch flt3_itd_ext_out/stub.txt
+        """
+
 
     script:
         """
