@@ -35,7 +35,7 @@ process CNV_ANNOTATE {
 
     script:
         """
-        cnv_annotate.py \\
+        python3 ${projectDir}/bin/cnv_annotate.py \\
             --sample ${meta.id} \\
             --concordance ${concordance} \\
             --loo-summary ${loo_summary} \\

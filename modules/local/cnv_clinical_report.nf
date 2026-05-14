@@ -45,7 +45,7 @@ process CNV_CLINICAL_REPORT {
 
     script:
         """
-        cnv_clinical_report.py \\
+        python3 ${projectDir}/bin/cnv_clinical_report.py \\
             -s ${meta.id} \\
             --concordance ${concordance} \\
             --cnvkit-calls ${cnvkit_call_cns} \\
