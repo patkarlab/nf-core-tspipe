@@ -62,6 +62,38 @@ workflow TSPIPE {
     ch_gnomad     = Channel.fromPath(params.gnomad_af_only, checkIfExists: true)
     ch_gnomad_tbi = Channel.fromPath(params.gnomad_af_only + '.tbi', checkIfExists: true)
 
+    // ----- CNV reference channels (asset defaults, runtime-overridable) -
+    // nf-core CNV wiring v1 (apply_nfcore_cnv_wiring_part1)
+    // Sex-specific PoNs. CNVKIT module selects via meta.sex at process time;
+    // sex=='unknown' falls back to the female PoN with a log.warn.
+    ch_cnv_pon_male   = Channel.value(file(
+        params.cnv_pon_male   ?: "${projectDir}/assets/${params.panel}/cnvkit_pon_male.cnn",
+        checkIfExists: true))
+    ch_cnv_pon_female = Channel.value(file(
+        params.cnv_pon_female ?: "${projectDir}/assets/${params.panel}/cnvkit_pon_female.cnn",
+        checkIfExists: true))
+    // Panel-specific LOO QC artefacts produced by BUILD_PON.
+    ch_cnv_loo_summary   = Channel.value(file(
+        params.cnv_loo_summary   ?: "${projectDir}/assets/${params.panel}/cnvkit_loo_summary.tsv",
+        checkIfExists: true))
+    ch_cnv_noisy_bins    = Channel.value(file(
+        params.cnv_noisy_bins    ?: "${projectDir}/assets/${params.panel}/cnvkit_noisy_bins.bed",
+        checkIfExists: true))
+    ch_cnv_noise_profile = Channel.value(file(
+        params.cnv_noise_profile ?: "${projectDir}/assets/${params.panel}/loo_bin_noise_profile.tsv",
+        checkIfExists: true))
+    // Panel-agnostic annotation references.
+    ch_cytoband = Channel.value(file(
+        params.cytoband ?: "${projectDir}/assets/references/cytoBand_hg38.txt",
+        checkIfExists: true))
+    ch_clingen  = Channel.value(file(
+        params.clingen  ?: "${projectDir}/assets/references/ClinGen_gene_curation_list_GRCh38.tsv",
+        checkIfExists: true))
+    // Panel-specific chr-gene scatter regions (no runtime override; lives in panel assets).
+    ch_scatter_regions = Channel.value(file(
+        "${projectDir}/assets/${params.panel}/cnv_scatter_regions.txt",
+        checkIfExists: true))
+
     // ----- Parse the samplesheet ----------------------------------------
     ch_input = Channel.fromPath(params.input, checkIfExists: true)
         .splitCsv(header: true)
@@ -110,7 +142,20 @@ workflow TSPIPE {
     // ch_flt3_consensus = FLT3_ITD.out.consensus_tsv
 
     // ----- 4. CNV calling (CNVKit + Z-score + concordance) --------------
-    // CNV_CALLING(ch_final_bam, ch_reference, ch_bed)
+    // nf-core CNV wiring v1 (apply_nfcore_cnv_wiring_part1)
+    CNV_CALLING(
+        ch_final_bam,
+        ch_reference,
+        ch_bed,
+        ch_cnv_pon_male,
+        ch_cnv_pon_female,
+        ch_cnv_loo_summary,
+        ch_cnv_noisy_bins,
+        ch_cnv_noise_profile,
+        ch_cytoband,
+        ch_clingen,
+        ch_scatter_regions,
+    )
 
     // ----- 5. SV calling -----------------------------------------------
     // SV_CALLING(ch_final_bam, ch_reference, ch_bed)
