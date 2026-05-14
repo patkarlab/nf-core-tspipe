@@ -31,3 +31,7 @@ Thumbs.db
 
 # tmux debug logs
 tmux-*.log
+
+# Local backup files (e.g. *.bak.YYYYMMDD_HHMMSS or *.bak_<tag>)
+*.bak.*
+*.bak_*
