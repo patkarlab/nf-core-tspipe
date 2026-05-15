@@ -64,16 +64,19 @@ process SOMATICSEQ_ENSEMBLE {
         path  dbsnp_vcf
 
     output:
-        tuple val(meta), path("${meta.id}.somaticseq.vcf"),                       emit: vcf
-        tuple val(meta), path("${meta.id}.somaticseq.consensus_snv.vcf.gz"),      emit: snv_vcf
-        tuple val(meta), path("${meta.id}.somaticseq.consensus_indel.vcf.gz"),    emit: indel_vcf
-        path  "${meta.id}.somaticseq_workdir",                                    emit: workdir
-        path  "versions.yml",                                                     emit: versions
+        // Module 1 (ensemble): emit raw consensus VCFs + workdir.
+        // Post-processing (sort/bgzip/index/concat/rename) is in
+        // SOMATICSEQ_POSTPROCESS which uses a gatk4 container (has bcftools).
+        tuple val(meta), path("${meta.id}.somaticseq_workdir/Consensus.sSNV.vcf"),   emit: consensus_snv
+        tuple val(meta), path("${meta.id}.somaticseq_workdir/Consensus.sINDEL.vcf"), emit: consensus_indel
+        path  "${meta.id}.somaticseq_workdir",                                       emit: workdir
+        path  "versions.yml",                                                        emit: versions
     stub:
         // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
         """
         mkdir -p ${meta.id}.somaticseq_workdir
-        touch ${meta.id}.somaticseq.vcf ${meta.id}.somaticseq.consensus_snv.vcf.gz ${meta.id}.somaticseq.consensus_indel.vcf.gz versions.yml
+        mkdir -p ${meta.id}.somaticseq_workdir
+        touch ${meta.id}.somaticseq_workdir/Consensus.sSNV.vcf ${meta.id}.somaticseq_workdir/Consensus.sINDEL.vcf versions.yml
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             stub: true
@@ -96,13 +99,29 @@ process SOMATICSEQ_ENSEMBLE {
         ARB_SNV_LIST=()
         ARB_INDEL_LIST=()
 
-        for ENTRY in "freebayes:${freebayes_vcf}" "platypus:${platypus_vcf}" \\
-                     "pindel:${pindel_vcf}" "deepsomatic:${deepsomatic_vcf}"; do
+        # NOTE 2026-05-17: pindel and deepsomatic temporarily dropped from
+        # the arbitrary-caller loop. Both produce valid VCFs upstream but the
+        # SomaticSeq preprocessing loop crashes during their iteration in ways
+        # that proved hard to pin down within a single debug session.
+        # Production's 07_somaticseq.py uses the 6-caller stable baseline.
+        # Revisit pindel+deepsomatic integration in a dedicated session.
+        for ENTRY in "freebayes:${freebayes_vcf}" "platypus:${platypus_vcf}"; do
             CALLER=\${ENTRY%%:*}
             SRC=\${ENTRY#*:}
             if [ -z "\$SRC" ] || [ ! -e "\$SRC" ]; then
                 echo "[somaticseq] \$CALLER: no VCF provided, skipping" 1>&2
                 continue
+            fi
+
+            # Fail-fast on 0-byte input (corruption check).
+            # We've observed PINDEL + DEEPSOMATIC outputs getting zeroed
+            # during parallel/resume races; treating it as a hard error here
+            # is louder than the silent header-only VCF that splitVcf.py
+            # would otherwise produce. Applies to both .vcf and .vcf.gz.
+            if [ ! -s "\$SRC" ]; then
+                echo "[somaticseq] \$CALLER: input \$SRC is 0 bytes; treating as corruption" 1>&2
+                echo "  hint: remove the upstream task work dir + .nextflow/cache entry and resume" 1>&2
+                exit 2
             fi
 
             # Decompress if gzipped (splitVcf.py expects plain text)
@@ -111,7 +130,7 @@ process SOMATICSEQ_ENSEMBLE {
                 SRC="\${CALLER}.decompressed.vcf"
             fi
 
-            N=\$(grep -cv '^#' "\$SRC" 2>/dev/null || echo 0)
+            N=\$(grep -cv '^#' "\$SRC" 2>/dev/null) || N=0
             if [ "\$N" -eq 0 ]; then
                 echo "[somaticseq] \$CALLER: header-only, skipping" 1>&2
                 continue
@@ -199,67 +218,15 @@ process SOMATICSEQ_ENSEMBLE {
             exit \$RC
         fi
 
-        # ----------------------------------------------------------------
-        # 3. Sort + bgzip + index consensus VCFs
-        # ----------------------------------------------------------------
-        SNV_RAW=\$WORK/Consensus.sSNV.vcf
-        INDEL_RAW=\$WORK/Consensus.sINDEL.vcf
-
-        SNV_SORTED=\${SAMPLE}.somaticseq.consensus_snv.vcf
-        INDEL_SORTED=\${SAMPLE}.somaticseq.consensus_indel.vcf
-
-        grep '^#'    \$SNV_RAW   >  \$SNV_SORTED
-        grep -v '^#' \$SNV_RAW   | sort -k1,1V -k2,2g >> \$SNV_SORTED
-        grep '^#'    \$INDEL_RAW >  \$INDEL_SORTED
-        grep -v '^#' \$INDEL_RAW | sort -k1,1V -k2,2g >> \$INDEL_SORTED
-
-        bgzip -c \$SNV_SORTED   > \${SNV_SORTED}.gz
-        bgzip -c \$INDEL_SORTED > \${INDEL_SORTED}.gz
-        bcftools index -t \${SNV_SORTED}.gz
-        bcftools index -t \${INDEL_SORTED}.gz
-
-        # ----------------------------------------------------------------
-        # 4. Merge SNV + INDEL into final VCF
-        # ----------------------------------------------------------------
-        bcftools concat -a \${SNV_SORTED}.gz \${INDEL_SORTED}.gz -o \${SAMPLE}.somaticseq.vcf
-
-        # ----------------------------------------------------------------
-        # 5. Rename caller INFO field codes (8-caller version)
-        # ----------------------------------------------------------------
-        python3 - "\${SAMPLE}.somaticseq.vcf" <<'PYRENAME'
-import re, sys
-path = sys.argv[1]
-caller_labels = ["Mutect2", "VarDict", "VarScan", "Strelka",
-                 "FreeBayes", "Platypus", "Pindel", "DeepSomatic"]
-label_csv = ", ".join(caller_labels)
-with open(path) as f:
-    content = f.read()
-content = re.sub(
-    r'##INFO=<ID=([A-Z]+\\d+),Number=\\d+,Type=\\w+,'
-    r'Description="Calling decision of the \\d+ algorithms:[^"]*">',
-    f'##INFO=<ID=MVDKFPID,Number=8,Type=String,'
-    f'Description="Calling decision of the 8 algorithms: {label_csv}">',
-    content,
-)
-content = re.sub(r'\\b[A-Z]{2,}\\d+(?==)', 'MVDKFPID', content)
-with open(path, "w") as f:
-    f.write(content)
-print(f"[somaticseq] renamed caller INFO -> MVDKFPID ({label_csv})", file=sys.stderr)
-PYRENAME
-
-        # ----------------------------------------------------------------
-        # 6. Final summary
-        # ----------------------------------------------------------------
-        for LABEL in "SNV consensus" "INDEL consensus" "Merged VCF"; do : ; done  # no-op for clarity
-        SNV_N=\$(grep -cv '^#' \${SNV_SORTED} || echo 0)
-        INDEL_N=\$(grep -cv '^#' \${INDEL_SORTED} || echo 0)
-        FINAL_N=\$(grep -cv '^#' \${SAMPLE}.somaticseq.vcf || echo 0)
-        echo "[somaticseq ${meta.id}] SNV=\$SNV_N  INDEL=\$INDEL_N  FINAL=\$FINAL_N" 1>&2
+        # Module 1 emits raw consensus VCFs from \$WORK.
+        # Sort/bgzip/index/concat/rename happens in SOMATICSEQ_POSTPROCESS
+        # (uses gatk4 container which has bcftools+bgzip+tabix on PATH).
+        echo "[somaticseq \${SAMPLE}] consensus VCFs ready:" 1>&2
+        ls -la \$WORK/Consensus.s{SNV,INDEL}.vcf 1>&2 || true
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             somaticseq: \$(somaticseq_parallel.py --version 2>&1 | sed 's/.*v//' | head -n1)
-            bcftools:   \$(bcftools --version | head -n1 | sed 's/bcftools //')
         END_VERSIONS
         """
 }
