@@ -69,7 +69,13 @@ process CNVKIT {
             echo "[WARN]   If this sample is male, chrX will show systematic loss in the CNR." >&2
         fi
 
-        cnvkit.py \\
+        # Matplotlib/fontconfig need a writable cache dir; the container's
+        # default ($HOME/.config/matplotlib) is not writable.
+        export MPLCONFIGDIR=\$PWD/.mpl
+        export XDG_CACHE_HOME=\$PWD/.cache
+        mkdir -p \$MPLCONFIGDIR \$XDG_CACHE_HOME
+
+        cnvkit_wrapper.py \\
             --bam ${bam} \\
             -s ${meta.id} \\
             -o . \\
