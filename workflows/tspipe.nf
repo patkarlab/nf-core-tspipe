@@ -20,6 +20,7 @@
 include { PREPROCESSING       } from '../subworkflows/local/preprocessing'
 include { VARIANT_CALLING     } from '../subworkflows/local/variant_calling'
 include { SOMATICSEQ_ENSEMBLE } from '../modules/local/somaticseq'
+include { SOMATICSEQ_POSTPROCESS } from '../modules/local/somaticseq_postprocess'
 include { FLT3_ITD            } from '../subworkflows/local/flt3_itd'
 include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
 include { SV_CALLING          } from '../subworkflows/local/sv_calling'
@@ -135,7 +136,14 @@ workflow TSPIPE {
         ch_bed,
         ch_dbsnp_vcf,
     )
-    ch_somaticseq_vcf = SOMATICSEQ_ENSEMBLE.out.vcf
+
+    // Post-process: sort/bgzip/index/concat/rename in gatk4 container
+    // (somaticseq's own container lacks bcftools/bgzip/tabix on PATH).
+    SOMATICSEQ_POSTPROCESS(
+        SOMATICSEQ_ENSEMBLE.out.consensus_snv
+            .join(SOMATICSEQ_ENSEMBLE.out.consensus_indel)
+    )
+    ch_somaticseq_vcf = SOMATICSEQ_POSTPROCESS.out.vcf
 
     // ----- 3. FLT3-ITD 4-tool ensemble ----------------------------------
     // FLT3_ITD(ch_final_bam, VARIANT_CALLING.out.pindel_vcf)
