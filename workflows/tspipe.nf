@@ -41,7 +41,7 @@ workflow TSPIPE {
         file(params.reference.replaceFirst(/\.fa(sta)?$/, '.dict'), checkIfExists: true)
     ])
     ch_bed       = Channel.value(file(params.bed, checkIfExists: true))
-    ch_pindel_bed = Channel.fromPath(params.pindel_bed, checkIfExists: true)
+    ch_pindel_bed = Channel.value(file(params.pindel_bed, checkIfExists: true))
     ch_blacklist = params.snv_blacklist
                        ? Channel.fromPath(params.snv_blacklist, checkIfExists: true)
                        : Channel.value([])
@@ -57,11 +57,11 @@ workflow TSPIPE {
     ])
 
     // dbsnp VCF only (path, no .tbi) - SomaticSeq's --dbsnp-vcf expects the path
-    ch_dbsnp_vcf = Channel.fromPath(params.dbsnp_vcf, checkIfExists: true)
+    ch_dbsnp_vcf = Channel.value(file(params.dbsnp_vcf, checkIfExists: true))
 
     // gnomAD for Mutect2 germline filtering
-    ch_gnomad     = Channel.fromPath(params.gnomad_af_only, checkIfExists: true)
-    ch_gnomad_tbi = Channel.fromPath(params.gnomad_af_only + '.tbi', checkIfExists: true)
+    ch_gnomad     = Channel.value(file(params.gnomad_af_only, checkIfExists: true))
+    ch_gnomad_tbi = Channel.value(file(params.gnomad_af_only + '.tbi', checkIfExists: true))
 
     // ----- CNV reference channels (asset defaults, runtime-overridable) -
     // nf-core CNV wiring v1 (apply_nfcore_cnv_wiring_part1)
