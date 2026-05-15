@@ -56,12 +56,12 @@ process CNV_CLINICAL_REPORT {
         # Normalise possible output filenames into the module's declared
         # output basenames (the bin/ script's filename convention has
         # varied across versions; this shim catches the known variants).
-        for src in ${meta.id}.cnv_clinical_report.tsv ${meta.id}.cnv_clinical.tsv ${meta.id}_clinical_report.tsv; do
+        for src in ${meta.id}_cnv_clinical_report.tsv ${meta.id}.cnv_clinical_report.tsv ${meta.id}.cnv_clinical.tsv ${meta.id}_clinical_report.tsv; do
             if [ -f "\$src" ] && [ ! -f "${meta.id}_cnv_clinical.tsv" ]; then
                 mv "\$src" "${meta.id}_cnv_clinical.tsv"
             fi
         done
-        for src in ${meta.id}.cnv_clinical_report.txt ${meta.id}.cnv_clinical.txt ${meta.id}_clinical_report.txt; do
+        for src in ${meta.id}_cnv_clinical_report.txt ${meta.id}.cnv_clinical_report.txt ${meta.id}.cnv_clinical.txt ${meta.id}_clinical_report.txt; do
             if [ -f "\$src" ] && [ ! -f "${meta.id}_cnv_clinical.txt" ]; then
                 mv "\$src" "${meta.id}_cnv_clinical.txt"
             fi
