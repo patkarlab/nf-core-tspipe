@@ -48,7 +48,7 @@ process SOMATICSEQ_ENSEMBLE {
     container  'lethalfang/somaticseq:3.7.4'
 
     input:
-        // All 8 caller VCFs joined by meta in tspipe.nf
+        // All 8 caller VCFs + BAM joined by meta in tspipe.nf
         tuple val(meta),
               path(mutect2_vcf),
               path(vardict_vcf),
@@ -57,8 +57,9 @@ process SOMATICSEQ_ENSEMBLE {
               path(freebayes_vcf),
               path(platypus_vcf),
               path(pindel_vcf),
-              path(deepsomatic_vcf)
-        tuple val(_meta_bam), path(bam), path(bai)
+              path(deepsomatic_vcf),
+              path(bam),
+              path(bai)
         tuple path(fasta), path(fai), path(dict)
         path  bed
         path  dbsnp_vcf

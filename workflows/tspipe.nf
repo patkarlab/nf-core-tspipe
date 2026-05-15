@@ -126,12 +126,13 @@ workflow TSPIPE {
         .join(VARIANT_CALLING.out.platypus_vcf,    by: 0)
         .join(VARIANT_CALLING.out.pindel_vcf,      by: 0)
         .join(VARIANT_CALLING.out.deepsomatic_vcf, by: 0)
+        .join(ch_final_bam,                        by: 0)
     // Result tuple shape: [meta, mutect2, vardict, varscan, strelka,
-    //                     freebayes, platypus, pindel, deepsomatic]
+    //                     freebayes, platypus, pindel, deepsomatic,
+    //                     bam, bai]
 
     SOMATICSEQ_ENSEMBLE(
         ch_somaticseq_in,
-        ch_final_bam,
         ch_reference,
         ch_bed,
         ch_dbsnp_vcf,
