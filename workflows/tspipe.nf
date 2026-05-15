@@ -39,7 +39,7 @@ workflow TSPIPE {
         file(params.reference + '.fai', checkIfExists: true),
         file(params.reference.replaceFirst(/\.fa(sta)?$/, '.dict'), checkIfExists: true)
     ])
-    ch_bed       = Channel.fromPath(params.bed,        checkIfExists: true)
+    ch_bed       = Channel.value(file(params.bed, checkIfExists: true))
     ch_pindel_bed = Channel.fromPath(params.pindel_bed, checkIfExists: true)
     ch_blacklist = params.snv_blacklist
                        ? Channel.fromPath(params.snv_blacklist, checkIfExists: true)
