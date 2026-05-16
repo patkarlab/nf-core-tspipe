@@ -24,8 +24,11 @@ process FLT3_ITD_EXT {
     label      'process_low'
     label      'error_ignore'   // non-fatal per original orchestrator semantics
 
-    container  'zhkddocker/flt3_itd_ext:v1.1'
-    containerOptions { task.stubRun ? '' : '-w /biosoft/FLT3_ITD_ext' }
+    container  'local/flt3_itd_ext:v0.2'
+    // No containerOptions: v0.2's PATH wrapper /usr/local/bin/flt3_itd_ext
+    // handles the cd-to-install-dir requirement internally, so the
+    // container runs with CWD = Nextflow work dir for both Docker and
+    // Singularity profiles.
 
     input:
         tuple val(meta), path(bam), path(bai)
@@ -43,11 +46,16 @@ process FLT3_ITD_EXT {
 
 
     script:
+        // Absolute paths via \$(pwd) -- the wrapper cd's into the install
+        // dir before exec'ing perl, so relative paths in -b/-o would
+        // resolve against /biosoft/FLT3_ITD_ext instead of Nextflow's
+        // work dir. \$(pwd) is evaluated by bash at runtime inside the
+        // container, where CWD is the bind-mounted work dir.
         """
         mkdir -p flt3_itd_ext_out
-        perl /biosoft/FLT3_ITD_ext/FLT3_ITD_ext.pl \\
-            -b ${bam} \\
-            -o flt3_itd_ext_out \\
+        flt3_itd_ext \\
+            -b \$(pwd)/${bam} \\
+            -o \$(pwd)/flt3_itd_ext_out \\
             -n HC \\
             -g hg38
         """
