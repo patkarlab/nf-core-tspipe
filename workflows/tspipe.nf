@@ -146,9 +146,9 @@ workflow TSPIPE {
     )
     ch_somaticseq_vcf = SOMATICSEQ_POSTPROCESS.out.vcf
 
-    // ----- 3. FLT3-ITD 4-tool ensemble ----------------------------------
-    // FLT3_ITD(ch_final_bam, VARIANT_CALLING.out.pindel_vcf)
-    // ch_flt3_consensus = FLT3_ITD.out.consensus_tsv
+    // ----- 3. FLT3-ITD 3-tool ensemble ----------------------------------
+    FLT3_ITD(ch_final_bam)
+    ch_flt3_consensus = FLT3_ITD.out.consensus_tsv
 
     // ----- 4. CNV calling (CNVKit + Z-score + concordance) --------------
     // nf-core CNV wiring v1 (apply_nfcore_cnv_wiring_part1)
