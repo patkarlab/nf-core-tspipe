@@ -27,8 +27,8 @@ process BAM_TO_FLT3_FASTQ {
 
 
     script:
-        // chr13:28,034,000-28,036,000 hg38 (covers FLT3 exons 13-15 with margin)
-        def region = task.ext.flt3_region ?: 'chr13:28033000-28036000'
+        // chr13:28,003,000-28,101,000 hg38 (entire FLT3 gene body plus margin)
+        def region = task.ext.flt3_region ?: 'chr13:28003000-28101000'
         """
         samtools view -b -@ ${task.cpus} ${bam} ${region} \\
           | samtools sort -n -@ ${task.cpus} -O bam - \\

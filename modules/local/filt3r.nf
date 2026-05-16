@@ -1,49 +1,59 @@
 /*
  * modules/local/filt3r.nf
  *
- * filt3r (Baudry 2022). FLT3-ITD k-mer based caller on FASTQ input.
+ * filt3r (Baudry et al., Bioinformatics 2022) FLT3-ITD detection via
+ * k-mer assembly against an FLT3 exon14/15 reference. Container
+ * `local/filt3r:v0.1` was built from /home/hemat/programs/filt3r/
+ * (in-tree Dockerfile).
  *
- * Original install path: /home/hemat/programs/filt3r/filt3r
- *   reference: /home/hemat/programs/filt3r/data/flt3_exon14-15.fa
- *   k-mer = 12 (validated default)
+ * Container layout:
+ *   /filt3r/filt3r                       (compiled binary; NOT on PATH)
+ *   /filt3r/data/flt3_exon14-15.fa       (k-mer reference)
  *
- * Until a public bioconda package lands, this module assumes a local
- * conda env or container with filt3r on PATH. Override via process.container
- * in nextflow.config.
+ * Production invocation in scripts/09_flt3_itd.py:
+ *   filt3r --ref data/flt3_exon14-15.fa -k 12 \
+ *          --sequences R1,R2 --nb-threads N --vcf \
+ *          --out <sample>_filt3r.results.json
+ *
+ * Two output files are written: the JSON (requested via --out) and a
+ * sibling VCF (produced because --vcf was passed). The consensus
+ * parser reads only the VCF; the JSON is retained for audit because
+ * it contains per-read alignment evidence the VCF does not.
+ *
+ * k=12 is the validated default per Baudry 2022; overrideable via
+ * task.ext.kmer in conf/modules.config without editing this module.
  */
 
 process FILT3R {
     tag        "${meta.id}"
     label      'process_low'
-    label      'error_ignore'
+    label      'error_ignore'   // soft-fail per production orchestrator semantics
 
-    // filt3r is not on bioconda yet; build a custom container or use a local
-    // install via -profile standard.
-    // container 'your-registry/filt3r:0.4.0'
+    container  'local/filt3r:v0.1'
 
     input:
-        tuple val(meta), path(reads1), path(reads2)
+        tuple val(meta), path(r1), path(r2)
 
     output:
-        tuple val(meta), path("${meta.id}_filt3r.json"), emit: calls, optional: true
-        tuple val(meta), path("${meta.id}_filt3r.vcf"),  emit: vcf,   optional: true
+        tuple val(meta), path("${meta.id}_filt3r.results.vcf"),  emit: vcf
+        tuple val(meta), path("${meta.id}_filt3r.results.json"), emit: json
+
     stub:
         // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
         """
-        touch ${meta.id}_filt3r.json ${meta.id}_filt3r.vcf
+        touch ${meta.id}_filt3r.results.vcf
+        touch ${meta.id}_filt3r.results.json
         """
-
 
     script:
         def kmer = task.ext.kmer ?: 12
-        def ref  = params.filt3r_ref ?: '/home/hemat/programs/filt3r/data/flt3_exon14-15.fa'
         """
-        filt3r \\
-            -k ${kmer} \\
-            --ref ${ref} \\
-            --sequences ${reads1},${reads2} \\
-            --vcf > ${meta.id}_filt3r.json
-        # The vcf flag emits VCF to a fixed path - check upstream tool docs
-        if [ -f filt3r.vcf ]; then mv filt3r.vcf ${meta.id}_filt3r.vcf; fi
+        /filt3r/filt3r \\
+            --ref         /filt3r/data/flt3_exon14-15.fa \\
+            -k            ${kmer} \\
+            --sequences   ${r1},${r2} \\
+            --nb-threads  ${task.cpus} \\
+            --vcf \\
+            --out         ${meta.id}_filt3r.results.json
         """
 }
