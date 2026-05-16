@@ -59,7 +59,16 @@ workflow FLT3_ITD {
         // inputs on FLT3_CONSENSUS would let Nextflow pair positionally,
         // which is the cross-sample mispairing bug shape that broke
         // SomaticSeq before commit 3bf7eb4.
-        ch_for_consensus = GETITD.out.hc_tsv
+        // Driver channel: ch_bam has every sample by construction. Starting
+        // the join chain from ch_bam (rather than from one of the caller
+        // emits) guarantees that every sample produces exactly one
+        // 4-element tuple even when multiple callers soft-fail for the
+        // same sample. .join(remainder: true) only fills nulls when at
+        // least one side has the key; using ch_bam as the always-present
+        // left side ensures that condition holds.
+        ch_for_consensus = ch_bam
+            .map { meta, bam, bai -> [meta] }
+            .join(GETITD.out.hc_tsv,    by: 0, remainder: true)
             .join(FLT3_ITD_EXT.out.vcf, by: 0, remainder: true)
             .join(FILT3R.out.vcf,       by: 0, remainder: true)
             .map { meta, getitd, flt3_ext, filt3r ->

@@ -25,7 +25,7 @@ process FLT3_ITD_EXT {
     label      'error_ignore'   // non-fatal per original orchestrator semantics
 
     container  'zhkddocker/flt3_itd_ext:v1.1'
-    containerOptions '-w /biosoft/FLT3_ITD_ext'
+    containerOptions { task.stubRun ? '' : '-w /biosoft/FLT3_ITD_ext' }
 
     input:
         tuple val(meta), path(bam), path(bai)
