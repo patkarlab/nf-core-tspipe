@@ -1,0 +1,6 @@
+##fileformat=VCFv4.1
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="ITD length in bp">
+##INFO=<ID=M,Number=1,Type=Integer,Description="Supporting reads">
+##INFO=<ID=WT,Number=1,Type=Integer,Description="Wild-type reads">
+##INFO=<ID=VAF,Number=1,Type=Float,Description="Variant allele frequency (fraction)">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO

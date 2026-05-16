@@ -1,0 +1,10 @@
+##fileformat=VCFv4.1
+##INFO=<ID=GENE,Number=1,Type=String,Description="Gene name">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="ITD length in bp">
+##INFO=<ID=CDS,Number=1,Type=String,Description="HGVS coding sequence notation">
+##INFO=<ID=AA,Number=1,Type=String,Description="HGVS protein notation">
+##INFO=<ID=RAF,Number=1,Type=Float,Description="Read allele frequency (non-UMI)">
+##INFO=<ID=RAR,Number=1,Type=Float,Description="Read allelic ratio (non-UMI)">
+##INFO=<ID=RDP,Number=1,Type=Integer,Description="Read depth in region">
+##INFO=<ID=RVD,Number=1,Type=Integer,Description="Reads supporting variant">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
