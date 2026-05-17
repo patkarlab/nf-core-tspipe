@@ -12,6 +12,7 @@ include { ABRA2                  } from '../../modules/local/abra2'
 include { HSMETRICS              } from '../../modules/local/hsmetrics'
 include { MOSDEPTH               } from '../../modules/local/mosdepth'
 include { PARSE_EXON_COVERAGE    } from '../../modules/local/parse_exon_coverage'
+include { SAMPLE_DASHBOARD       } from '../../modules/local/sample_dashboard'
 
 workflow PREPROCESSING {
 
@@ -49,6 +50,19 @@ workflow PREPROCESSING {
         MOSDEPTH(ABRA2.out.bam, exonwise_bed_ch)
         PARSE_EXON_COVERAGE(MOSDEPTH.out.regions_thresholds, exonwise_bed_ch)
 
+        // Per-sample dashboard: join HsMetrics + per-exon coverage on meta.id,
+        // then render a self-contained HTML report. Provenance values are
+        // pulled from Nextflow's workflow object (commit + start time) and
+        // params.panel_name, with permissive defaults.
+        ch_dashboard_input = HSMETRICS.out.metrics
+            .join(PARSE_EXON_COVERAGE.out.tsv)
+        SAMPLE_DASHBOARD(
+            ch_dashboard_input,
+            params.panel_name ?: 'MYOPOOL hg38',
+            workflow.commitId ?: '(uncommitted)',
+            workflow.start.format('yyyy-MM-dd')
+        )
+
     emit:
         trimmed   = FASTP.out.reads
         aligned   = BWA_MEM.out.bam
@@ -57,4 +71,5 @@ workflow PREPROCESSING {
         final_bam     = ABRA2.out.bam
         hsmetrics     = HSMETRICS.out.metrics
         exon_coverage = PARSE_EXON_COVERAGE.out.tsv
+        dashboard     = SAMPLE_DASHBOARD.out.html
 }
