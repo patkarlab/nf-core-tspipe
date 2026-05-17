@@ -9,6 +9,9 @@ include { BWA_MEM                } from '../../modules/local/bwa_mem'
 include { PICARD_MARKDUPLICATES  } from '../../modules/local/markduplicates'
 include { GATK4_BQSR             } from '../../modules/local/bqsr'
 include { ABRA2                  } from '../../modules/local/abra2'
+include { HSMETRICS              } from '../../modules/local/hsmetrics'
+include { MOSDEPTH               } from '../../modules/local/mosdepth'
+include { PARSE_EXON_COVERAGE    } from '../../modules/local/parse_exon_coverage'
 
 workflow PREPROCESSING {
 
@@ -35,10 +38,22 @@ workflow PREPROCESSING {
         GATK4_BQSR(PICARD_MARKDUPLICATES.out.bam, reference_ch, dbsnp_ch, mills_ch)
         ABRA2(GATK4_BQSR.out.bam, reference_ch, bed_ch)
 
+        // QC: per-target capture metrics + per-exon coverage.
+        // HSMETRICS runs in the GATK container. Per-exon coverage
+        // is a two-step pipeline because the mosdepth biocontainer
+        // has no Python: MOSDEPTH writes regions/thresholds bed.gz,
+        // then PARSE_EXON_COVERAGE (GATK container, has Python)
+        // joins them with the panel BED labels into a per-exon TSV.
+        HSMETRICS(ABRA2.out.bam, reference_ch, bed_ch)
+        MOSDEPTH(ABRA2.out.bam, bed_ch)
+        PARSE_EXON_COVERAGE(MOSDEPTH.out.regions_thresholds, bed_ch)
+
     emit:
         trimmed   = FASTP.out.reads
         aligned   = BWA_MEM.out.bam
         dedup     = PICARD_MARKDUPLICATES.out.bam
         recal     = GATK4_BQSR.out.bam
-        final_bam = ABRA2.out.bam
+        final_bam     = ABRA2.out.bam
+        hsmetrics     = HSMETRICS.out.metrics
+        exon_coverage = PARSE_EXON_COVERAGE.out.tsv
 }

@@ -110,7 +110,9 @@ workflow TSPIPE {
 
     // ----- 1. Preprocessing: fastp -> bwa -> markdup -> bqsr -> abra2 ---
     PREPROCESSING(ch_input, ch_reference, ch_bed, ch_dbsnp, ch_mills)
-    ch_final_bam = PREPROCESSING.out.final_bam   // [meta, bam, bai]
+    ch_final_bam     = PREPROCESSING.out.final_bam      // [meta, bam, bai]
+    ch_hsmetrics     = PREPROCESSING.out.hsmetrics       // [meta, hs_metrics.txt]
+    ch_exon_coverage = PREPROCESSING.out.exon_coverage   // [meta, exon_coverage.tsv]
 
     // ----- 2. Variant calling: 8 callers + U2AF1 rescue ----------------
     VARIANT_CALLING(ch_final_bam, ch_reference, ch_bed, ch_pindel_bed, ch_gnomad, ch_gnomad_tbi)
