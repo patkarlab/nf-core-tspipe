@@ -100,13 +100,21 @@ process SOMATICSEQ_ENSEMBLE {
         ARB_SNV_LIST=()
         ARB_INDEL_LIST=()
 
-        # NOTE 2026-05-17: pindel and deepsomatic temporarily dropped from
-        # the arbitrary-caller loop. Both produce valid VCFs upstream but the
-        # SomaticSeq preprocessing loop crashes during their iteration in ways
-        # that proved hard to pin down within a single debug session.
-        # Production's 07_somaticseq.py uses the 6-caller stable baseline.
-        # Revisit pindel+deepsomatic integration in a dedicated session.
-        for ENTRY in "freebayes:${freebayes_vcf}" "platypus:${platypus_vcf}"; do
+        # 2026-05-17: arbitrary-caller loop covers all four arbitrary
+        # callers, matching production's 8-caller setup in
+        # scripts/07_somaticseq.py. Pindel was previously dropped because
+        # splitVcf.py crashes on its symbolic-allele records (SV calls
+        # like <INS>/<DEL>, breakend notation, <NON_REF>). The SV
+        # pre-filter inserted further down strips those before splitVcf
+        # runs, which lets Pindel contribute SNV/INDEL votes without
+        # affecting flow for FreeBayes and Platypus (which only emit
+        # plain alleles). DeepSomatic is also re-enabled; in this
+        # pipeline it runs in PASS-only mode and rarely emits symbolic
+        # records, but the same pre-filter protects against the corner
+        # cases. If a caller still crashes after this change, the
+        # filter's per-caller stderr logging makes the failure mode
+        # visible in .command.err.
+        for ENTRY in "freebayes:${freebayes_vcf}" "platypus:${platypus_vcf}" "pindel:${pindel_vcf}" "deepsomatic:${deepsomatic_vcf}"; do
             CALLER=\${ENTRY%%:*}
             SRC=\${ENTRY#*:}
             if [ -z "\$SRC" ] || [ ! -e "\$SRC" ]; then
@@ -137,6 +145,29 @@ process SOMATICSEQ_ENSEMBLE {
                 continue
             fi
 
+            # Strip symbolic-allele records before splitVcf.py sees them.
+            # SomaticSeq's arbitrary-caller path only handles plain SNVs
+            # and INDELs; symbolic alleles (Pindel SVs like <INS>/<DEL>,
+            # <NON_REF>, <*>, breakends like "G]chr5:1000]") and "." no-
+            # call ALTs crash or get misclassified by splitVcf.py. The
+            # awk filter keeps header lines verbatim and passes through
+            # only records whose REF is plain nucleotides (A/C/G/T/N,
+            # any case) and whose ALT is plain nucleotides with commas
+            # allowed for multi-allelic. No-op for FreeBayes and Platypus.
+            FILTERED="\${CALLER}.snv_indel_only.vcf"
+            awk 'BEGIN{FS=OFS="\\t"} /^#/ {print; next} \$4 ~ /^[ACGTNacgtn]+\$/ && \$5 ~ /^[ACGTNacgtn,]+\$/ {print}' "\$SRC" > "\$FILTERED"
+            N_FILT=\$(grep -cv '^#' "\$FILTERED" 2>/dev/null) || N_FILT=0
+            DROPPED=\$((N - N_FILT))
+            if [ "\$DROPPED" -gt 0 ]; then
+                echo "[somaticseq] \$CALLER: dropped \$DROPPED non-SNV/INDEL records (symbolic alleles, SVs, breakends, no-calls)" 1>&2
+            fi
+            if [ "\$N_FILT" -eq 0 ]; then
+                echo "[somaticseq] \$CALLER: no SNV/INDEL records after filter, skipping" 1>&2
+                continue
+            fi
+            N=\$N_FILT
+            SRC="\$FILTERED"
+
             # Sort the source VCF (headers first, then chr/pos sort)
             SORTED="\${CALLER}.sorted.vcf"
             grep '^#'   "\$SRC" >  "\$SORTED"
@@ -151,7 +182,14 @@ process SOMATICSEQ_ENSEMBLE {
             for VCF in "\$SNV" "\$INDEL"; do
                 OUT="\${VCF%.vcf}_sorted.vcf"
                 grep '^#'    "\$VCF" >  "\$OUT"
-                grep -v '^#' "\$VCF" | sort -k1,1V -k2,2g >> "\$OUT"
+                # `|| true` tolerates header-only split VCFs. Pindel
+                # after the SV pre-filter often has zero plain SNVs
+                # in its FLT3+UBTF scope, so \$VCF here can be
+                # header-only. Under `set -eo pipefail`, grep -v's
+                # no-match exit code 1 would otherwise kill the task.
+                # Same convention as the sort step in
+                # modules/local/somaticseq_postprocess.nf.
+                grep -v '^#' "\$VCF" | sort -k1,1V -k2,2g >> "\$OUT" || true
                 mv "\$OUT" "\$VCF"
             done
 

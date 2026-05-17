@@ -59,24 +59,65 @@ process SOMATICSEQ_POSTPROCESS {
         bcftools concat -a \${SNV_SORTED}.gz \${INDEL_SORTED}.gz -o \${SAMPLE}.somaticseq.vcf
 
         python3 - "\${SAMPLE}.somaticseq.vcf" <<'PYRENAME'
+# Rename SomaticSeq's caller-decision INFO field to the stable token
+# "MVDKFP" that downstream parsers (bin/annotate.py) look for. We
+# match production's INFO_TAG exactly; production's 07_somaticseq.py
+# docstring notes downstream parsers match the literal string "MVDKFP".
+#
+# Number=N is parsed from SomaticSeq's emitted header rather than
+# hardcoded, so this stays consistent if a caller's VCF was empty and
+# got skipped (N < 8), or if upstream is currently feeding fewer
+# callers than the maximum (N = 6 with Pindel + DeepSomatic disabled).
+#
+# Native-caller emit order is fixed by SomaticSeq itself:
+#   MuTect, VarScan2, VarDict, Strelka  (NOT VarDict before VarScan).
+# Arbitrary callers follow in the order they were passed to
+# somaticseq_parallel.py in modules/local/somaticseq.nf.
 import re, sys
 path = sys.argv[1]
-caller_labels = ["Mutect2", "VarDict", "VarScan", "Strelka",
+caller_labels = ["Mutect2", "VarScan", "VarDict", "Strelka",
                  "FreeBayes", "Platypus", "Pindel", "DeepSomatic"]
-label_csv = ", ".join(caller_labels)
+INFO_TAG = "MVDKFP"
+
 with open(path) as f:
     content = f.read()
-content = re.sub(
-    r'##INFO=<ID=([A-Z]+\\d+),Number=\\d+,Type=\\w+,'
+
+# Parse the existing caller-decision header to learn N (bitmap width).
+m = re.search(
+    r'##INFO=<ID=[A-Z]+\\d+,Number=(\\d+),Type=\\w+,'
     r'Description="Calling decision of the \\d+ algorithms:[^"]*">',
-    f'##INFO=<ID=MVDKFPID,Number=8,Type=String,'
-    f'Description="Calling decision of the 8 algorithms: {label_csv}">',
     content,
 )
-content = re.sub(r'\\b[A-Z]{2,}\\d+(?==)', 'MVDKFPID', content)
+if not m:
+    print("[somaticseq_postprocess] WARNING: no caller-decision INFO "
+          "header found; nothing renamed", file=sys.stderr)
+    sys.exit(0)
+
+n = int(m.group(1))
+active = caller_labels[:n]
+label_csv = ", ".join(active)
+
+# Rewrite the header to use INFO_TAG and the parsed N, with the
+# description listing only the callers that actually contributed.
+content = re.sub(
+    r'##INFO=<ID=[A-Z]+\\d+,Number=\\d+,Type=\\w+,'
+    r'Description="Calling decision of the \\d+ algorithms:[^"]*">',
+    f'##INFO=<ID={INFO_TAG},Number={n},Type=String,'
+    f'Description="Calling decision of the {n} algorithms: {label_csv}">',
+    content,
+)
+# Rewrite per-record field names. The pattern matches things like
+# MVDK01=, MVDK0123=, etc. - uppercase-letters-then-digits followed
+# by "=" - and rewrites the prefix to INFO_TAG. Sample IDs and other
+# tokens do not match because they lack the uppercase+digits shape
+# immediately before an "=".
+content = re.sub(r'\\b[A-Z]{2,}\\d+(?==)', INFO_TAG, content)
+
 with open(path, "w") as f:
     f.write(content)
-print(f"[somaticseq_postprocess] renamed caller INFO -> MVDKFPID", file=sys.stderr)
+
+print(f"[somaticseq_postprocess] renamed caller INFO -> {INFO_TAG} "
+      f"(Number={n}: {label_csv})", file=sys.stderr)
 PYRENAME
 
         SNV_N=\$(grep -cv '^#' \${SNV_SORTED}) || SNV_N=0
