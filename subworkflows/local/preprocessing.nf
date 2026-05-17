@@ -19,6 +19,7 @@ workflow PREPROCESSING {
         reads_ch
         reference_ch
         bed_ch
+        exonwise_bed_ch  // exon-collapsed BED for MOSDEPTH/PARSE_EXON_COVERAGE only
         dbsnp_ch       // [vcf, tbi]
         mills_ch       // [vcf, tbi]
 
@@ -45,8 +46,8 @@ workflow PREPROCESSING {
         // then PARSE_EXON_COVERAGE (GATK container, has Python)
         // joins them with the panel BED labels into a per-exon TSV.
         HSMETRICS(ABRA2.out.bam, reference_ch, bed_ch)
-        MOSDEPTH(ABRA2.out.bam, bed_ch)
-        PARSE_EXON_COVERAGE(MOSDEPTH.out.regions_thresholds, bed_ch)
+        MOSDEPTH(ABRA2.out.bam, exonwise_bed_ch)
+        PARSE_EXON_COVERAGE(MOSDEPTH.out.regions_thresholds, exonwise_bed_ch)
 
     emit:
         trimmed   = FASTP.out.reads

@@ -33,6 +33,7 @@ workflow TSPIPE {
     if (!params.input)     { error "Missing --input (samplesheet CSV)" }
     if (!params.reference) { error "Missing --reference (hg38 FASTA)"  }
     if (!params.bed)       { error "Missing --bed (panel BED)"         }
+    if (!params.exonwise_bed) { error "Missing --exonwise_bed (Exonwise hg38 BED for per-exon coverage)" }
 
     // Channels for fixed references shared across processes.
     ch_reference = Channel.value([
@@ -41,6 +42,7 @@ workflow TSPIPE {
         file(params.reference.replaceFirst(/\.fa(sta)?$/, '.dict'), checkIfExists: true)
     ])
     ch_bed       = Channel.value(file(params.bed, checkIfExists: true))
+    ch_exonwise_bed = Channel.value(file(params.exonwise_bed, checkIfExists: true))
     ch_pindel_bed = Channel.value(file(params.pindel_bed, checkIfExists: true))
     ch_blacklist = params.snv_blacklist
                        ? Channel.fromPath(params.snv_blacklist, checkIfExists: true)
@@ -109,7 +111,7 @@ workflow TSPIPE {
         }
 
     // ----- 1. Preprocessing: fastp -> bwa -> markdup -> bqsr -> abra2 ---
-    PREPROCESSING(ch_input, ch_reference, ch_bed, ch_dbsnp, ch_mills)
+    PREPROCESSING(ch_input, ch_reference, ch_bed, ch_exonwise_bed, ch_dbsnp, ch_mills)
     ch_final_bam     = PREPROCESSING.out.final_bam      // [meta, bam, bai]
     ch_hsmetrics     = PREPROCESSING.out.hsmetrics       // [meta, hs_metrics.txt]
     ch_exon_coverage = PREPROCESSING.out.exon_coverage   // [meta, exon_coverage.tsv]
