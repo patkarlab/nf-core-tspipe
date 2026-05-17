@@ -19,14 +19,18 @@ workflow ANNOTATION {
     take:
         somaticseq_vcf_ch       // [meta, vcf]
         flt3_consensus_tsv_ch   // [meta, tsv]
+        u2af1_tsv_ch            // [meta, tsv] (from U2AF1_RESCUE)
         blacklist_ch            // path or []
         reference_ch
 
     main:
         VEP_ANNOTATE(somaticseq_vcf_ch, reference_ch)
 
-        // Variant filter consumes blacklist; --blacklist arg from step 14.
-        VARIANT_FILTER(VEP_ANNOTATE.out.tsv, blacklist_ch)
+        // Join VEP output with U2AF1 rescue on meta.id. Both channels
+        // emit one tuple per sample so this is 1:1. variant_filter.py
+        // auto-discovers the staged u2af1 TSV by convention.
+        ch_filter_in = VEP_ANNOTATE.out.tsv.join(u2af1_tsv_ch)
+        VARIANT_FILTER(ch_filter_in, blacklist_ch)
 
         VARIANT_VALIDATOR(VARIANT_FILTER.out.clinical)
 

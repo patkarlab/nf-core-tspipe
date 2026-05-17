@@ -170,13 +170,13 @@ workflow TSPIPE {
     // SV_CALLING(ch_final_bam, ch_reference, ch_bed)
 
     // ----- 6. Annotation: VEP -> ANNOVAR -> filter -> validator -> oncovi
-    // ANNOTATION(
-    //     ch_somaticseq_vcf,
-    //     ch_flt3_consensus,
-    //     VARIANT_CALLING.out.u2af1_tsv,
-    //     ch_blacklist,
-    //     ch_reference,
-    // )
+    ANNOTATION(
+        ch_somaticseq_vcf,
+        ch_flt3_consensus,
+        VARIANT_CALLING.out.u2af1_tsv,
+        ch_blacklist,
+        ch_reference,
+    )
 
     // ----- 7. Reporting: IGV reports + organize_output ------------------
     // REPORTING(
