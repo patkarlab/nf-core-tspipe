@@ -65,6 +65,7 @@ process MOSDEPTH {
             --by ${bed} \\
             --threads ${task.cpus} \\
             --no-per-base \\
+            --flag 772 \\
             --thresholds 100,250,500 \\
             ${meta.id} \\
             ${bam}

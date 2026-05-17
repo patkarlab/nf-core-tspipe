@@ -91,6 +91,7 @@ def run_mosdepth(bam_path, bed_path, output_prefix, threads=4):
         "--by", str(bed_path),
         "--threads", str(threads),
         "--no-per-base",          # We only need region summaries
+        "--flag", "772",          # Include duplicates (clinical convention; 1796 default - 1024 DUP)
         "--thresholds", ",".join(str(t) for t in COVERAGE_THRESHOLDS),
         str(output_prefix),
         str(bam_path),
