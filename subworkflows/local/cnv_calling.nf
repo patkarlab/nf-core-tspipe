@@ -104,11 +104,13 @@ workflow CNV_CALLING {
         )
 
     emit:
-        cnvkit_calls    = CNVKIT.out.call_cns
-        zscore_calls    = ZSCORE_CNV.out.zscore_genes
-        concordance     = CNV_CONCORDANCE.out.tsv
-        clinical_report = CNV_CLINICAL_REPORT.out.tsv
-        annotated       = CNV_ANNOTATE.out.tsv
-        plots_dir       = CNV_PLOTS.out.plots_dir
-        plot_pdfs       = CNV_PLOTS.out.pdfs
+        cnvkit_calls       = CNVKIT.out.call_cns
+        zscore_calls       = ZSCORE_CNV.out.zscore_genes
+        concordance        = CNV_CONCORDANCE.out.tsv
+        clinical_report    = CNV_CLINICAL_REPORT.out.tsv
+        annotated          = CNV_ANNOTATE.out.tsv
+        plots_dir          = CNV_PLOTS.out.plots_dir
+        plot_pdfs          = CNV_PLOTS.out.pdfs
+        cnvkit_diagram_pdf = CNV_PLOTS.out.diagram_pdf
+        cnvkit_scatter_png = CNV_PLOTS.out.scatter_png
 }

@@ -34,8 +34,9 @@ process FLT3_ITD_EXT {
         tuple val(meta), path(bam), path(bai)
 
     output:
-        tuple val(meta), path("flt3_itd_ext_out/*.vcf"), emit: vcf
-        tuple val(meta), path("flt3_itd_ext_out/"),      emit: out_dir, optional: true
+        tuple val(meta), path("flt3_itd_ext_out/${meta.id}.final_FLT3_ITD.vcf"),         emit: vcf
+        tuple val(meta), path("flt3_itd_ext_out/${meta.id}.final_FLT3_ITD_summary.txt"), emit: summary
+        tuple val(meta), path("flt3_itd_ext_out/"),                                       emit: out_dir, optional: true
     stub:
         // nf-core stub blocks v2 (matches `vcf` named emit on flt3_itd_ext_out/*.vcf)
         """

@@ -72,4 +72,5 @@ workflow PREPROCESSING {
         hsmetrics     = HSMETRICS.out.metrics
         exon_coverage = PARSE_EXON_COVERAGE.out.tsv
         dashboard     = SAMPLE_DASHBOARD.out.html
+        fastp_html    = FASTP.out.html
 }

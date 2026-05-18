@@ -1,36 +1,65 @@
 /*
  * modules/local/flt3_to_variants.nf
  *
- * FLT3 -> variants merge
+ * Merge FLT3 consensus ITDs into the per-sample clinical variant TSV.
  *
- * Note: Tag SNV-path FLT3 hits as Confirmed_by_FLT3_ITD_ensemble; append PASS_HIGH/PASS_LOW ITDs as rows. See scripts/17b_flt3_to_variants.py.
+ * TEMPORARY HOST-LOCAL EXECUTION (TODO: containerize):
+ *   This module follows the same pattern as VARIANT_VALIDATOR and ONCOVI.
+ *   The 17b script is pure stdlib (no pandas) so containerizing it would
+ *   actually be easy, but we keep all three stub-replacements consistent
+ *   for now -- the only barrier to lifting is testing in a container.
  *
- * TODO: this is a stub. Fill in the script: block with the actual command line.
- * The original Python wrapper in scripts/ shows the exact invocation -- this
- * module just needs to translate that to a Nextflow process body.
+ *   See conf/modules.config (executor block) and the production script
+ *   at /home/hemat/targeted-seq-pipeline/scripts/17b_flt3_to_variants.py.
  */
 
 process FLT3_TO_VARIANTS {
     tag        "${meta.id}"
-    label      'process_medium'
+    label      'process_low'
 
     input:
         tuple val(meta), path(clinical_tsv), path(flt3_consensus_tsv)
 
     output:
         tuple val(meta), path("${meta.id}.final.tsv"), emit: tsv
+        path "versions.yml",                           emit: versions
+
     stub:
-        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
         """
         touch ${meta.id}.final.tsv
+        cat <<-END_VERSIONS > versions.yml
+        "TSPIPE:ANNOTATION:FLT3_TO_VARIANTS":
+            stub: true
+        END_VERSIONS
         """
-
 
     script:
         """
-        # TODO: replace this stub with the tool invocation from the source script.
-        echo "STUB: FLT3_TO_VARIANTS for ${meta.id}" >&2
-        # Touch output filename(s) so downstream channels don't break during DAG validation:
-        touch ${meta.id}.final.tsv
+        # The production script reads consensus from <sample-dir>/flt3/
+        # so synthesize that layout from the staged consensus TSV.
+        mkdir -p flt3
+        ln -sf ${flt3_consensus_tsv} flt3/${meta.id}_flt3_consensus.tsv
+
+        /home/hemat/anaconda3/envs/targeted-seq/bin/python \
+            /home/hemat/targeted-seq-pipeline/scripts/17b_flt3_to_variants.py \
+            --sample-dir . \
+            --sample ${meta.id} \
+            --variant-tsv ${clinical_tsv}
+
+        # The production script writes <variant_tsv stem>.with_flt3.tsv.
+        # Find it and rename to match our emit declaration.
+        STEM=\$(basename ${clinical_tsv} .tsv)
+        if [ -f "\${STEM}.with_flt3.tsv" ]; then
+            mv "\${STEM}.with_flt3.tsv" ${meta.id}.final.tsv
+        else
+            echo "ERROR: flt3_to_variants.py did not produce expected output" >&2
+            ls -la >&2
+            exit 1
+        fi
+
+        cat <<-END_VERSIONS > versions.yml
+        "TSPIPE:ANNOTATION:FLT3_TO_VARIANTS":
+            python: \$(/home/hemat/anaconda3/envs/targeted-seq/bin/python --version 2>&1 | sed 's/Python //')
+        END_VERSIONS
         """
 }

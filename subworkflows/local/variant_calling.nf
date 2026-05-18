@@ -41,6 +41,7 @@ workflow VARIANT_CALLING {
     emit:
         mutect2_vcf     = GATK4_MUTECT2.out.vcf
         u2af1_tsv       = U2AF1_RESCUE.out.tsv
+        u2af1_report    = U2AF1_RESCUE.out.report
         vardict_vcf     = VARDICT.out.vcf
         varscan_vcf     = VARSCAN.out.vcf
         freebayes_vcf   = FREEBAYES.out.vcf

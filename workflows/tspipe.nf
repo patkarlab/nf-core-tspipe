@@ -26,6 +26,7 @@ include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
 include { SV_CALLING          } from '../subworkflows/local/sv_calling'
 include { ANNOTATION          } from '../subworkflows/local/annotation'
 include { REPORTING           } from '../subworkflows/local/reporting'
+include { ORGANIZE_OUTPUT     } from '../modules/local/organize_output'
 
 workflow TSPIPE {
 
@@ -44,8 +45,11 @@ workflow TSPIPE {
     ch_bed       = Channel.value(file(params.bed, checkIfExists: true))
     ch_exonwise_bed = Channel.value(file(params.exonwise_bed, checkIfExists: true))
     ch_pindel_bed = Channel.value(file(params.pindel_bed, checkIfExists: true))
+    // ch_blacklist must be a VALUE channel (broadcasts to every
+    // VARIANT_FILTER task instance), not a queue channel (which would
+    // emit once and starve all subsequent samples).
     ch_blacklist = params.snv_blacklist
-                       ? Channel.fromPath(params.snv_blacklist, checkIfExists: true)
+                       ? Channel.value(file(params.snv_blacklist, checkIfExists: true))
                        : Channel.value([])
 
     // Known-sites VCFs for BQSR. Each tuple is [vcf, tbi].
@@ -182,12 +186,50 @@ workflow TSPIPE {
         ch_reference,
     )
 
-    // ----- 7. Reporting: IGV reports + organize_output ------------------
-    // REPORTING(
-    //     ANNOTATION.out.clinical_tsv,
-    //     ch_final_bam,
-    //     CNV_CALLING.out.clinical_report,
-    //     SV_CALLING.out.annotated,
-    //     FLT3_ITD.out.consensus_tsv,
-    // )
+    // ----- 7. ORGANIZE_OUTPUT: build clinical/ deliverable tree --------
+    //
+    // Optional-channel handling via driver-pattern. Nextflow's
+    // .join(remainder: true) is symmetric: it keeps unmatched items
+    // from BOTH sides, which causes right-only emits when an optional
+    // channel fires before its upstream mandatory siblings. Those
+    // right-only emits collapse the LEFT tuple into a single `null`,
+    // producing a malformed input tuple downstream.
+    //
+    // Instead: build always-emitting versions of each optional channel
+    // by joining a meta-only driver (derived from a guaranteed-present
+    // channel) against the optional, with remainder: true, and
+    // null-filling missing slots with NO_FILE_* placeholder files.
+    // The main organize chain then uses plain .join() everywhere -- no
+    // remainder, no ordering surprises -- and bin/organize_output.py
+    // detects the NO_FILE_ prefix to skip absent optionals.
+
+    ch_meta_driver = PREPROCESSING.out.final_bam.map { meta, _bam, _bai -> meta }
+
+    def no_u2af1_report = file("${projectDir}/assets/NO_FILE_u2af1_pileup_report.txt", checkIfExists: true)
+    def no_u2af1_rescue = file("${projectDir}/assets/NO_FILE_u2af1_rescue.tsv",        checkIfExists: true)
+
+    ch_u2af1_report = ch_meta_driver
+        .join(VARIANT_CALLING.out.u2af1_report, remainder: true)
+        .map { meta, f -> [meta, f ?: no_u2af1_report] }
+
+    ch_u2af1_rescue = ch_meta_driver
+        .join(VARIANT_CALLING.out.u2af1_tsv,    remainder: true)
+        .map { meta, f -> [meta, f ?: no_u2af1_rescue] }
+
+    ch_organize = PREPROCESSING.out.final_bam                                // tuple(meta, bam, bai)
+        .join(ANNOTATION.out.clinical_tsv)                                   // + clinical_tsv
+        .join(ANNOTATION.out.filtered_tsv)                                   // + filtered_tsv
+        .join(ch_u2af1_report)                                               // + u2af1_report  (always emits; sentinel if missing)
+        .join(ch_u2af1_rescue)                                               // + u2af1_rescue  (always emits; sentinel if missing)
+        .join(FLT3_ITD.out.consensus_tsv)                                    // + flt3_consensus
+        .join(PREPROCESSING.out.hsmetrics)                                   // + hsmetrics
+        .join(PREPROCESSING.out.exon_coverage)                               // + exon_coverage
+        .join(PREPROCESSING.out.fastp_html)                                  // + fastp_html
+        .join(PREPROCESSING.out.dashboard)                                   // + dashboard
+        .join(CNV_CALLING.out.clinical_report)                               // + cnv_clinical_tsv
+        .join(CNV_CALLING.out.cnvkit_diagram_pdf)                            // + cnvkit_diagram
+        .join(CNV_CALLING.out.cnvkit_scatter_png)                            // + cnvkit_scatter
+        .join(CNV_CALLING.out.plots_dir)                                     // + cnvkit_plots_dir
+
+    ORGANIZE_OUTPUT(ch_organize)
 }

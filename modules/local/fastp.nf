@@ -18,13 +18,13 @@ process FASTP {
 
     output:
         tuple val(meta), path("*_trim_R1.fastq.gz"), path("*_trim_R2.fastq.gz"), emit: reads
-        path  "*.html",                                                          emit: html
-        path  "*.json",                                                          emit: json
+        tuple val(meta), path("*_fastp.html"),                                   emit: html
+        tuple val(meta), path("*_fastp.json"),                                   emit: json
         path  "versions.yml",                                                    emit: versions
     stub:
         // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
         """
-        touch stub_trim_R1.fastq.gz stub_trim_R2.fastq.gz stub.html stub.json versions.yml
+        touch ${meta.id}_trim_R1.fastq.gz ${meta.id}_trim_R2.fastq.gz ${meta.id}_fastp.html ${meta.id}_fastp.json versions.yml
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             stub: true

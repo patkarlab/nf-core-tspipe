@@ -1,37 +1,66 @@
-/*
- * modules/local/organize_output.nf
- *
- * Output organizer
- *
- * Note: Bundle deliverables into a per-sample folder with FLT3 section + variant TSV fallback. See scripts/20_organize_output.py.
- *
- * TODO: this is a stub. Fill in the script: block with the actual command line.
- * The original Python wrapper in scripts/ shows the exact invocation -- this
- * module just needs to translate that to a Nextflow process body.
- */
-
 process ORGANIZE_OUTPUT {
     tag        "${meta.id}"
-    label      'process_medium'
+    label      'process_low'
+    container  'docker://broadinstitute/gatk:4.5.0.0'
+    // publishDir is configured via conf/modules.config (withName: 'ORGANIZE_OUTPUT')
+    // to keep the project's single-source-of-truth convention.
 
     input:
-        tuple val(meta), path(clinical_tsv), path(cnv_report), path(sv_annotated), path(flt3_consensus), path(igv_html)
+        tuple val(meta),
+              path(bam), path(bai),
+              path(clinical_tsv),
+              path(filtered_tsv),
+              path(u2af1_report,      stageAs: 'NO_FILE_u2af1_report.txt'),
+              path(u2af1_rescue,      stageAs: 'NO_FILE_u2af1_rescue.tsv'),
+              path(flt3_consensus),
+              path(hsmetrics),
+              path(exon_coverage),
+              path(fastp_html),
+              path(dashboard),
+              path(cnv_clinical_tsv),
+              path(cnvkit_diagram),
+              path(cnvkit_scatter),
+              path(cnvkit_plots_dir)
 
     output:
-        path "deliverables/*", emit: bundle
-    stub:
-        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
-        """
-        mkdir -p deliverables
-        touch deliverables/stub.txt
-        """
-
+        tuple val(meta), path("clinical/"), emit: clinical
+        path  "versions.yml",                emit: versions
 
     script:
         """
-        # TODO: replace this stub with the tool invocation from the source script.
-        echo "STUB: ORGANIZE_OUTPUT for ${meta.id}" >&2
-        # Touch output filename(s) so downstream channels don't break during DAG validation:
-        mkdir -p deliverables && touch deliverables/*
+        organize_output.py \\
+            --sample              ${meta.id} \\
+            --outdir              . \\
+            --bam                 ${bam} \\
+            --bai                 ${bai} \\
+            --clinical-tsv        ${clinical_tsv} \\
+            --filtered-tsv        ${filtered_tsv} \\
+            --u2af1-report        ${u2af1_report} \\
+            --u2af1-rescue        ${u2af1_rescue} \\
+            --flt3-consensus      ${flt3_consensus} \\
+            --hsmetrics           ${hsmetrics} \\
+            --exon-coverage       ${exon_coverage} \\
+            --fastp-html          ${fastp_html} \\
+            --dashboard           ${dashboard} \\
+            --cnv-clinical-tsv    ${cnv_clinical_tsv} \\
+            --cnvkit-diagram-pdf  ${cnvkit_diagram} \\
+            --cnvkit-scatter-png  ${cnvkit_scatter} \\
+            --cnvkit-plots-dir    ${cnvkit_plots_dir}
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python3 --version 2>&1 | awk '{print \$2}')
+        END_VERSIONS
+        """
+
+    stub:
+        """
+        mkdir -p clinical
+        touch clinical/${meta.id}.final.bam
+        touch versions.yml
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            stub: true
+        END_VERSIONS
         """
 }

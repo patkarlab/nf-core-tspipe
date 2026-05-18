@@ -19,7 +19,7 @@ process SAMPLE_DASHBOARD {
     tag        "${meta.id}"
     label      'process_low'
     container  'docker://broadinstitute/gatk:4.5.0.0'
-    publishDir "${params.outdir}/${meta.id}/dashboard", mode: 'copy'
+    publishDir "${params.outdir}/${meta.id}/dashboard", mode: 'link'
 
     input:
         tuple val(meta), path(hsmetrics), path(exon_coverage)

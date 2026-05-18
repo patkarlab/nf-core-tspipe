@@ -44,4 +44,5 @@ workflow ANNOTATION {
 
     emit:
         clinical_tsv = FLT3_TO_VARIANTS.out.tsv
+        filtered_tsv = VARIANT_FILTER.out.filtered
 }

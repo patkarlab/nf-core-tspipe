@@ -39,13 +39,16 @@ process CNV_PLOTS {
         path  scatter_regions
 
     output:
-        tuple val(meta), path("plots"),                  emit: plots_dir
-        tuple val(meta), path("${meta.id}*.pdf"),        emit: pdfs, optional: true
+        tuple val(meta), path("plots"),                                          emit: plots_dir
+        tuple val(meta), path("plots/${meta.id}_chr_gene_scatter.pdf"),          emit: diagram_pdf
+        tuple val(meta), path("plots/overview/${meta.id}_genome_wide.png"),      emit: scatter_png
+        tuple val(meta), path("plots/${meta.id}*.pdf"),                          emit: pdfs, optional: true
     stub:
-        // nf-core stub blocks v1 (apply_nfcore_add_stub_blocks)
+        // nf-core stub blocks v3 (touches real cnv_plots.py output paths)
         """
-        mkdir -p plots
-        touch ${meta.id}stub.pdf
+        mkdir -p plots/overview plots/per_chromosome plots/per_gene plots/combined
+        touch plots/${meta.id}_chr_gene_scatter.pdf
+        touch plots/overview/${meta.id}_genome_wide.png
         """
 
 
