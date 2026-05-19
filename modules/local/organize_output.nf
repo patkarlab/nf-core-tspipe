@@ -16,6 +16,7 @@ process ORGANIZE_OUTPUT {
               path(hsmetrics),
               path(exon_coverage),
               path(fastp_html),
+              path(igv_report),
               path(dashboard),
               path(cnv_clinical_tsv),
               path(cnvkit_diagram),
@@ -41,6 +42,7 @@ process ORGANIZE_OUTPUT {
             --hsmetrics           ${hsmetrics} \\
             --exon-coverage       ${exon_coverage} \\
             --fastp-html          ${fastp_html} \\
+            --igv-report          ${igv_report} \\
             --dashboard           ${dashboard} \\
             --cnv-clinical-tsv    ${cnv_clinical_tsv} \\
             --cnvkit-diagram-pdf  ${cnvkit_diagram} \\
@@ -56,7 +58,19 @@ process ORGANIZE_OUTPUT {
     stub:
         """
         mkdir -p clinical
+        # Touch every deliverable that organize_output.py would hardlink in.
+        # Useful for downstream stub validation and matches the real bin
+        # script's output layout.
         touch clinical/${meta.id}.final.bam
+        touch clinical/${meta.id}.final.bam.bai
+        touch clinical/${meta.id}.somaticseq.clinical.final.tsv
+        touch clinical/${meta.id}.somaticseq.filtered.tsv
+        touch clinical/${meta.id}_flt3_consensus.tsv
+        touch clinical/${meta.id}_hsmetrics.txt
+        touch clinical/${meta.id}_exon_coverage.tsv
+        touch clinical/${meta.id}_fastp.html
+        touch clinical/${meta.id}_igv_report.html
+        touch clinical/${meta.id}_dashboard.html
         touch versions.yml
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

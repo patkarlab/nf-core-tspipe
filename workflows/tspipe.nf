@@ -26,6 +26,7 @@ include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
 include { SV_CALLING          } from '../subworkflows/local/sv_calling'
 include { ANNOTATION          } from '../subworkflows/local/annotation'
 include { REPORTING           } from '../subworkflows/local/reporting'
+include { IGV_REPORTS         } from '../modules/local/igv_reports'
 include { ORGANIZE_OUTPUT     } from '../modules/local/organize_output'
 
 workflow TSPIPE {
@@ -190,6 +191,12 @@ workflow TSPIPE {
         ch_reference,
     )
 
+    // ----- 6b. IGV_REPORTS: per-sample HTML for clinical review (D2) -----
+    IGV_REPORTS(
+        ANNOTATION.out.clinical_tsv.join(PREPROCESSING.out.final_bam),
+        ch_reference
+    )
+
     // ----- 7. ORGANIZE_OUTPUT: build clinical/ deliverable tree --------
     //
     // Optional-channel handling via driver-pattern. Nextflow's
@@ -229,6 +236,7 @@ workflow TSPIPE {
         .join(PREPROCESSING.out.hsmetrics)                                   // + hsmetrics
         .join(PREPROCESSING.out.exon_coverage)                               // + exon_coverage
         .join(PREPROCESSING.out.fastp_html)                                  // + fastp_html
+        .join(IGV_REPORTS.out.html)                                           // + igv_report (D2)
         .join(PREPROCESSING.out.dashboard)                                   // + dashboard
         .join(CNV_CALLING.out.clinical_report)                               // + cnv_clinical_tsv
         .join(CNV_CALLING.out.cnvkit_diagram_pdf)                            // + cnvkit_diagram

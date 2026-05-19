@@ -125,6 +125,8 @@ def main():
     parser.add_argument("--hsmetrics", required=True)
     parser.add_argument("--dashboard", required=True)
     parser.add_argument("--fastp-html", required=True)
+    parser.add_argument("--igv-report", required=True,
+                        help="IGV HTML report from create_report")
     parser.add_argument("--cnv-clinical-tsv", required=True)
     parser.add_argument("--cnvkit-diagram-pdf", required=True)
     parser.add_argument("--cnvkit-scatter-png", required=True)
@@ -183,6 +185,8 @@ def main():
              "Per-exon coverage analysis")
     hardlink(args.fastp_html,    out / (s + "_fastp.html"),
              "Fastp trimming QC report")
+    hardlink(args.igv_report,    out / (s + "_igv_report.html"),
+             "IGV review report")
     hardlink(args.dashboard,     out / (s + "_dashboard.html"),
              "Per-sample QC dashboard")
 

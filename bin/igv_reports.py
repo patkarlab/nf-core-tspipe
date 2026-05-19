@@ -1,23 +1,39 @@
 #!/usr/bin/env python3
 """
-16_igv_reports.py - Generate self-contained IGV HTML reports for clinical variants.
+igv_reports.py - Generate self-contained IGV HTML reports for clinical variants.
 
 Reads the clinical TSV, converts variants to a VCF, and generates an interactive
 HTML report with embedded IGV views of each variant.
 
+Ported from production scripts/16_igv_reports.py (2026-05-12) with two
+behavior-preserving changes for the nf-core container environment:
+
+  1. pandas.read_csv -> csv.DictReader  (pandas is not in the igv-reports
+     biocontainer; csv is stdlib).
+  2. subprocess bgzip/tabix -> pysam.tabix_compress/tabix_index  (bgzip and
+     tabix binaries are not in the igv-reports biocontainer; pysam is, and
+     its APIs produce byte-equivalent output).
+
+Other than dependency surface, the VCF generated and the create_report
+invocation are identical to production. Output HTML is byte-equivalent
+modulo timestamps embedded by create_report.
+
 Usage:
-    python scripts/16_igv_reports.py --sample 26CGH40
+    python igv_reports.py \\
+        --sample 25NGS1307 \\
+        --input 25NGS1307.somaticseq.clinical.final.tsv \\
+        --bam 25NGS1307.final.bam \\
+        --fasta hg38.fa \\
+        --output 25NGS1307_igv_report.html
 """
 
 import argparse
-import gzip
+import csv
 import logging
 import os
-import subprocess
 import sys
-import tempfile
 
-import pandas as pd
+import pysam
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,157 +42,165 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-PIPELINE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate IGV HTML reports for clinical variants"
     )
     parser.add_argument("-s", "--sample", required=True, help="Sample name")
-    parser.add_argument("-i", "--input", default=None,
-                        help="Input clinical TSV (default: results/{sample}/annotation/{sample}.somaticseq.clinical.tsv)")
-    parser.add_argument("--bam", default=None,
-                        help="BAM file (default: results/{sample}/abra2/{sample}.final.bam)")
-    parser.add_argument("-o", "--output", default=None,
-                        help="Output HTML (default: results/{sample}/annotation/{sample}_igv_report.html)")
+    parser.add_argument("-i", "--input", required=True,
+                        help="Input clinical TSV")
+    parser.add_argument("--bam", required=True, help="BAM file (post-ABRA2)")
+    parser.add_argument("--fasta", required=True,
+                        help="Reference FASTA (must be indexed; .fai sibling required)")
+    parser.add_argument("-o", "--output", required=True,
+                        help="Output HTML")
     parser.add_argument("--flanking", type=int, default=500,
-                        help="Flanking region in bp (default: 500)")
+                        help="Flanking region in bp (default: 500, matches production)")
     return parser.parse_args()
 
 
-def tsv_to_vcf(df, vcf_path):
-    """Convert clinical TSV rows to a minimal VCF file (bgzipped + tabix indexed)."""
-    # Sort by chromosome and position
-    chrom_order = [f"chr{i}" for i in range(1, 23)] + ["chrX", "chrY", "chrM"]
-    df = df.copy()
-    df["_chrom_sort"] = df["Chr"].apply(lambda x: chrom_order.index(x) if x in chrom_order else 99)
-    df["_pos_sort"] = df["Start"].astype(int)
-    df = df.sort_values(["_chrom_sort", "_pos_sort"]).drop(columns=["_chrom_sort", "_pos_sort"])
+def read_clinical_tsv(path):
+    """Read clinical TSV as a list of dicts with all values as strings.
 
-    vcf_lines = []
-    vcf_lines.append("##fileformat=VCFv4.2")
-    vcf_lines.append('##INFO=<ID=Gene,Number=1,Type=String,Description="Gene symbol">')
-    vcf_lines.append('##INFO=<ID=Consequence,Number=1,Type=String,Description="Variant consequence">')
-    vcf_lines.append('##INFO=<ID=HGVSp,Number=1,Type=String,Description="Protein HGVS">')
-    vcf_lines.append('##INFO=<ID=VAF_pct,Number=1,Type=Float,Description="Variant allele frequency (%)">')
-    vcf_lines.append('##INFO=<ID=Callers,Number=1,Type=String,Description="Variant callers">')
-    vcf_lines.append("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO")
+    Equivalent to pandas.read_csv(path, sep='\\t', dtype=str) for our use case.
+    """
+    with open(path) as fh:
+        reader = csv.DictReader(fh, delimiter="\t")
+        return list(reader)
 
-    for _, row in df.iterrows():
-        chrom = str(row["Chr"])
-        pos = str(int(row["Start"]))
-        ref = str(row["Ref"])
-        alt = str(row["Alt"])
-        rsid = str(row.get("rsID", "."))
-        if rsid in ("-1", "", "nan"):
-            rsid = "."
-        filt = str(row.get("Filter", "PASS"))
-        if filt in ("-1", "", "nan"):
-            filt = "PASS"
 
-        # Build INFO field
-        info_parts = []
-        gene = str(row.get("Gene", ".")).replace(";", ",")
-        consequence = str(row.get("Consequence", ".")).replace(";", ",")
-        hgvsp = str(row.get("HGVSp", ".")).replace(";", ",")
-        vaf = str(row.get("VAF_pct", "."))
-        callers = str(row.get("Callers", ".")).replace(";", ",")
+# Chromosome sort order: chr1..22, chrX, chrY, chrM, everything else last.
+CHROM_ORDER = {chrom: i for i, chrom in enumerate(
+    [f"chr{i}" for i in range(1, 23)] + ["chrX", "chrY", "chrM"]
+)}
 
-        for key, val in [("Gene", gene), ("Consequence", consequence),
-                         ("HGVSp", hgvsp), ("VAF_pct", vaf), ("Callers", callers)]:
-            if val not in ("-1", "", "nan", "."):
-                info_parts.append(f"{key}={val}")
 
-        info = ";".join(info_parts) if info_parts else "."
+def _chrom_sort_key(row):
+    return (CHROM_ORDER.get(row["Chr"], 99), int(row["Start"]))
 
-        vcf_lines.append(f"{chrom}\t{pos}\t{rsid}\t{ref}\t{alt}\t.\t{filt}\t{info}")
 
-    # Write, bgzip, and tabix
-    raw_vcf = vcf_path.replace(".gz", "")
-    with open(raw_vcf, "w") as f:
-        f.write("\n".join(vcf_lines) + "\n")
+def _clean(value):
+    """Production's missing-value sentinel handling: blanks, -1, nan, '.' all
+    collapse to '.' for VCF info fields."""
+    v = str(value) if value is not None else "."
+    return "." if v in ("-1", "", "nan") else v
 
-    subprocess.run(["bgzip", "-f", raw_vcf], check=True)
-    subprocess.run(["tabix", "-p", "vcf", "-f", vcf_path], check=True)
-    log.info(f"Created VCF: {vcf_path}")
+
+def tsv_to_vcf(rows, vcf_gz_path):
+    """Write the clinical rows as a bgzipped + tabix-indexed VCF at vcf_gz_path.
+
+    rows: list of dicts from read_clinical_tsv().
+    vcf_gz_path: output path ending in .vcf.gz. The .tbi sibling will be
+        created next to it.
+
+    Behavior mirrors production scripts/16_igv_reports.py:tsv_to_vcf except
+    that compression and indexing are done via pysam instead of shelling out
+    to bgzip and tabix.
+    """
+    rows_sorted = sorted(rows, key=_chrom_sort_key)
+
+    raw_vcf = vcf_gz_path[:-3] if vcf_gz_path.endswith(".gz") else vcf_gz_path + ".raw"
+
+    header_lines = [
+        "##fileformat=VCFv4.2",
+        '##INFO=<ID=Gene,Number=1,Type=String,Description="Gene symbol">',
+        '##INFO=<ID=Consequence,Number=1,Type=String,Description="Variant consequence">',
+        '##INFO=<ID=HGVSp,Number=1,Type=String,Description="Protein HGVS">',
+        '##INFO=<ID=VAF_pct,Number=1,Type=Float,Description="Variant allele frequency (%)">',
+        '##INFO=<ID=Callers,Number=1,Type=String,Description="Variant callers">',
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
+    ]
+
+    with open(raw_vcf, "w") as fh:
+        fh.write("\n".join(header_lines) + "\n")
+        for row in rows_sorted:
+            chrom = row["Chr"]
+            pos = str(int(row["Start"]))
+            ref = row["Ref"]
+            alt = row["Alt"]
+            rsid = _clean(row.get("rsID"))
+            filt = _clean(row.get("Filter")) or "PASS"
+            if filt == ".":
+                filt = "PASS"
+
+            info_parts = []
+            for key, raw_val in [
+                ("Gene", row.get("Gene")),
+                ("Consequence", row.get("Consequence")),
+                ("HGVSp", row.get("HGVSp")),
+                ("VAF_pct", row.get("VAF_pct")),
+                ("Callers", row.get("Callers")),
+            ]:
+                val = _clean(raw_val)
+                if val != ".":
+                    # Mirror production: replace ';' with ',' since ';' is the
+                    # INFO field separator.
+                    info_parts.append(f"{key}={val.replace(';', ',')}")
+            info = ";".join(info_parts) if info_parts else "."
+
+            fh.write(f"{chrom}\t{pos}\t{rsid}\t{ref}\t{alt}\t.\t{filt}\t{info}\n")
+
+    # Compress with pysam (bgzip-compatible) and tabix-index.
+    pysam.tabix_compress(raw_vcf, vcf_gz_path, force=True)
+    os.remove(raw_vcf)
+    pysam.tabix_index(vcf_gz_path, preset="vcf", force=True)
+    log.info("Created VCF: %s (.tbi sibling indexed)", vcf_gz_path)
 
 
 def main():
     args = parse_args()
-    sample = args.sample
 
-    # Input paths — derive defaults from -o so batch runner's outdir is respected
-    default_annot_dir = os.path.join(PIPELINE_DIR, "results", sample, "annotation")
-    default_base_dir = os.path.join(PIPELINE_DIR, "results", sample)
+    for path, label in [
+        (args.input, "Clinical TSV"),
+        (args.bam, "BAM"),
+        (args.bam + ".bai", "BAM index"),
+        (args.fasta, "Reference FASTA"),
+        (args.fasta + ".fai", "Reference FASTA index"),
+    ]:
+        if not os.path.isfile(path):
+            log.error("%s not found: %s", label, path)
+            sys.exit(1)
 
-    if args.output:
-        output_html = args.output
-        # Infer annotation dir from output path for input defaults
-        annot_dir = os.path.dirname(output_html)
-        base_dir = os.path.dirname(annot_dir)
-    else:
-        annot_dir = default_annot_dir
-        base_dir = default_base_dir
-        output_html = os.path.join(annot_dir, f"{sample}_igv_report.html")
+    rows = read_clinical_tsv(args.input)
+    log.info("Read %d clinical variants from %s", len(rows), args.input)
 
-    if args.input:
-        input_tsv = args.input
-    else:
-        input_tsv = os.path.join(annot_dir, f"{sample}.somaticseq.clinical.final.tsv")
-
-    if args.bam:
-        bam_path = args.bam
-    else:
-        bam_path = os.path.join(base_dir, "abra2", f"{sample}.final.bam")
-
-    # Validate inputs
-    if not os.path.isfile(input_tsv):
-        log.error(f"Input file not found: {input_tsv}")
-        sys.exit(1)
-    if not os.path.isfile(bam_path):
-        log.error(f"BAM file not found: {bam_path}")
-        sys.exit(1)
-
-    # Read clinical TSV
-    df = pd.read_csv(input_tsv, sep="\t", dtype=str)
-    log.info(f"Read {len(df)} clinical variants from {input_tsv}")
-
-    if len(df) == 0:
-        log.warning("No variants found — skipping report generation")
+    if not rows:
+        log.warning("No variants found -- skipping report generation")
+        # Touch an empty output so downstream channels do not break.
+        with open(args.output, "w") as fh:
+            fh.write("<html><body><p>No clinical variants for this sample.</p></body></html>\n")
         sys.exit(0)
 
-    # Create VCF in the output directory
-    outdir = os.path.dirname(output_html)
+    outdir = os.path.dirname(os.path.abspath(args.output)) or "."
     os.makedirs(outdir, exist_ok=True)
-    vcf_path = os.path.join(outdir, f"{sample}.clinical.vcf.gz")
-    tsv_to_vcf(df, vcf_path)
+    vcf_path = os.path.join(outdir, f"{args.sample}.clinical.vcf.gz")
+    tsv_to_vcf(rows, vcf_path)
 
-    # Generate IGV report
+    # Build create_report invocation. Match production's args exactly,
+    # except --genome (production cloud-fetched hg38; we provide a local FASTA).
+    import subprocess
     cmd = [
         "create_report",
         vcf_path,
-        "--genome", "hg38",
-        "--tracks", vcf_path, bam_path,
+        "--fasta", args.fasta,
+        "--tracks", vcf_path, args.bam,
         "--info-columns", "Gene", "Consequence", "HGVSp", "VAF_pct", "Callers",
         "--flanking", str(args.flanking),
-        "--title", f"{sample} Clinical Variant Review",
-        "--output", output_html,
+        "--title", f"{args.sample} Clinical Variant Review",
+        "--output", args.output,
     ]
-
-    log.info(f"Running: {' '.join(cmd)}")
+    log.info("Running: %s", " ".join(cmd))
     result = subprocess.run(cmd, capture_output=True, text=True)
-
     if result.returncode != 0:
-        log.error(f"create_report failed:\n{result.stderr}")
+        log.error("create_report failed:\n%s", result.stderr)
         sys.exit(1)
-
     if result.stdout.strip():
         log.info(result.stdout.strip())
 
-    file_size = os.path.getsize(output_html) / (1024 * 1024)
-    log.info(f"IGV report generated: {output_html} ({file_size:.1f} MB)")
-    log.info(f"Open in browser to review {len(df)} clinical variants")
+    size_mb = os.path.getsize(args.output) / (1024 * 1024)
+    log.info("IGV report generated: %s (%.1f MB, %d variants)",
+             args.output, size_mb, len(rows))
 
 
 if __name__ == "__main__":
