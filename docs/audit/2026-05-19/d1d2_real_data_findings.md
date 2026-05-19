@@ -264,3 +264,134 @@ To finalize the production version:
 6. **Future sessions — B4 (KMT2A-PTD), REPORTING cleanup, etc.**
 
 After steps 1-5 land, D1 and D2 are clinically production-ready.
+
+---
+
+## Addendum 2026-05-19 (post-resume reconciliation)
+
+This addendum is written after `apply_pindel_gt_filter.py` was applied
+to `bin/flt3_consensus.py` and the validation run was resumed against
+25NGS1307. It reconciles two predictions in the **Recommended
+next-session fix** block above with the actual post-patch consensus
+TSV, and documents the reasoning for future test maintenance.
+
+### Actual post-patch consensus TSV (25NGS1307)
+
+| status            | n_tools | tools                                  | length_bp | pos_hg38   | vaf_pct_min | vaf_pct_max | vaf_pct_mean |
+|---|---|---|---|---|---|---|---|
+| `PASS_HIGH`       | 4       | FLT3_ITD_EXT, Pindel, filt3r, getITD   | 45        | 28034132   | 9.89        | 30.60       | 18.21        |
+| `REVIEW_REQUIRED` | 1       | FLT3_ITD_EXT                           | 39        | 28034145   | 0.58        | 0.58        | 0.58         |
+
+This is the correct clinical output. The two deviations from the
+original prediction are explained below.
+
+### Deviation 1: `vaf_pct_mean` 18.21 (predicted ~30)
+
+The memo's "~30%" anticipated **Pindel's VAF in isolation**, not the
+4-caller cluster mean. The four callers in the lead cluster report
+VAFs across a 9.89–30.6 range; getITD and Pindel sit at the high end,
+FLT3_ITD_EXT and filt3r at the low end. Arithmetic mean across the
+four is 18.21, which is what `vaf_pct_mean` is defined to report.
+
+Pindel-specific VAF (`AD=483,213` → 30.60%) appears as
+`vaf_pct_max`. The lead-record VAF is unchanged from earlier
+analyses; only the column being read off was different.
+
+### Deviation 2: second row is `REVIEW_REQUIRED` 1-caller, not `PASS_LOW` 2-caller
+
+The pre-patch Pindel VCF for 25NGS1307 contains 42 records: 1
+genotyped 0/1 (the real ITD at chr13:28034132, AD=483,213) and 41
+genotyped 0/0. Distribution of the 0/0 noise by SVLEN and alt-read
+count:
+
+| SVLEN | n records | alt reads (max) | clinical interpretation       |
+|---|---|---|---|
+| 45    | 38        | 24              | shoulder noise around the true ITD |
+| 39    | 2         | 14              | one record at pos 28034145, AD=471,14 |
+| 73    | 2         | 1               | sub-percent stray events           |
+| 68    | 1         | 2               | distal stray                       |
+
+The 39-bp record at pos 28034145, AD=471,14 is the source of the
+predicted "PASS_LOW, 2 callers at 39 bp" row. Pre-patch, it cast a
+second vote alongside the FLT3_ITD_EXT 39-bp call, lifting the
+cluster from 1 caller (REVIEW_REQUIRED) to 2 callers (PASS_LOW).
+This is precisely the failure mode the GT filter was added to
+correct.
+
+The memo's "post-fix" prediction was therefore internally
+inconsistent: it expected all 0/0 records to be dropped **and**
+expected the 39-bp cluster to retain its second caller. Only one
+of those can be true; removing the 0/0 record is the correct
+behaviour, and `REVIEW_REQUIRED, 1 caller, 0.58% VAF` is the
+clinically correct post-patch call.
+
+**Implication for test maintenance:** the standalone test
+`tools/patches/2026-05-19/test_pindel_gt_filter.py` deliberately
+does **not** assert on the second cluster's status, length, or
+caller count. Future maintainers should not "correct" the test to
+reproduce the pre-patch 2-caller prediction. The 1-caller
+REVIEW_REQUIRED row is the intended outcome of the filter on this
+fixture.
+
+### Why GT-only outperforms `altreads >= N` on this data
+
+A reasonable alternative was considered: layer an alt-read floor
+(e.g. `altreads >= 10`) on top of, or in place of, the GT check.
+On this specimen that would have kept the following 0/0 noise
+records, all of which the GT filter correctly drops:
+
+| pos      | SVLEN | alt reads | impact if kept                                     |
+|---|---|---|---|
+| 28034145 | 39    | 14        | restores the false 2-caller PASS_LOW at 39 bp        |
+| 28034156 | 45    | 24        | drags lead-cluster `vaf_pct_min` to ~4.7%            |
+| 28034158 | 45    | 10        | drags `vaf_pct_min` further                          |
+| 28034163 | 45    | 12        | drags `vaf_pct_min` further                          |
+| 28034164 | 45    | 12        | drags `vaf_pct_min` further                          |
+| 28034166 | 45    | 11        | drags `vaf_pct_min` further                          |
+| 28034171 | 45    | 10        | drags `vaf_pct_min` further                          |
+
+Pindel's per-record GT call already integrates strand bias, soft-clip
+evidence, mapping quality, and per-position error context — signals
+that a flat alt-read threshold ignores. The 14 alt reads at
+pos 28034145 look meaningful at first glance, but Pindel's full model
+genotypes the locus as homozygous reference, and the independent
+FLT3_ITD_EXT reading of the same position at 0.58% VAF agrees that
+the signal is sub-clonal noise rather than a real low-burden ITD.
+
+Trusting GT therefore means trusting Pindel's own decision boundary,
+which is more biologically informed than any single numeric
+threshold available downstream.
+
+### Independent evidence the filter is doing its job
+
+The cleanest single number confirming this is the lead cluster's
+`vaf_pct_min = 9.89`. That value comes from FLT3_ITD_EXT or filt3r;
+the Pindel contribution to the cluster reports VAF near 30%. If any
+of the 38 GT=0/0 SVLEN=45 records had leaked through, they would have
+contributed alt fractions in the 0.2–4.7% range, collapsing
+`vaf_pct_min` to a fraction of a percent. `9.89` is consistent with
+all four callers reporting the same true heterozygous ITD and nothing
+else.
+
+### Outstanding follow-ups (not blocking)
+
+- The reconciliation above is panel- and specimen-specific. If a
+  future specimen produces a low-burden ITD that Pindel itself calls
+  as 0/0, the GT filter would drop it. This is acceptable for the
+  current panel because three independent callers (FLT3_ITD_EXT,
+  filt3r, getITD) cover the low-burden range; a single-caller
+  REVIEW_REQUIRED row would still flag it for human review. If a
+  future audit shows this assumption breaking, the right response is
+  to revisit Pindel's calling parameters upstream, not to relax the
+  GT filter downstream.
+- The 0.58% VAF REVIEW_REQUIRED row stays in the output for human
+  review, as intended; no further filtering is added here.
+
+### References
+
+- Patch: `tools/patches/2026-05-19/apply_pindel_gt_filter.py`
+- Test: `tools/patches/2026-05-19/test_pindel_gt_filter.py`
+- Fixture used for analysis: `/tmp/d1_pindel_real.vcf`
+  (extracted from work dir `work/ca/5b8dfc*/25NGS1307.pindel_flt3.vcf`)
+- Backup of pre-patch script:
+  `bin/flt3_consensus.py.bak_pindel_gt_filter_20260519_124207`
