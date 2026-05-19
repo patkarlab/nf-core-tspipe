@@ -1,3 +1,20 @@
+# Porting status (historical snapshot)
+
+> **This document is a historical snapshot from the port-era of nf-core-tspipe.**
+>
+> It was last updated at git tag `stage1-verified` (commit `a7c640e`,
+> "preprocessing parity with production on 25NGS1307"). The information
+> below describes the state of the port at that time. The port is now
+> complete: every module marked "stub" below is wired and operational,
+> as verified by the 2026-05-19 16-sample validation run.
+>
+> Do not use this document for current operational status. For current
+> status, see `README.md` and `docs/INSTALL.md` in the repo root.
+>
+> Kept under `docs/audit/` for historical reference only.
+
+---
+
 # Porting status
 
 Per-module status. "Faithful" = command-line is translated from the original

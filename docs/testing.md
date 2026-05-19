@@ -234,4 +234,3 @@ See docs/usage_pon.md for details.
 | `Process FAILED with exit status 247`                | Out of memory                                       | Bump `max_memory` or that label's resource tier |
 | `Cannot find any reads matching: ...`                | FASTQ path wrong in samplesheet                    | Check path, no symlink shenanigans   |
 | `Reference dictionary file does not exist`           | .dict missing next to FASTA                        | `gatk CreateSequenceDictionary -R fasta` |
-| `STUB: <PROCESS_NAME> for ...` in trace              | You ran a stub module                              | Fill in that module's `script:` block from PORTING_STATUS.md |
