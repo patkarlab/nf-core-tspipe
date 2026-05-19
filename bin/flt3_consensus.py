@@ -315,6 +315,12 @@ def parse_pindel(vcf):
             svtype = info.get("SVTYPE", "")
             if svtype not in ("DUP", "INS"):
                 continue
+            fmt_keys = parts[8].split(":") if len(parts) > 8 else []
+            sample_vals = parts[9].split(":") if len(parts) > 9 else []
+            fmt = dict(zip(fmt_keys, sample_vals))
+            gt = fmt.get("GT", "")
+            if gt in ("0/0", "0|0", "./."):
+                continue
             length_str = info.get("SVLEN", "0").lstrip("+-")
             try:
                 length = abs(int(length_str))
