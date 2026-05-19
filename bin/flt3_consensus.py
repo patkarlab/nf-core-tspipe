@@ -263,6 +263,82 @@ def parse_filt3r(vcf):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
+def _pindel_vaf_from_format(parts):
+    """Best-effort VAF from a Pindel VCF FORMAT field. Returns None if not computable.
+
+    Pindel writes AD as 'ref,alt' in the sample column. VAF is alt / (ref + alt),
+    rounded to 4 decimals. Returns None when AD is missing, malformed, or both
+    counts are zero. Ported from production scripts/09b_flt3_consensus.py
+    lines 269-285.
+    """
+    if len(parts) < 10:
+        return None
+    fmt_keys = parts[8].split(":")
+    sample_vals = parts[9].split(":")
+    fmt = dict(zip(fmt_keys, sample_vals))
+    ad = fmt.get("AD")
+    if ad and "," in ad:
+        try:
+            ref_n, alt_n = (int(x) for x in ad.split(",")[:2])
+            total = ref_n + alt_n
+            return round(alt_n / total, 4) if total else None
+        except ValueError:
+            return None
+    return None
+
+
+def parse_pindel(vcf):
+    """Parse a Pindel VCF, filtered upstream to the FLT3 region.
+
+    Keeps DUP and INS events of length >= 6bp. Length comes from
+    INFO/SVLEN; if SVLEN is missing or unparseable, falls back to
+    abs(len(alt) - len(ref)). VAF is computed from FORMAT/AD via
+    _pindel_vaf_from_format(); None when unavailable.
+
+    `vcf` is a pathlib.Path or None. Returns [] if the file does not
+    exist (which is the soft-fail case when the consensus is invoked
+    with the empty placeholder).
+
+    Ported from production scripts/09b_flt3_consensus.py lines 198-238.
+    """
+    if vcf is None or not vcf.exists():
+        return []
+    out = []
+    with open(vcf) as fh:
+        for line in fh:
+            if line.startswith("#") or not line.strip():
+                continue
+            parts = line.rstrip("\n").split("\t")
+            chrom, pos, _id, ref, alt = parts[0], int(parts[1]), parts[2], parts[3], parts[4]
+            info = dict(kv.split("=", 1) for kv in parts[7].split(";") if "=" in kv)
+            svtype = info.get("SVTYPE", "")
+            if svtype not in ("DUP", "INS"):
+                continue
+            length_str = info.get("SVLEN", "0").lstrip("+-")
+            try:
+                length = abs(int(length_str))
+            except ValueError:
+                length = abs(len(alt) - len(ref))
+            if length < 6:
+                continue
+            vaf = _pindel_vaf_from_format(parts)
+            out.append({
+                "tool": "Pindel",
+                "length": length,
+                "pos_hg38": pos,
+                "vaf": vaf,
+                "ar": None,
+                "supporting_reads": None,
+                "total_reads": None,
+                "inserted_seq": alt[len(ref):] if alt.startswith(ref) else alt,
+                "hgvsc": "",
+                "hgvsp": "",
+                "domain": "",
+                "raw_id": f"Pindel:{length}bp@hg38:{pos}",
+            })
+    return out
+
 def _liftover_hg19_to_hg38(pos_hg19):
     """Approximate FLT3-locus hg19->hg38 lift. Sufficient for cross-caller
     clustering, where the cluster key is length, not position."""
@@ -435,6 +511,9 @@ def main():
     p.add_argument("--filt3r", required=True, type=Path,
                    help="filt3r results VCF "
                         "(<sample>_filt3r.results.vcf)")
+    p.add_argument("--pindel", type=Path, default=None,
+                   help="Pindel VCF, pre-filtered to FLT3 region and DUP/INS only. "
+                        "Optional; missing or empty file produces zero Pindel records.")
     p.add_argument("--out", required=True, type=Path,
                    help="output consensus TSV path")
     args = p.parse_args()
@@ -443,12 +522,13 @@ def main():
     records += parse_getitd(args.getitd)
     records += parse_flt3_itd_ext(args.flt3_itd_ext)
     records += parse_filt3r(args.filt3r)
+    records += parse_pindel(args.pindel)
 
     sys.stderr.write(f"[consensus] collected {len(records)} per-caller records\n")
     by_tool = defaultdict(int)
     for r in records:
         by_tool[r["tool"]] += 1
-    for tool in ("getITD", "FLT3_ITD_EXT", "filt3r"):
+    for tool in ("getITD", "FLT3_ITD_EXT", "filt3r", "Pindel"):
         sys.stderr.write(f"[consensus]   {tool}: {by_tool[tool]}\n")
 
     clusters = cluster_by_length(records)

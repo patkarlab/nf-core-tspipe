@@ -35,3 +35,13 @@ tmux-*.log
 # Local backup files (e.g. *.bak.YYYYMMDD_HHMMSS or *.bak_<tag>)
 *.bak.*
 *.bak_*
+
+# Zero-byte stray files matching subworkflow names — appeared 2026-05-19
+# from an unknown source. Defensive ignore so they can't be staged.
+/ANNOTATION
+/CNV_CALLING
+/FLT3_ITD
+/REPORTING
+/SOMATICSEQ_ENSEMBLE
+/SV_CALLING
+/VARIANT_CALLING
