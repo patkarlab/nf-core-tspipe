@@ -49,8 +49,8 @@ reference tree:
 git clone git@github.com:patkarlab/nf-core-tspipe.git
 cd nf-core-tspipe
 
-# 2. Copy and edit the site config
-cp conf/gandalf.config conf/mysite.config
+# 2. Copy the template site config and edit it
+cp conf/site_template.config conf/mysite.config
 $EDITOR conf/mysite.config            # set paths for your server
 
 # 3. Register the profile in nextflow.config (add a mysite { ... } block)
@@ -264,15 +264,48 @@ the upstream maintainers, then download the databases your panel
 needs (`refGene`, `cosmic`, `clinvar`, etc.) into the directory
 pointed at by `--annovar_db`.
 
+### Helper scripts under `assets/training/`
+
+The repo ships two download helpers that simplify the steps above
+when you have outbound network access from the install host:
+
+| Script | What it fetches |
+|---|---|
+| `assets/training/download_hg38_resources.sh` | Broad hg38 FASTA + dbSNP + Mills + gnomAD VCFs |
+| `assets/training/download_annovar_db.sh` | ANNOVAR databases (post-install, after you have the ANNOVAR perl install) |
+
+Read each script before running — they write to paths under the
+caller's working directory. For sites doing a full reference rebuild
+(rare; only needed when retargeting the hg38 masking strategy),
+`assets/training/run_masked_realign.sh` regenerates the masked
+reference from the unmasked Broad bundle.
+
+The four older PoN-building scripts in the same directory
+(`build_sex_pon.py`, `build_sex_matched_pons.sh`, `cnv_loo_qc.py`,
+`run_masked_realign_cnv_negatives.sh`) are superseded by the
+`BUILD_PON` Nextflow workflow described in `docs/usage_pon.md`. Use
+the workflow rather than the bash scripts for new PoN builds.
+
 ---
 
 ## Site configuration
 
-`conf/gandalf.config` is the development host's site config. For any
-other server, copy it and adapt:
+Two configs ship in `conf/` that are relevant to a new install:
+
+- **`conf/site_template.config`** — purpose-built starting point for a
+  new server. Has placeholder paths, sensible conservative defaults
+  (`max_cpus=16`, `max_memory=128.GB`), and walks through both
+  containers-only (Strategy A) and local-install (Strategy B)
+  configurations as commented blocks. This is what to copy.
+- **`conf/gandalf.config`** — the working site config for the
+  development host. Useful as a reference example (sized for
+  192 cores / 1.5 TB, with the local-install Strategy B fully wired
+  up), but not what you want to copy verbatim onto a new server.
+
+To create a new site config:
 
 ```bash
-cp conf/gandalf.config conf/mysite.config
+cp conf/site_template.config conf/mysite.config
 $EDITOR conf/mysite.config
 ```
 
@@ -287,48 +320,48 @@ profiles {
 }
 ```
 
-Key knobs to edit in the new file (line numbers refer to
-`conf/gandalf.config`):
+The placeholder paths in `site_template.config` are grouped by purpose,
+each with a `// ----` comment header. Fill in each block in order:
 
-| Knob | Line | Edit for your site |
-|---|---|---|
-| `pipeline_root` | 24 | Base directory containing your `references/`, `bedfiles/`, and `software/` subtrees |
-| `reference`, `bed`, `pindel_bed`, `adapters` | 27–31 | Reference data paths |
-| `dbsnp_vcf`, `mills_vcf`, `gnomad_af_only` | 38–42 | Broad-bundle VCF paths |
-| `snv_blacklist` | 44 | Hand-curated blacklist |
-| `vep_cache`, `annovar_script`, `annovar_db` | 52–54 | Annotation databases |
-| `flt3_container` | 57 | `'singularity'` or `'docker'` to match your runtime |
-| `singularity.cacheDir` | 167 | Persistent, roomy directory; not `/tmp` |
-| `executor.cpus`, `executor.memory`, `executor.queueSize` | 154–159 | Match your hardware envelope |
-| `max_cpus`, `max_memory`, `max_time` | 71–73 | Per-process ceilings; `check_max()` clamps tier defaults down to these |
+| Block | What to set |
+|---|---|
+| Root directory | `pipeline_root` — base for your `references/`, `bedfiles/`, `software/` subtrees |
+| Reference + panel | `reference`, `bed`, `exonwise_bed`, `pindel_bed`, `adapters` |
+| Broad-bundle VCFs | `dbsnp_vcf`, `mills_vcf`, `gnomad_af_only` (with their `.tbi` indexes alongside) |
+| Annotation databases | `vep_cache`, `annovar_script`, `annovar_db` |
+| SNV blacklist | `snv_blacklist` — optional, defaults to no blacklist filtering |
+| CNV resources | Leave commented out unless overriding the shipped `assets/<panel>/` PoN |
+| Annotation references | Leave commented out unless overriding the shipped `assets/references/` files |
+| FLT3 ensemble | `flt3_container` — `'singularity'` or `'docker'` to match your runtime |
+| Resource ceilings | `max_memory`, `max_cpus`, `max_time` — `check_max()` in `conf/base.config` clamps requests at these |
+| Executor envelope | `executor { cpus, memory, queueSize }` — should match your hardware |
+| Container runtime | Leave `singularity { ... }` enabled; flip to `docker { enabled = true }` and disable singularity if Docker is your runtime |
+
+For a worked example, see `conf/gandalf.config` — the local-install
+Strategy B is fully wired there (conda envs, per-process tool-path
+overrides for VARDICT/STRELKA/PLATYPUS/GETITD/FILT3R).
 
 ### Conda-on-host vs all-containers
 
-`conf/gandalf.config` keeps `conda.enabled = false` and puts two
-pre-existing conda environments on PATH inside every process
-(`process.beforeScript`):
+`conf/site_template.config` ships as Strategy A (containers-only) by
+default: every module's `container` directive is picked up by
+Singularity (or Docker), and there is no `process.beforeScript` or
+host-path machinery. **This is the recommended path for a new site.**
 
-- `/home/hemat/anaconda3/envs/targeted-seq` (Python 3.10.14, with
-  fastp, bwa-mem2, samtools, gatk4, abra2, cnvkit, freebayes, vardict,
-  varscan, somaticseq, pysam, pandas, numpy)
-- `/home/hemat/anaconda3/envs/py2` (Python 2, for Strelka and
-  Platypus)
+If your host already has the conda envs installed (the
+`targeted-seq` env with fastp, bwa-mem2, samtools, gatk4, abra2,
+cnvkit, freebayes, vardict, varscan, somaticseq, plus a py2 env for
+Strelka and Platypus), Strategy B is faster on first run because no
+containers need to be pulled. To switch to Strategy B in your site
+config:
 
-This is a gandalf-specific shortcut to avoid pulling containers when
-the tools are already installed on disk. **A fresh server should not
-replicate this layout.** Instead, in `conf/mysite.config`:
+- Uncomment the `conda { enabled = false }`, `env { ... }`, and
+  `process { ... }` block at the bottom of `site_template.config`.
+- Fill in the conda env paths and the per-tool helper paths
+  (`vardict_helpers_dir`, the FLT3 `getitd_path` / `filt3r_bin` /
+  `filt3r_ref` ext-vars).
 
-- Remove the `process.beforeScript = '...'` block.
-- Remove the `env { TARGETED_SEQ_ENV = ...; PY2_ENV = ... }` block.
-- Remove the `withName: 'STRELKA' { beforeScript = ... }` and
-  `withName: 'PLATYPUS' { beforeScript = ... }` overrides.
-- Remove the `withName: 'VARDICT' { ext.vardict_helpers_dir = ... }`
-  override.
-- Remove the `withName: 'GETITD'` and `withName: 'FILT3R'` ext-path
-  overrides — the containerised images bundle these.
-
-The singularity-launched biocontainers (see "Container catalogue"
-below) will then carry the tools without any host-side state.
+Reference: `conf/gandalf.config` is a complete Strategy B example.
 
 ### Modules that genuinely need host execution
 
