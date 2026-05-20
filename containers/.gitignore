@@ -1,0 +1,7 @@
+# Build-time artefacts; never commit
+filt3r/filt3r-static
+filt3r/build/
+
+# Don't commit the getITD build context if the .git is from upstream
+# (we want the panel-specific anno/ files, but not a nested git tree).
+getitd/getitd/.git/

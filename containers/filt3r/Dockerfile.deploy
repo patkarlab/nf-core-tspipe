@@ -1,0 +1,26 @@
+# filt3r — slim deploy Dockerfile from pre-built static binary
+#
+# Produces a ~10 MB Alpine-based image containing a pre-compiled
+# filt3r static binary. Requires you to first build filt3r yourself
+# (see Dockerfile alongside this file) and produce a statically-linked
+# binary at ./filt3r-static in the build context.
+#
+# This is the preferred image for production deployment once the static
+# binary is built and verified — much smaller than the build-from-source
+# image and deterministic (no network dependency at build time).
+#
+# Build (after producing filt3r-static):
+#   cp /path/to/built/filt3r ./filt3r-static
+#   docker build -f Dockerfile.deploy -t local/filt3r:v0.1 .
+#
+# Note: this is the upstream-provided deploy Dockerfile from the filt3r
+# repo, unchanged. The gandalf-cached local/filt3r:v0.1 was built from
+# the build-from-source Dockerfile alongside this one; if you switch to
+# the slim image, also bump the tag (e.g. local/filt3r:v0.1-slim) and
+# update modules/local/filt3r.nf to match. The k-mer reference path
+# inside the slim image will also differ from /filt3r/data/... — verify
+# the module's --ref path before flipping tags.
+
+FROM alpine:latest
+
+COPY ./filt3r-static /bin/filt3r
