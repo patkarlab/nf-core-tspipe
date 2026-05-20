@@ -196,6 +196,7 @@ For Nextflow and nf-core conventions: [nf-co.re](https://nf-co.re/) &middot;
 
 ## License
 
-To be confirmed by the maintainers. Most nf-core pipelines use MIT or
-Apache-2.0; the choice should be added as a `LICENSE` file at the
-repository root and reflected in this section as a SPDX identifier.
+MIT. See [`LICENSE`](LICENSE) for the full text.
+
+SPDX-License-Identifier: `MIT`
+
