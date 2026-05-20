@@ -230,3 +230,78 @@ recall on the high-confidence positives.
 > confirm whether the whitelist is now wired into the nf-core port and
 > document the current behaviour; if it is still pending, list it under
 > *Known gaps* in the README rather than here.
+
+
+## Known unported clinical steps
+
+Some production-pipeline steps that add clinical value have not yet
+been ported to the nf-core port. Their absence is a feature gap, not
+a deliberate design decision. Listing them here so the gap is visible
+to reviewers comparing pipeline outputs.
+
+### Clinical-tier overlay (`17c_clinical_tier.py`)
+
+**Production behaviour**: after OncoVI scoring (step 15) and FLT3
+merge (step 17b), the production pipeline runs `17c_clinical_tier.py`
+to classify each variant according to the AMP/ASCO/CAP 2017 tier
+scheme:
+
+- **IA** — FDA-approved targeted therapy or guideline-listed marker
+  for this exact variant in this disease context.
+- **IB** — Strong clinical significance from professional-society
+  guidelines (ELN MR adverse, MIPSS70+ HMR, WHO/ICC entity-defining,
+  IPSS-M main).
+- **IIC** — Hotspot in established driver; potential clinical
+  significance.
+- **IID** — Plausible driver, not hotspot.
+- **III** — Variant of unknown significance in a panel gene.
+- **IV** — Benign or likely benign (synonymous, intronic, etc.).
+
+The classification adds two columns to the clinical TSV:
+`Clinical_Tier` and `Clinical_Tier_Rationale` (a pipe-separated rule
+chain). The script reads `references/myeloid_driver_genes.tsv` and
+`references/myeloid_hotspots.tsv` as panel-curated evidence lookups,
+and takes a `--diagnosis` argument so that the same variant can be
+classified differently across disease contexts (e.g. JAK2 p.V617F is
+**IA** in MPN, **IIC** in AML).
+
+**This pipeline**: the step is not ported. The nf-core clinical TSV
+has OncoVI's algorithmic oncogenicity score but no curated tier
+overlay. A clinician comparing the two pipelines' outputs will see
+the `Clinical_Tier` and `Clinical_Tier_Rationale` columns missing in
+the nf-core output.
+
+**Why this matters**: OncoVI applies the Horak 2022 guidelines
+algorithmically against general oncogenicity evidence; the
+clinical-tier overlay is a panel-specific curated lookup against
+disease-context-aware driver and hotspot tables. The two evidence
+layers are complementary, not substitutes — losing the tier overlay
+means losing the AMP/ASCO/CAP-formatted clinical signal that the
+production output carries.
+
+**Porting blockers / open questions**:
+
+- **Diagnosis context** flows through the production script via
+  `-d <diagnosis>` but is not currently represented in the nf-core
+  samplesheet schema. Porting requires deciding between (a) a
+  pipeline-level `params.diagnosis` default with same-for-all-samples
+  behaviour, (b) a per-sample `diagnosis` column added to the
+  samplesheet, or (c) running the step with a generic diagnosis and
+  accepting reduced tier specificity.
+- **The driver and hotspot tables** are panel-specific and currently
+  live under the production tree at `references/myeloid_*.tsv`. Their
+  in-repo tracking (Git LFS, `assets/<panel>/`, or external references
+  via `params.driver_genes` / `params.hotspots`) is undecided. The
+  asset-default fallback pattern used by the CNV PoN is a natural
+  template.
+- **Validation surface** is non-trivial. Tier classifications affect
+  how clinicians read variants, so a port needs careful diff-against-
+  production validation across multiple diagnoses before clinical
+  use.
+
+**Estimated effort**: half a day to one day for the port itself,
+including the diagnosis-context decision and the in-repo tracking
+decision for the reference tables. Plus validation across diagnoses.
+Tracked as a follow-up open item; not a blocker for first release if
+the production pipeline remains the source-of-truth tier annotation
+until the port lands.
