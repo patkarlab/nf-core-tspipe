@@ -1,236 +1,269 @@
-# Testing on gandalf
+# Testing
 
-This is a phased plan. Don't skip ahead. Each phase verifies one thing; jumping
-straight to the full pipeline on a real sample will produce confusing failures
-that are hard to debug.
+This is a phased smoke-test plan for verifying that a fresh install works end
+to end. It assumes [`docs/INSTALL.md`](INSTALL.md) is complete: prerequisites
+installed, site config written and registered, reference data in place,
+VariantValidator REST stack running, container catalogue pulled.
 
-## Phase 0 — Prerequisites (15 min)
+Run the phases in order. Each one verifies one thing; skipping ahead produces
+failures that are hard to debug.
+
+| Phase | What it verifies                                       | Time      | Real data |
+|-------|--------------------------------------------------------|-----------|-----------|
+| 1     | Config parses, profiles resolve                        | 2 min     | No        |
+| 2     | DAG topology and channel wiring (stub mode)            | 5 min     | Stubs     |
+| 3     | One-sample real run, end to end                        | 30–45 min | Yes       |
+| 4     | Multi-sample parallelism at production scale           | 2–4 h     | Yes       |
+| 5     | Panel-of-normals build (only when rebuilding the PoN)  | varies    | Yes       |
+
+Throughout this document, `<yoursite>` stands in for the profile name you
+registered in `nextflow.config` (e.g. `gandalf`, `mysite`). All examples assume
+you are at the repository root.
+
+Cross-references:
+
+- [`docs/INSTALL.md`](INSTALL.md) — install context and prerequisites
+- [`docs/usage.md`](usage.md) — parameter reference and samplesheet format
+- [`docs/output.md`](output.md) — expected outputs per sample
+- [`docs/usage_pon.md`](usage_pon.md) — panel-of-normals build workflow
+- [`docs/clinical_decisions.md`](clinical_decisions.md) — intentional differences from the upstream Python pipeline
+
+## A note on the `test` profile
+
+The bundled `test` profile is currently broken: it references fixtures under
+`assets/test/` that are not in the repository. Do not use it. For structural
+validation, use `<yoursite>,singularity -stub` with a real one-sample
+samplesheet (Phase 2 below).
+
+## Phase 1 — Config parse check (2 min)
+
+Verify that the configuration is syntactically valid and your site profile
+resolves cleanly. This does not start any processes.
 
 ```bash
-# 1. Check Java (Nextflow needs Java 11+)
-java -version
-# If missing or older than 11, install via your conda env:
-#   conda install -n targeted-seq -c conda-forge openjdk=17
+# Resolved configuration for your profile. Errors here mean a typo in
+# conf/<yoursite>.config or in nextflow.config.
+nextflow config -profile <yoursite>,singularity
 
-# 2. Install Nextflow (one-time, downloads ~50MB)
-cd /goast/hemat_data/
-curl -s https://get.nextflow.io | bash
-# Move into PATH
-mkdir -p /home/hemat/bin
-mv nextflow /home/hemat/bin/
-export PATH=/home/hemat/bin:$PATH
-echo 'export PATH=/home/hemat/bin:$PATH' >> ~/.bashrc
-
-# 3. Verify
-nextflow -version
-# Should print: nextflow version 24.x.x or similar
-
-# 4. Singularity available?
-which singularity
-# If not, this will fail on FLT3_ITD_EXT. Either install singularity or
-# set params.flt3_container = 'docker' in conf/gandalf.config.
+# Help output exercises main.nf parsing without running anything.
+nextflow run . -profile <yoursite>,singularity --help 2>&1 | head -60
 ```
 
-## Phase 1 — Drop the scaffold into place (5 min)
+Success criteria:
+
+- `nextflow config` prints the merged config without errors.
+- The help output lists pipeline parameters with sensible defaults.
+
+If either fails, fix the config before moving on. Common causes: missing
+required params (`dbsnp_vcf`, `mills_vcf`, `gnomad_af_only`, `exonwise_bed`,
+`annovar_script`), unresolved `${...}` variables, or a profile name that does
+not match the `profiles { ... }` block in `nextflow.config`.
+
+## Phase 2 — Structural validation in stub mode (~5 min)
+
+Every module in `modules/local/` has a `stub:` block that creates empty
+declared outputs without invoking the underlying tool. Running the whole
+pipeline in `-stub` mode therefore exercises:
+
+- Channel construction and joins in `subworkflows/local/`
+- DAG topology (every consumer finds a producer)
+- Per-module output shape (declared emits match downstream consumers)
+- Resolved file paths for all reference inputs
+
+It does **not** exercise container pulls, the variant callers themselves, or
+any tool-specific behaviour.
+
+Build a one-sample samplesheet against any pair of FASTQs (the files are not
+read in stub mode, but the paths must exist):
 
 ```bash
-# Untar the pipeline somewhere persistent
-cd /goast/hemat_data/
-tar -xzf /path/to/nf-core-tspipe.tar.gz
-
-# Quick look at the structure
-cd nf-core-tspipe/
-ls -la
-# You should see: main.nf, nextflow.config, workflows/, subworkflows/,
-# modules/, conf/, bin/, assets/, docs/
-```
-
-## Phase 2 — Validate the parse (2 min)
-
-This catches syntax errors WITHOUT actually running anything.
-
-```bash
-cd /goast/hemat_data/nf-core-tspipe/
-
-# Show resolved configuration. If this fails, the config has a typo.
-nextflow config -profile gandalf
-
-# Try parsing main.nf without executing.
-# DAG validation may flag missing files for stubs -- that's expected.
-nextflow run main.nf -profile gandalf --help 2>&1 | head -40
-```
-
-If `nextflow config -profile gandalf` succeeds, the configuration is syntactically valid.
-
-## Phase 3 — Sanity-test ONE preprocessing run (30 min, real data)
-
-The faithful modules are: fastp, BWA, MarkDup, BQSR, ABRA2. These are enough to
-go from raw FASTQ to a final BAM. Test them on a sample you've already processed
-with the Python runner so you have a known-good output to compare against.
-
-Pick a sample whose original output you trust -- 25NGS1307 is in the results/
-directory.
-
-```bash
-cd /goast/hemat_data/nf-core-tspipe/
-
-# Create a tiny samplesheet with ONE sample
-mkdir -p test_run
-cat > test_run/samplesheet.csv <<EOF
+mkdir -p /tmp/tspipe_smoke
+cat > /tmp/tspipe_smoke/samplesheet.csv <<'EOF'
 sample,fastq_1,fastq_2,sex
-25NGS1307,/goast/hemat_data/targeted-seq-pipeline/sample_fastqs/25NGS1307_R1.fastq.gz,/goast/hemat_data/targeted-seq-pipeline/sample_fastqs/25NGS1307_R2.fastq.gz,unknown
+SMOKE01,/absolute/path/to/SMOKE01_R1.fastq.gz,/absolute/path/to/SMOKE01_R2.fastq.gz,unknown
 EOF
+```
 
-# Adjust the FASTQ paths above to match where your fastqs actually live on gandalf!
+Samplesheet column reference is in [`docs/usage.md`](usage.md). `sex` accepts
+`male`, `female`, or `unknown` (the CNV module falls back to the female PoN on
+`unknown`, with a warning).
 
-# Dry-run first: prints the DAG without executing
-nextflow run main.nf \
-    -profile gandalf \
-    --input test_run/samplesheet.csv \
-    --outdir test_run/results \
-    -preview
+Run with `-stub`:
 
-# If the dry-run looks clean, the real run:
-nextflow run main.nf \
-    -profile gandalf \
-    --input test_run/samplesheet.csv \
-    --outdir test_run/results \
+```bash
+nextflow run . \
+    -profile <yoursite>,singularity \
+    -stub \
+    --input /tmp/tspipe_smoke/samplesheet.csv \
+    --outdir /tmp/tspipe_smoke/stub_$(date +%Y%m%d_%H%M%S) \
+    -with-trace /tmp/tspipe_smoke/stub_trace.txt
+```
+
+Success criteria:
+
+- Every process line ends with `1 of 1 ✔` (or `cached: 1 ✔` on a `-resume`).
+- No `FAILED` or `ABORTED` rows in the trace.
+- The output tree under `--outdir` mirrors the layout described in
+  [`docs/output.md`](output.md), with empty placeholder files.
+
+A reference clean run is the 2026-05-16 stub validation: 21 of 21 processes
+green on a single CNV-calling sample.
+
+## Phase 3 — One-sample real run (~30–45 min)
+
+This is the first run that actually pulls containers and invokes the tools.
+
+### Sample selection
+
+Pick a sample with a **known FLT3-ITD** for the first smoke test if you have
+one. The reason is documented in the README under *Status and known
+limitations*: `FLT3_ITD_EXT` exits with `NO ITD CANDIDATE CLUSTERS GENERATED`
+on ITD-negative specimens, which Nextflow records as a task failure. The
+pipeline as a whole still completes (other modules are unaffected and the
+clinical tree is assembled), but a first-time smoke test on an ITD-negative
+sample will surface a red row in the execution report that looks like an
+install problem and is not.
+
+If you only have ITD-negative samples available, use one anyway and expect
+exactly one `FLT3_ITD_EXT` failure per sample in the report.
+
+### Run
+
+```bash
+mkdir -p /data/runs
+RUN_DIR=/data/runs/$(date +%Y%m%d_%H%M%S)_smoke_1sample
+
+nextflow run . \
+    -profile <yoursite>,singularity \
+    --input /tmp/tspipe_smoke/samplesheet.csv \
+    --outdir ${RUN_DIR} \
     -resume \
-    -with-report test_run/report.html \
-    -with-trace test_run/trace.txt \
-    -with-timeline test_run/timeline.html \
-    2>&1 | tee test_run/nextflow.log
+    -with-report  ${RUN_DIR}/report.html \
+    -with-trace   ${RUN_DIR}/trace.txt \
+    -with-timeline ${RUN_DIR}/timeline.html \
+    2>&1 | tee ${RUN_DIR}/nextflow.log
 ```
 
-The trace.txt file is your best friend -- it shows per-process status, runtime,
-peak memory, exit code. If something fails:
+`-resume` is harmless on a first run and lets you retry from cache if a single
+process fails for a transient reason.
+
+### Verifying success
+
+Inspect the run in this order:
+
+1. **Execution report** — open `${RUN_DIR}/report.html` (or
+   `${RUN_DIR}/pipeline_info/execution_report_*.html`). All processes should
+   show exit code 0, with the documented FLT3_ITD_EXT exception above.
+2. **Clinical deliverable tree** — `${RUN_DIR}/<sample>/clinical/` should
+   contain the files listed in [`docs/output.md`](output.md): the final BAM,
+   clinical TSV, FLT3 consensus TSV, CNV plots, IGV pileup HTML, and per-sample
+   dashboard.
+3. **Clinical TSV has rows** —
+   `wc -l ${RUN_DIR}/<sample>/clinical/<sample>.clinical.tsv` should be
+   greater than 1 (header plus variants).
+4. **FLT3 consensus TSV is well-formed** —
+   `${RUN_DIR}/<sample>/clinical/<sample>_flt3_consensus.tsv` exists. If the
+   sample is ITD-positive, expect rows; if ITD-negative, expect header only.
+5. **CNV outputs** — `${RUN_DIR}/<sample>/clinical/cnv/` contains the scatter
+   PDF/PNG and the annotated CNV TSV.
+
+### When something fails
 
 ```bash
-# Find the failed process
-grep -E "FAILED|ABORTED" test_run/trace.txt
+# Find the failed task in the trace
+grep -E "FAILED|ABORTED" ${RUN_DIR}/trace.txt
 
-# Look at the work dir of the failed task
-ls -la work/<hash_dir>/
-cat work/<hash_dir>/.command.sh    # the script that ran
-cat work/<hash_dir>/.command.err   # stderr from the tool
-cat work/<hash_dir>/.command.log   # Nextflow's wrapper log
+# Look at the task's work directory
+ls -la work/<hash>/
+cat work/<hash>/.command.sh    # the script Nextflow ran
+cat work/<hash>/.command.err   # stderr from the tool
+cat work/<hash>/.command.log   # Nextflow's wrapper log
+cat work/<hash>/.exitcode      # non-zero exit code
 ```
 
-### Compare against the Python-runner output
+For channel-join failures, `.command.err` is usually empty because no task
+script ran; the error is in `.nextflow.log` at the repository root with a
+traceback into the relevant subworkflow.
+
+## Phase 4 — Multi-sample batch (production scale)
+
+Once a one-sample run is green, the same command with a larger samplesheet
+exercises Nextflow's per-sample parallelism. There is no separate command —
+just more rows in the samplesheet.
+
+The production baseline is the 2026-05-19 run on gandalf: **16 samples, 2 h 19
+min wall time** on 192 cores and 1.5 TB RAM. Smaller hosts will see longer
+wall times but the same per-sample work.
 
 ```bash
-# Old BAM
-ls -lh /goast/hemat_data/targeted-seq-pipeline/results/25NGS1307/abra2/25NGS1307.final.bam
+RUN_DIR=/data/runs/$(date +%Y%m%d_%H%M%S)_batch
 
-# New BAM
-ls -lh test_run/results/25NGS1307/abra2/25NGS1307.final.bam
-
-# Are they bit-identical?
-md5sum /goast/.../25NGS1307.final.bam test_run/results/25NGS1307/abra2/25NGS1307.final.bam
-
-# They probably won't md5-match exactly because read-group lines or sort order
-# may differ -- but they should have the SAME number of reads and the same
-# coverage profile:
-samtools flagstat /goast/.../25NGS1307.final.bam > old.stats
-samtools flagstat test_run/results/25NGS1307/abra2/25NGS1307.final.bam > new.stats
-diff old.stats new.stats
+nextflow run . \
+    -profile <yoursite>,singularity \
+    --input /path/to/multi_sample_samplesheet.csv \
+    --outdir ${RUN_DIR} \
+    -resume \
+    -with-report  ${RUN_DIR}/report.html \
+    -with-trace   ${RUN_DIR}/trace.txt \
+    -with-timeline ${RUN_DIR}/timeline.html
 ```
 
-If the BAM flagstats match, preprocessing is wired correctly.
+What to watch:
 
-## Phase 4 — Add variant calling (60 min)
+- Multiple `RUNNING` rows in `${RUN_DIR}/trace.txt` early on confirm that the
+  scheduler is parallelising across samples.
+- The execution report's CPU utilisation gauge: if it sits low for long
+  stretches, one process label is a bottleneck. Tune `withLabel:...`
+  resource directives in your site config; see [`docs/INSTALL.md`](INSTALL.md)
+  for the resource label conventions.
+- Wall time on the timeline HTML, compared against the gandalf baseline,
+  scales roughly linearly with `(samples / cores)`.
 
-Once preprocessing works, fill in the variant-caller stubs ONE AT A TIME. Start
-with Mutect2 (already faithful) -- comment out the others temporarily:
+## Phase 5 — PoN build (one-off, only when rebuilding)
 
-```groovy
-// In subworkflows/local/variant_calling.nf, comment everything except Mutect2:
-GATK4_MUTECT2(bam_ch, reference_ch, bed_ch)
-// VARDICT(bam_ch, reference_ch, bed_ch)
-// VARSCAN(bam_ch, reference_ch, bed_ch)
-// ...
-```
-
-Run, verify the Mutect2 VCF matches the original. Then uncomment VarDict,
-fill in its module body from scripts/06_variant_callers.py, run, verify. Repeat.
-
-## Phase 5 — Full pipeline on one sample (3-4h)
-
-Once all callers and CNV/SV/annotation are filled in, run end-to-end on
-25NGS1307 and compare:
+A separate workflow entry, only run when constructing a new CNV panel-of-
+normals (different panel BED, different reference build, or a refreshed
+normals cohort). Full reference is in
+[`docs/usage_pon.md`](usage_pon.md); the smoke-test invocation is:
 
 ```bash
-# Run full pipeline
-nextflow run main.nf -profile gandalf --input test_run/samplesheet.csv \
-                                       --outdir test_run/full_results -resume
-
-# Compare clinical TSVs
-diff <(sort /goast/.../25NGS1307.somaticseq.clinical.tsv) \
-     <(sort test_run/full_results/25NGS1307/annotation/25NGS1307.clinical.tsv) \
-     | head -50
-
-# FLT3-ITD: the headline result for 25NGS1307 is a 45bp ITD (p.Val581_Arg595dup)
-# detected by 3 of 3 length-based tools. Confirm:
-grep "Val581_Arg595" test_run/full_results/25NGS1307/flt3/25NGS1307_flt3_consensus.tsv
-```
-
-## Phase 6 — Multi-sample batch (overnight)
-
-The whole point of moving to Nextflow is parallelism across samples. Test that
-works:
-
-```bash
-# Build a 4-sample samplesheet covering the validation set
-cat > test_run/batch_samplesheet.csv <<EOF
-sample,fastq_1,fastq_2,sex
-25NGS1307,/path/.../25NGS1307_R1.fastq.gz,/path/.../25NGS1307_R2.fastq.gz,unknown
-25NGS1058,/path/.../25NGS1058_R1.fastq.gz,/path/.../25NGS1058_R2.fastq.gz,unknown
-25RSEQ86,/path/.../25RSEQ86_R1.fastq.gz,/path/.../25RSEQ86_R2.fastq.gz,unknown
-26CGH40,/path/.../26CGH40_R1.fastq.gz,/path/.../26CGH40_R2.fastq.gz,female
-EOF
-
-nextflow run main.nf -profile gandalf --input test_run/batch_samplesheet.csv \
-                                       --outdir test_run/batch_results -resume
-```
-
-This will validate the two pending items from the original notes:
-- FLT3 ensemble on 25NGS1058 and 25RSEQ86 (samples where the old pipeline
-  missed real ITDs)
-- 4-sample throughput on gandalf
-
-## Phase 7 — PoN build (one-off, only if rebuilding)
-
-If you need to rebuild the CNV PoN against a new reference or new normals:
-
-```bash
-# Build a normals samplesheet
-cd /goast/hemat_data/nf-core-tspipe/
-
-cat > test_run/normals.csv <<EOF
-sample,fastq_1,fastq_2,sex,exclude
-BNC1,/path/.../BNC1_R1.fastq.gz,/path/.../BNC1_R2.fastq.gz,female,false
-BNC2,/path/.../BNC2_R1.fastq.gz,/path/.../BNC2_R2.fastq.gz,male,false
-...
-OCIAML3,/path/.../OCIAML3_R1.fastq.gz,/path/.../OCIAML3_R2.fastq.gz,female,true
-EOF
-
-# Run the PoN-build workflow
-nextflow run main.nf -entry BUILD_PON -profile gandalf \
-    --input test_run/normals.csv \
-    --outdir test_run/pon_results \
+nextflow run . -entry BUILD_PON \
+    -profile <yoursite>,singularity \
+    --input /path/to/normals.csv \
+    --outdir /path/to/pon_outdir \
     -resume
 ```
 
-See docs/usage_pon.md for details.
+The normals samplesheet has the same columns as the per-sample samplesheet
+plus an `exclude` column (true/false) to mark known-aberrant normals that
+should be present in the input but absent from the final PoN. See
+[`docs/usage_pon.md`](usage_pon.md).
 
-## Common errors and what they mean
+## Common errors
 
-| Error                                                | Means                                              | Fix                                  |
-| ---------------------------------------------------- | -------------------------------------------------- | ------------------------------------ |
-| `nextflow: command not found`                        | Step 0.2 wasn't done                               | Install nextflow                     |
-| `error: Java version not supported`                  | Java 8 in PATH                                      | Java 11+ via conda                   |
-| `tool not found in $PATH`                            | Conda env not on PATH inside process               | Check `process.beforeScript` in conf/gandalf.config |
-| `singularity: command not found`                     | Singularity not installed                          | Set `flt3_container = 'docker'` in gandalf.config |
-| `Process FAILED with exit status 247`                | Out of memory                                       | Bump `max_memory` or that label's resource tier |
-| `Cannot find any reads matching: ...`                | FASTQ path wrong in samplesheet                    | Check path, no symlink shenanigans   |
-| `Reference dictionary file does not exist`           | .dict missing next to FASTA                        | `gatk CreateSequenceDictionary -R fasta` |
+| Error                                                  | Means                                                | Fix                                                                                    |
+|--------------------------------------------------------|------------------------------------------------------|----------------------------------------------------------------------------------------|
+| `nextflow: command not found`                          | Nextflow not on PATH                                 | Reinstall per [`docs/INSTALL.md`](INSTALL.md#nextflow)                                  |
+| `Nextflow requires Java 17+`                           | Older Java in PATH                                   | Install Java 21 LTS per [`docs/INSTALL.md`](INSTALL.md#java)                            |
+| `singularity: command not found`                       | Singularity/Apptainer not installed                  | Install per [`docs/INSTALL.md`](INSTALL.md#singularity-apptainer)                        |
+| `Cannot find any reads matching: ...`                  | Samplesheet path wrong or file unreadable            | Check the absolute path and permissions; FASTQs must be readable by the run user        |
+| `Reference dictionary file does not exist`             | `.dict` missing next to the reference FASTA          | `gatk CreateSequenceDictionary -R <fasta>`                                              |
+| Process FAILED with exit status 247                    | Out of memory                                        | Bump `max_memory`, or the label-specific resource tier in your site config              |
+| Process FAILED with exit status 137                    | OOM-killed by the OS (cgroup limit)                  | Same as 247; check the host's available memory                                          |
+| `FLT3_ITD_EXT` failed with `NO ITD CANDIDATE CLUSTERS` | Sample has no detectable FLT3-ITD                    | Expected; the consensus TSV will be header-only. Not an install problem.                |
+| `VariantValidator: connection refused`                 | The REST stack is not running                        | `docker compose up -d` in the rest_variantValidator directory; see [`docs/INSTALL.md`](INSTALL.md#variantvalidator-rest-stack) |
+| Channel-join `EmptyChannelException`                   | An upstream process emitted nothing for a sample     | Check the trace for the upstream FAILED row; the missing output is the root cause       |
+| `MANIFEST_UNKNOWN` from a `docker://` URI              | Container image was renamed or never published       | Check `conf/modules.config` for the offending `container` directive                     |
+
+## Re-running and caching
+
+`-resume` reuses cached results from the same `--outdir`. Two rules to remember:
+
+- Same `--outdir` → cache is consulted. Change `--outdir` → cache is ignored,
+  even with `-resume`.
+- Cache keys hash the full container URI, input file content, and the script
+  block. Changing any of these invalidates the downstream cache.
+
+The `work/` directory grows quickly. After a clean validation run, prune with
+`nextflow clean -f` (interactive) or remove the run-specific work hashes by
+hand if you need to keep parallel runs around.

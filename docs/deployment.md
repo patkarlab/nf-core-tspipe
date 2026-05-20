@@ -1,182 +1,144 @@
 # Moving to a new server
 
-Once the pipeline runs correctly on gandalf, porting it to another server should
-be ~1 day of work: a config file, a reference download, and a smoke test.
+This doc covers the gandalf-specific shortcut: pulling references, PoN
+artefacts, and other large assets across from gandalf rather than
+re-downloading or rebuilding from scratch.
 
-## Checklist
+**Prerequisite.** Finish [`docs/INSTALL.md`](INSTALL.md) on the
+destination server first. Nextflow, Singularity, Docker, the
+VariantValidator REST stack, the container catalogue, and the site
+config are all install-time concerns covered there. This doc is the
+final, gandalf-specific step.
 
-```
-[ ] 1. Install Nextflow on the new server
-[ ] 2. Install Singularity (or Docker)
-[ ] 3. Mirror reference + resource files
-[ ] 4. Write conf/<newsite>.config
-[ ] 5. Register the new profile in nextflow.config
-[ ] 6. Run Phase 2-3 from docs/testing.md (parse + one-sample run)
-[ ] 7. Compare against gandalf output
-```
+Cross-references:
 
-## 1. Install Nextflow
+- [`docs/INSTALL.md`](INSTALL.md) — install everything else from scratch
+- [`docs/testing.md`](testing.md) — post-install smoke tests, used for validation below
+- [`docs/usage_pon.md`](usage_pon.md) — rebuild the PoN on the destination instead of rsyncing
 
-```bash
-curl -s https://get.nextflow.io | bash
-sudo mv nextflow /usr/local/bin/   # or to ~/bin/
-nextflow -version
-```
+## What to rsync from gandalf
 
-## 2. Install Singularity (or use Docker)
+| Source on gandalf                                                                  | Destination on new site            | Size    | Notes                                                                                                                  |
+|------------------------------------------------------------------------------------|------------------------------------|---------|------------------------------------------------------------------------------------------------------------------------|
+| `/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/`                   | `<refs_root>/hg38_broad/`          | ~50 GB  | Broad's hg38 bundle plus known-sites VCFs. Can also be re-downloaded via `assets/training/download_hg38_resources.sh`. |
+| `/goast/hemat_data/targeted-seq-pipeline/references/<masked_fasta>*`               | `<refs_root>/`                     | ~3 GB   | The U2AF1/UBTF-paralog-masked variant. Produced by `assets/training/run_masked_realign.sh`.                            |
+| `/goast/hemat_data/targeted-seq-pipeline/bedfiles/`                                | `<refs_root>/bedfiles/`            | <50 MB  | Panel BEDs (myeloid, etc.).                                                                                            |
+| `/goast/hemat_data/targeted-seq-pipeline/vep_cache/`                               | `<refs_root>/vep_cache/`           | ~25 GB  | Tied to a specific VEP version; mismatched VEP gives mismatched annotation strings.                                    |
+| `/goast/hemat_data/targeted-seq-pipeline/annovar_db/`                              | `<refs_root>/annovar_db/`          | ~120 GB | ANNOVAR databases. Not redistributable — only rsync between sites with valid ANNOVAR registration.                     |
+| `/goast/hemat_data/nf-core-tspipe/assets/myeloid/cnvkit_pon_{male,female}.cnn`     | `<clone>/assets/myeloid/`          | ~3 MB   | Sex-stratified CNV PoN. Alternative: rebuild on destination via `BUILD_PON` ([`docs/usage_pon.md`](usage_pon.md)).      |
+| `/goast/hemat_data/nf-core-tspipe/assets/myeloid/loo_bin_noise_profile.tsv`        | `<clone>/assets/myeloid/`          | <1 MB   | LOO bin noise profile produced by the same `BUILD_PON` run.                                                            |
+| `/goast/hemat_data/nf-core-tspipe/assets/references/cytoBand_hg38.txt`             | `<clone>/assets/references/`       | <1 MB   | hg38 cytoband annotation.                                                                                              |
+| `/goast/hemat_data/nf-core-tspipe/assets/references/ClinGen_gene_curation_list_GRCh38.tsv` | `<clone>/assets/references/` | <1 MB   | ClinGen gene curation list.                                                                                            |
 
-Singularity is preferred for HPC; Docker is easier on personal workstations.
-On Ubuntu/Debian:
+Aggregate is roughly **200 GB** end to end if you take everything. The
+ANNOVAR DB is by far the largest single item; if its size is prohibitive
+on the destination, your ANNOVAR registration lets you download a
+smaller per-database subset directly.
 
-```bash
-sudo apt install singularity-container
-# or for a container-runtime fallback:
-sudo apt install docker.io
-sudo usermod -aG docker $USER     # log out + log in
-```
+The asset files in the bottom four rows are not tracked in git (binary
+and/or large). Rsyncing them is the standard way to seed a destination
+clone without rebuilding the PoN; the alternative is to run `BUILD_PON`
+on the destination.
 
-Container images will be pulled automatically on first run. Set a persistent
-cache so they're not re-downloaded:
-
-```bash
-mkdir -p /large_disk/singularity_cache
-# Set this in your site config -- see step 4.
-```
-
-## 3. Mirror reference files
-
-The cheap-and-cheerful approach: `rsync` from gandalf.
+## rsync invocation
 
 ```bash
-# On the new server:
-NEW_PIPELINE_ROOT=/data/tspipe
-mkdir -p $NEW_PIPELINE_ROOT
+# From the new server, with SSH access to gandalf.
+REFS=/data/tspipe_refs
+CLONE=/data/nf-core-tspipe          # your git clone of the pipeline
+mkdir -p ${REFS}
 
-# Pull references (this is the big one -- ~200 GB for VEP + ANNOVAR + hg38)
-rsync -avh --progress \
+# References (the big ones)
+rsync -avh --progress --partial \
     hemat@gandalf:/goast/hemat_data/targeted-seq-pipeline/references/ \
-    $NEW_PIPELINE_ROOT/references/
+    ${REFS}/references/
 
-rsync -avh --progress \
+rsync -avh --progress --partial \
     hemat@gandalf:/goast/hemat_data/targeted-seq-pipeline/bedfiles/ \
-    $NEW_PIPELINE_ROOT/bedfiles/
+    ${REFS}/bedfiles/
 
-# Pon-built outputs (cnvkit_pon, loo_summary etc.) -- if you trust them on
-# the new server. If you want to rebuild from scratch on the new server,
-# skip this and run -entry BUILD_PON over there.
-rsync -avh --progress \
-    hemat@gandalf:/goast/hemat_data/targeted-seq-pipeline/pon_normals/ \
-    $NEW_PIPELINE_ROOT/pon_normals/
+rsync -avh --progress --partial \
+    hemat@gandalf:/goast/hemat_data/targeted-seq-pipeline/vep_cache/ \
+    ${REFS}/vep_cache/
+
+rsync -avh --progress --partial \
+    hemat@gandalf:/goast/hemat_data/targeted-seq-pipeline/annovar_db/ \
+    ${REFS}/annovar_db/
+
+# Asset files (panel-namespaced PoN + reference data) into your repo clone
+rsync -avh --progress --partial \
+    hemat@gandalf:/goast/hemat_data/nf-core-tspipe/assets/ \
+    ${CLONE}/assets/
 ```
 
-Alternatively, for the reference genome itself, you can re-download:
+`--partial` lets you resume mid-file if the SSH connection drops, which
+matters at 100+ GB transfers. Add `--bwlimit=NNNN` (KB/s) if the gandalf
+side needs throttling. For badly latent links, `tar | ssh tar -x` over a
+screen session is sometimes faster than rsync's per-file overhead, but
+rsync is the safer default.
+
+## Site-specific config differences
+
+Per [`docs/INSTALL.md`](INSTALL.md), you have already written
+`conf/<yoursite>.config` from `conf/site_template.config`. The values
+that will *differ from gandalf* are:
+
+| Param                                                                | Likely new value                                       |
+|----------------------------------------------------------------------|--------------------------------------------------------|
+| `pipeline_root`                                                      | Destination references root (e.g. `/data/tspipe_refs`) |
+| `reference`                                                          | `${pipeline_root}/<masked_fasta>`                      |
+| `bed`                                                                | `${pipeline_root}/bedfiles/<panel>.bed`                |
+| `dbsnp_vcf`, `mills_vcf`, `gnomad_af_only`, `vep_cache`, `annovar_db`| All under `${pipeline_root}/...`                       |
+| `max_cpus`, `max_memory`, `max_time`                                 | Match the destination host's hardware                  |
+| Singularity / Apptainer cache directory                              | Point at a large persistent disk on the destination    |
+
+Everything else (process resource labels, `conf/modules.config`
+behaviour, `singularity.enabled` etc.) should be unchanged across sites.
+If you find yourself needing to override module-level config, that's a
+signal to fix upstream rather than fork.
+
+## Validation
+
+Run the post-install smoke tests from
+[`docs/testing.md`](testing.md):
+
+1. **Phase 1** (config parse) — verifies the new profile is registered cleanly.
+2. **Phase 2** (`-stub` mode) — exercises the DAG against the rsynced asset paths without invoking any tool.
+3. **Phase 3** (one-sample real run) — first run that pulls containers and actually runs the pipeline.
+
+Then run a sample on the new server for which you have a known-good
+clinical TSV from gandalf, and diff:
 
 ```bash
-# Broad's bundle has the original hg38 + known sites.
-# Easier to re-download than to rsync the 50GB.
-bash assets/training/download_hg38_resources.sh
-# Then create the masked variant per your masking protocol.
-```
-
-## 4. Write the site config
-
-Start from the template:
-
-```bash
-cp conf/site_template.config conf/<yoursite>.config
-```
-
-Then edit the file. The critical knobs:
-
-| Param                   | What it points to                                |
-| ----------------------- | ------------------------------------------------ |
-| `pipeline_root`         | Your new base directory                          |
-| `reference`             | hg38 (masked) FASTA                              |
-| `bed`                   | Panel BED                                        |
-| `cnv_pon`, `cnv_*`      | PoN files (rsync'd or rebuilt)                   |
-| `snv_blacklist`         | The hand-curated TSV                             |
-| `vep_cache`, `annovar_db` | Annotation database directories                |
-| `max_cpus`, `max_memory`, `max_time` | Match the new machine             |
-
-For **Strategy A (containers everywhere)** — easiest:
-- DON'T set `vardict_bin`, `getitd_path`, `filt3r_bin`, etc.
-- DON'T add a `process.beforeScript` block.
-- The modules already declare `container = 'quay.io/biocontainers/...'` so
-  Nextflow will pull on first run.
-
-For **Strategy B (local installs)** — faster:
-- Install the same conda envs you had on gandalf (`targeted-seq` + `py2`).
-- Set the tool paths as in `conf/gandalf.config`.
-- Set `process.beforeScript` to put your env on PATH.
-
-## 5. Register the profile
-
-In `nextflow.config`:
-
-```groovy
-profiles {
-    ...
-    gandalf {
-        includeConfig 'conf/gandalf.config'
-    }
-    yoursite {                                 // add this
-        includeConfig 'conf/yoursite.config'
-    }
-}
-```
-
-## 6. Smoke test
-
-Same as Phase 2-3 in `docs/testing.md`:
-
-```bash
-# Config syntactically valid?
-nextflow config -profile yoursite
-
-# One-sample run
-nextflow run main.nf -profile yoursite,singularity \
-    --input test_samplesheet.csv \
-    --outdir test_results -resume
-```
-
-## 7. Compare against gandalf output
-
-Pick the same validation sample you used on gandalf (25NGS1307 with its known
-45bp FLT3-ITD), run the new server, then diff the clinical outputs:
-
-```bash
-diff <(sort gandalf_run/25NGS1307/annotation/25NGS1307.clinical.tsv) \
-     <(sort newserver_run/25NGS1307/annotation/25NGS1307.clinical.tsv) \
+diff <(sort gandalf_run/<sample>/clinical/<sample>.clinical.tsv) \
+     <(sort newsite_run/<sample>/clinical/<sample>.clinical.tsv) \
      > clinical.diff
 wc -l clinical.diff
 ```
 
-Acceptable differences: VEP cache version mismatch (different annotation
-strings), CNVKit if the PoN was rebuilt on the new server (different log2
-ratios), Mutect2 if the gnomAD VCF was updated.
+**Expected (benign) differences**
 
-NOT acceptable: variants present in one and absent in the other, FLT3-ITD
-length/VAF differences, FILTER column flipping between PASS and BLACKLIST.
+- VEP annotation strings if the VEP cache version differs between sites.
+- CNVKit log2 ratios if the PoN was rebuilt on the destination rather
+  than rsynced (different normals cohort yields a different baseline).
+- Mutect2 PASS/REJECT calls near germline boundaries if the gnomAD AF-only
+  VCF was updated between the two runs.
 
-## Containerizing the custom tools
+**Not acceptable**
 
-The four tools that aren't in bioconda will hold you back on a fresh server:
+- Variants present in one run and absent in the other.
+- FLT3-ITD length or VAF differences for the same sample.
+- The FILTER column flipping between PASS and BLACKLIST for the same
+  variant — usually a sign of a mismatched `snv_blacklist` file.
 
-1. **FLT3_ITD_EXT** — already a Docker image: `zhkddocker/flt3_itd_ext:v1.1`. Works on any server with Docker or Singularity.
+## Out of scope
 
-2. **getITD** — Python script + `anno/` directory. Build a container once:
-   ```dockerfile
-   FROM continuumio/miniconda3:latest
-   RUN pip install pysam pandas numpy biopython
-   COPY getitd/ /opt/getitd/
-   ENV PATH=/opt/getitd:$PATH
-   ```
-   Build and push to your registry, then set `container = 'your-registry/getitd:1.5.15'` in `modules/local/getitd.nf`.
+Container vendoring for the three local FLT3 tools (`filt3r`, `getitd`,
+`flt3_itd_ext`) is tracked in
+[`docs/INSTALL.md#open-items`](INSTALL.md#open-items). The current
+operational answer is to `docker save` the images from gandalf and load
+them on the destination; see INSTALL.md for the exact command sequence.
 
-3. **filt3r** — C++ binary. Either build a container, or copy the static binary to the new server and add to PATH.
-
-4. **VarDict** — Java tool. Bioconda has it (`bioconda::vardict-java`). The original install was from a build directory because they wanted a specific version; on the new server, just `conda install vardict-java` and let the module find it.
-
-5. **Pindel** — Bioconda has it. `conda install pindel`. Simpler than the source build the original used.
-
-Doing this once saves you copying conda envs around every time you provision a server. The bioconda container references in the module files mean a fresh server with only Singularity installed can run the entire pipeline (modulo the four tools above).
+A `BUILD_PON` rebuild on the destination is covered in
+[`docs/usage_pon.md`](usage_pon.md); pick it over the rsync route when
+the destination's normals cohort differs materially from gandalf's.
