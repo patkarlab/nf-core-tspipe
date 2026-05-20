@@ -1,7 +1,7 @@
 <h1 align="center">nf-core-tspipe</h1>
 
 <p align="center">
-  <strong>Targeted-sequencing analysis pipeline for myeloid leukaemia panels.</strong><br>
+  <strong>Targeted-sequencing analysis pipeline for leukaemia panel </strong><br>
   Paired-end FASTQ &rarr; clinical variant TSV + FLT3-ITD ensemble + CNV report + IGV pileup HTML.
 </p>
 
