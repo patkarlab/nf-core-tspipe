@@ -352,3 +352,133 @@ cross-filesystem hardlink errors), see
 [`docs/INSTALL.md#troubleshooting`](INSTALL.md#troubleshooting). For
 the known FLT3_ITD_EXT failure on FLT3-ITD-negative specimens, see
 the same section.
+
+
+## Reference data formats
+
+### SNV blacklist (`params.snv_blacklist`)
+
+The SNV blacklist is a tab-separated file of variants that should be
+flagged but not dropped. The annotation step (`bin/14_variant_filter.py`,
+invoked from the variant-filter module) reads it and sets
+`FILTER=BLACKLIST` on any matching variant. Matching variants remain in
+the output for audit; they are not removed.
+
+The format is a hybrid: most columns use BED-style 0-based half-open
+coordinates, but the optional exact-match columns use 1-based VCF-style
+coordinates. The split exists so each row can encode either a region
+("any indel overlapping this window") or an exact substitution. Mind
+the coordinate convention when adding rows.
+
+#### Columns
+
+| Column        | Required | Coord. base    | Description                                                                                                                |
+|---------------|----------|----------------|----------------------------------------------------------------------------------------------------------------------------|
+| `chrom`       | always   | -              | UCSC-style contig name with `chr` prefix, hg38. Example: `chr17`.                                                          |
+| `start`       | always   | **0-based**    | Inclusive start of the region to match. BED-style.                                                                         |
+| `end`         | always   | **0-based**    | Exclusive end of the region to match. BED-style.                                                                           |
+| `match_mode`  | always   | -              | One of: `region_indel`, `exact`. See *Match modes* below.                                                                  |
+| `pos_exact`   | exact only | **1-based**  | VCF-style position. Use `.` when `match_mode=region_indel`.                                                                 |
+| `ref_exact`   | exact only | -              | REF allele. Use `.` when `match_mode=region_indel`.                                                                         |
+| `alt_exact`   | exact only | -              | ALT allele. Use `.` when `match_mode=region_indel`.                                                                         |
+| `gene`        | always   | -              | Gene symbol. Audit-only; not used for matching. Helps reviewers grep the file.                                              |
+| `reason`      | always   | -              | One of: `ARTIFACT`, `POLYMORPHISM`, `RECURRENT_FP`. See *Reason vocabulary* below.                                          |
+| `evidence`    | always   | -              | Free-text justification. Include sample IDs, LOVD identifiers, frequency in cohort, or anything else the next reviewer needs to re-evaluate the entry. |
+| `date_added`  | always   | -              | ISO date (`YYYY-MM-DD`).                                                                                                    |
+
+Comment lines start with `#` or `##`. Lines starting with `##` are
+schema-documentation comments; lines starting with `#` (single hash)
+are typically commented-out placeholder rows pending coordinate
+resolution (see *Adding a placeholder*).
+
+#### Match modes
+
+- **`region_indel`** — flag any insertion, duplication, or deletion
+  whose variant locus overlaps the half-open interval `[start, end)`.
+  Use this for polyproline tracts, polynucleotide runs, and other
+  recurrent-indel sites where the exact offset varies between callers.
+  The `*_exact` columns should be `.`.
+
+- **`exact`** — flag a variant only when `(chrom, pos_exact, ref_exact,
+  alt_exact)` matches exactly. Use this for specific recurrent
+  substitutions identified as artefacts or common polymorphisms. The
+  `start` and `end` columns are still required (they should bracket
+  the position) but `pos_exact / ref_exact / alt_exact` carry the
+  actual match logic.
+
+#### Reason vocabulary
+
+- **`ARTIFACT`** — sequencing or alignment artefact (homopolymer
+  slippage, paralog collapse not handled by the masked reference,
+  polyproline-tract dup/del, 8-oxoG hotspots, etc.). Not real biology.
+- **`POLYMORPHISM`** — common germline variant that recurs in the
+  cohort and has been clinically reviewed as not actionable.
+- **`RECURRENT_FP`** — recurrent false positive in the ensemble that
+  doesn't fit cleanly into the first two categories (e.g. a
+  consistently mis-aligned region that produces calls in one caller
+  but no others).
+
+#### Adding a new entry
+
+Two cases.
+
+**Case 1: a recurrent region you want to flag (region_indel).** You
+have the contig and the genomic window; you don't need a specific
+ALT. Example workflow:
+
+1. Identify the region from the audit observation (sample ID, gene,
+   coordinates from VEP output).
+2. Convert any 1-based coordinates you have to 0-based half-open for
+   the `start` / `end` columns. (Subtract 1 from a 1-based start; the
+   1-based end is already the half-open exclusive end.)
+3. Add the row with `match_mode=region_indel` and `.` for the three
+   `*_exact` columns.
+4. Populate `evidence` with sample IDs and any external identifiers
+   (LOVD, ClinVar) you used.
+
+**Case 2: a specific recurrent substitution (exact).** You have a
+variant you've seen multiple times in cohort review.
+
+1. Pull the exact `CHROM`, `POS`, `REF`, `ALT` from a VEP-annotated
+   TSV for the affected sample. These are 1-based VCF-style and go
+   into `pos_exact / ref_exact / alt_exact`.
+2. Pick a small window around the position for the `start` / `end`
+   columns (`pos_exact - 1` and `pos_exact`, in 0-based half-open
+   terms, is sufficient).
+3. Set `match_mode=exact`.
+4. Same evidence and date-added requirements.
+
+#### Adding a placeholder
+
+When an audit flags a variant but you don't yet have the exact hg38
+coordinates from a VEP TSV (because the affected sample needs to be
+re-annotated, or because the audit happened off-platform), drop a
+commented row at the bottom of the file so the next reviewer has the
+context:
+
+```
+# --- placeholders requiring confirmation; do NOT enable until coordinates verified ---
+# Pull from a VEP-annotated TSV for the affected sample and replace the '.' fields, then remove the leading '#'.
+#chr17  .       .       exact   .       .       .       KDM6B   ARTIFACT        <evidence with sample IDs>      <date>
+```
+
+When the coordinates land, fill in `start`, `end`, `pos_exact`,
+`ref_exact`, `alt_exact` and uncomment the row.
+
+#### Filter behaviour
+
+`bin/14_variant_filter.py` sets `FILTER=BLACKLIST` on any variant that
+matches a row in this file. Matching variants are **kept**, not
+dropped. The intent is that downstream clinical review can see what
+was flagged and why, and can revisit the entry if the call turns out
+to be real biology after all. Removal would be lossy and would break
+audit trails; do not change this convention without a clinical-safety
+review.
+
+#### Cross-references
+
+- [`docs/clinical_decisions.md`](clinical_decisions.md) — the
+  blacklist is part of the conservative-by-default filtering strategy.
+- The schema is also documented inline in the
+  `##`-prefixed header of the TSV itself; the two should stay in
+  sync. If you edit one, mirror the change to the other.
