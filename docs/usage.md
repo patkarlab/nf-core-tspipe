@@ -193,7 +193,6 @@ followed by a comma-separated list.
 | `docker` | `docker.enabled = true; singularity.enabled = false; docker.userEmulation = true` | Workstation, or hosts without Singularity |
 | `conda` | `conda.enabled = true` | Slowest, most fragile. Not recommended for production |
 | `slurm` | `process.executor = 'slurm'; process.queue = 'normal'` | SLURM cluster |
-| `test` | Includes `conf/test.config` | **Broken** — references missing `assets/test/` fixtures. Use `<yoursite>,singularity -stub` instead (see "Stubs" below) |
 
 Combine a site profile and a runtime profile: `-profile gandalf,singularity`
 or `-profile mysite,slurm,singularity`.
@@ -348,8 +347,8 @@ the BUILD_PON output layout are in [`docs/output.md`](output.md).
 
 ## Troubleshooting
 
-For installation-time issues (VV REST stack, missing fixtures, the
-broken `test` profile, cross-filesystem hardlink errors), see
+For installation-time issues (VV REST stack, missing fixtures,
+cross-filesystem hardlink errors), see
 [`docs/INSTALL.md#troubleshooting`](INSTALL.md#troubleshooting). For
 the known FLT3_ITD_EXT failure on FLT3-ITD-negative specimens, see
 the same section.

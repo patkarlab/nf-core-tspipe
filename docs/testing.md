@@ -28,13 +28,6 @@ Cross-references:
 - [`docs/usage_pon.md`](usage_pon.md) — panel-of-normals build workflow
 - [`docs/clinical_decisions.md`](clinical_decisions.md) — intentional differences from the upstream Python pipeline
 
-## A note on the `test` profile
-
-The bundled `test` profile is currently broken: it references fixtures under
-`assets/test/` that are not in the repository. Do not use it. For structural
-validation, use `<yoursite>,singularity -stub` with a real one-sample
-samplesheet (Phase 2 below).
-
 ## Phase 1 — Config parse check (2 min)
 
 Verify that the configuration is syntactically valid and your site profile

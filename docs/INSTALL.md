@@ -839,20 +839,17 @@ and `work/` on the same filesystem.
 
 ## Open items
 
-Four items not yet fully resolved at the time of writing:
+Three items not yet fully resolved at the time of writing:
 
 1. **Dockerfiles for the three `local/*` FLT3 images** are not
    currently in the repo. A fresh-server installer needs either the
    Dockerfiles or a `docker save` archive from gandalf. Durable fix:
    vendor the Dockerfiles under `containers/<tool>/`.
-2. **`conf/test.config`** references missing `assets/test/`
-   fixtures. Either restore the fixtures or remove the broken
-   profile from `nextflow.config`.
-3. **SNV blacklist column layout** below the `##` comment header is
+2. **SNV blacklist column layout** below the `##` comment header is
    not documented here. The file's preamble describes the format as
    "tab-separated, one variant region per row"; `bin/14_variant_filter.py`
    is the authoritative consumer.
-4. **Production-tree symlink convention.** The launcher's preflight
+3. **Production-tree symlink convention.** The launcher's preflight
    expects `/home/<user>/targeted-seq-pipeline` to exist and resolve
    to the production tree. Recreate on each new server, or patch the
    launcher to use a configurable path.
