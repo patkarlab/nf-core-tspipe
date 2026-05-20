@@ -9,8 +9,9 @@
  *   actually be easy, but we keep all three stub-replacements consistent
  *   for now -- the only barrier to lifting is testing in a container.
  *
- *   See conf/modules.config (executor block) and the production script
- *   at /home/hemat/targeted-seq-pipeline/scripts/17b_flt3_to_variants.py.
+ *   The two paths into the legacy production tree are parameterised via
+ *   params.legacy_root and params.legacy_python_env. See nextflow.config
+ *   for defaults and docs/INSTALL.md for the site-override workflow.
  */
 
 process FLT3_TO_VARIANTS {
@@ -40,10 +41,10 @@ process FLT3_TO_VARIANTS {
         mkdir -p flt3
         ln -sf ${flt3_consensus_tsv} flt3/${meta.id}_flt3_consensus.tsv
 
-        /home/hemat/anaconda3/envs/targeted-seq/bin/python \
-            /home/hemat/targeted-seq-pipeline/scripts/17b_flt3_to_variants.py \
-            --sample-dir . \
-            --sample ${meta.id} \
+        ${params.legacy_python_env}/bin/python \\
+            ${params.legacy_root}/scripts/17b_flt3_to_variants.py \\
+            --sample-dir . \\
+            --sample ${meta.id} \\
             --variant-tsv ${clinical_tsv}
 
         # The production script writes <variant_tsv stem>.with_flt3.tsv.
@@ -59,7 +60,7 @@ process FLT3_TO_VARIANTS {
 
         cat <<-END_VERSIONS > versions.yml
         "TSPIPE:ANNOTATION:FLT3_TO_VARIANTS":
-            python: \$(/home/hemat/anaconda3/envs/targeted-seq/bin/python --version 2>&1 | sed 's/Python //')
+            python: \$(${params.legacy_python_env}/bin/python --version 2>&1 | sed 's/Python //')
         END_VERSIONS
         """
 }

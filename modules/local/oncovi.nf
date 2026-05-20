@@ -6,12 +6,12 @@
  * TEMPORARY HOST-LOCAL EXECUTION (TODO: containerize):
  *   This module bypasses singularity and invokes the production script
  *   directly via the targeted-seq conda env. The OncoVI tool and its
- *   resources directory live at /home/hemat/targeted-seq-pipeline/software/oncovi/
+ *   resources directory live at ${params.legacy_root}/software/oncovi/
  *   and would require bind-mounts to run in a container.
  *
- *   See conf/modules.config (executor block) and the production scripts
- *   at /home/hemat/targeted-seq-pipeline/scripts/15_oncovi.py and
- *   /home/hemat/targeted-seq-pipeline/software/oncovi/src/03_OncoVI_SOP.py.
+ *   The two paths into the legacy production tree are parameterised via
+ *   params.legacy_root and params.legacy_python_env. See nextflow.config
+ *   for defaults and docs/INSTALL.md for the site-override workflow.
  */
 
 process ONCOVI {
@@ -44,9 +44,9 @@ process ONCOVI {
             ln -sf ${tsv} ${meta.id}.somaticseq.clinical.validated.tsv
         fi
 
-        /home/hemat/anaconda3/envs/targeted-seq/bin/python \
-            /home/hemat/targeted-seq-pipeline/scripts/15_oncovi.py \
-            --sample ${meta.id} \
+        ${params.legacy_python_env}/bin/python \\
+            ${params.legacy_root}/scripts/15_oncovi.py \\
+            --sample ${meta.id} \\
             --outdir .
 
         # Rename to match the channel emit declared in this module
@@ -60,7 +60,7 @@ process ONCOVI {
 
         cat <<-END_VERSIONS > versions.yml
         "TSPIPE:ANNOTATION:ONCOVI":
-            python: \$(/home/hemat/anaconda3/envs/targeted-seq/bin/python --version 2>&1 | sed 's/Python //')
+            python: \$(${params.legacy_python_env}/bin/python --version 2>&1 | sed 's/Python //')
         END_VERSIONS
         """
 }

@@ -6,13 +6,14 @@
  * TEMPORARY HOST-LOCAL EXECUTION (TODO: containerize):
  *   This module bypasses singularity and invokes the production script
  *   directly via the targeted-seq conda env. The VariantValidator REST
- *   service runs on the gandalf host at localhost:5001, which is only
- *   reachable from host-local processes. Containerizing requires either
- *   --net=host (docker) or running the REST service inside the same
- *   singularity instance (out of scope today).
+ *   service runs on the host at localhost:5001, which is only reachable
+ *   from host-local processes. Containerizing requires either --net=host
+ *   (docker) or running the REST service inside the same singularity
+ *   instance (out of scope today).
  *
- *   See conf/modules.config (executor block) and the production script
- *   at /home/hemat/targeted-seq-pipeline/scripts/17_variant_validator.py.
+ *   The two paths into the legacy production tree are parameterised via
+ *   params.legacy_root and params.legacy_python_env. See nextflow.config
+ *   for defaults and docs/INSTALL.md for the site-override workflow.
  */
 
 process VARIANT_VALIDATOR {
@@ -47,13 +48,13 @@ process VARIANT_VALIDATOR {
             ln -sf ${tsv} ${meta.id}.somaticseq.clinical.tsv
         fi
 
-        /home/hemat/anaconda3/envs/targeted-seq/bin/python \
-            /home/hemat/targeted-seq-pipeline/scripts/17_variant_validator.py \
-            --sample ${meta.id} \
-            --input ${meta.id}.somaticseq.clinical.tsv \
-            --outdir . \
-            --vv-url http://localhost:5001 \
-            --threads 1 \
+        ${params.legacy_python_env}/bin/python \\
+            ${params.legacy_root}/scripts/17_variant_validator.py \\
+            --sample ${meta.id} \\
+            --input ${meta.id}.somaticseq.clinical.tsv \\
+            --outdir . \\
+            --vv-url http://localhost:5001 \\
+            --threads 1 \\
             --timeout 120
 
         # Rename to match the channel emit declared in this module
@@ -67,7 +68,7 @@ process VARIANT_VALIDATOR {
 
         cat <<-END_VERSIONS > versions.yml
         "TSPIPE:ANNOTATION:VARIANT_VALIDATOR":
-            python: \$(/home/hemat/anaconda3/envs/targeted-seq/bin/python --version 2>&1 | sed 's/Python //')
+            python: \$(${params.legacy_python_env}/bin/python --version 2>&1 | sed 's/Python //')
             vv_url: http://localhost:5001
         END_VERSIONS
         """
