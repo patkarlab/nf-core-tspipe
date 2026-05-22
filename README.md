@@ -90,7 +90,35 @@ cd /path/to/rest_variantValidator && docker compose up -d
 # 5. Build a samplesheet from your FASTQ directory
 tools/make_samplesheet.sh /path/to/fastq_dir --output /tmp/today.csv
 
-# 6. Run
+# 6. Run via the launch wrapper (recommended)
+SAMPLESHEET=/tmp/today.csv \
+    OUTDIR=/data/nfcore_runs/$(date +%Y%m%d_%H%M%S) \
+    PROFILE=mysite,singularity \
+    ./launch_tspipe.sh
+```
+
+The launch wrapper performs a VariantValidator (VV) health preflight
+before invoking Nextflow. If VV is unreachable on the initial probe,
+the wrapper attempts one cycle of auto-recovery (starts gunicorn
+inside the REST container, waits for worker warm-up, re-probes) and
+only launches Nextflow once VV returns `HTTP 200`. If preflight
+fails, the wrapper exits with code 10 and no Nextflow tasks are
+scheduled. See
+[`docs/sops/vv_troubleshooting.md`](docs/sops/vv_troubleshooting.md)
+for the manual SOP this wrapper automates.
+
+Each sample produces a clinical deliverable tree at
+`<outdir>/<sample>/clinical/` containing the final BAM, clinical
+variant TSV, FLT3-ITD consensus, CNV plots, IGV pileup HTML, and
+per-sample dashboard.
+
+<details>
+<summary><strong>Direct Nextflow invocation</strong> (bypasses VV preflight)</summary>
+
+The wrapper is a thin shell around `nextflow run .`. You can invoke
+Nextflow directly:
+
+```bash
 nextflow run . \
     --input /tmp/today.csv \
     --outdir /data/nfcore_runs/$(date +%Y%m%d_%H%M%S) \
@@ -98,10 +126,13 @@ nextflow run . \
     -resume
 ```
 
-Each sample produces a clinical deliverable tree at
-`<outdir>/<sample>/clinical/` containing the final BAM, clinical
-variant TSV, FLT3-ITD consensus, CNV plots, IGV pileup HTML, and
-per-sample dashboard.
+This bypasses the VV preflight check. If VV is unreachable when the
+annotation step runs, the pipeline will fail on the first
+`VARIANT_VALIDATOR` task. See
+[`docs/sops/vv_troubleshooting.md`](docs/sops/vv_troubleshooting.md)
+for the recovery procedure.
+
+</details>
 
 ## Documentation
 
@@ -109,6 +140,7 @@ per-sample dashboard.
 |---|---|
 | **[`docs/INSTALL.md`](docs/INSTALL.md)** | **Start here.** Comprehensive install reference for fresh-server deployments. |
 | [`docs/usage.md`](docs/usage.md) | Parameter reference and day-to-day operation. |
+| [`docs/sops/vv_troubleshooting.md`](docs/sops/vv_troubleshooting.md) | Troubleshooting the VariantValidator Docker stack when annotation fails. |
 | [`docs/output.md`](docs/output.md) | Output directory layout in detail. |
 | [`docs/usage_pon.md`](docs/usage_pon.md) | Building the CNV panel-of-normals (`BUILD_PON` workflow). |
 | [`docs/clinical_decisions.md`](docs/clinical_decisions.md) | Intentional differences from the upstream Python pipeline (U2AF1 paralog masking, VarScan threshold, DeepSomatic flags). |
