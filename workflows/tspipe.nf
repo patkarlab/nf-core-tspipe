@@ -28,6 +28,7 @@ include { ANNOTATION          } from '../subworkflows/local/annotation'
 include { REPORTING           } from '../subworkflows/local/reporting'
 include { IGV_REPORTS         } from '../modules/local/igv_reports'
 include { ORGANIZE_OUTPUT     } from '../modules/local/organize_output'
+include { DASHBOARD           } from '../modules/local/dashboard'
 
 workflow TSPIPE {
 
@@ -244,4 +245,18 @@ workflow TSPIPE {
         .join(CNV_CALLING.out.plots_dir)                                     // + cnvkit_plots_dir
 
     ORGANIZE_OUTPUT(ch_organize)
+
+    // ----- 8. DASHBOARD: cohort HTML index + per-sample reports --------
+    ch_dashboard_in = ORGANIZE_OUTPUT.out.clinical
+        .map { meta, clin -> [ meta.id, clin ] }
+        .collect(flat: false)
+        .multiMap { rows ->
+            sample_ids:    rows.collect { it[0] }
+            clinical_dirs: rows.collect { it[1] }
+        }
+
+    DASHBOARD(
+        ch_dashboard_in.sample_ids,
+        ch_dashboard_in.clinical_dirs,
+    )
 }
