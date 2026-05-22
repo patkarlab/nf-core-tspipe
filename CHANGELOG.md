@@ -19,7 +19,8 @@ GitHub Release.
 - **4-caller FLT3-ITD ensemble**: FLT3_ITD_EXT, getITD, filt3r, Pindel-region. Pindel-region added 2026-05-19, raising consensus confidence on real ITDs.
 - **CNV calling**: CNVKit against a sex-stratified panel-of-normals selected per-sample from `meta.sex`. Leave-one-out QC, scatter plots, concordance, and annotated clinical CNV TSV.
 - **Annotation**: VEP + ANNOVAR → curated SNV blacklist filter → VariantValidator HGVS verification → OncoVI oncogenicity scoring.
-- **IGV pileup reports**: per-sample interactive HTML for case review.
+- **IGV pileup reports**: per-sample interactive HTML for case review, patched in place by the cohort dashboard step to support hash-router deep links from the per-sample report.
+- **Cohort HTML dashboard**: static dashboard at `<outdir>/cohort_index.html` with a row per sample, linking to a tabbed per-sample report at `<outdir>/<sample>/clinical/<sample>_report.html`. Tabs: Overview, QC (HsMetrics + per-exon coverage), Variants — Clinical, Variants — All Filtered, FLT3, CNV (CNVkit plots + clinical TSV), IGV, Reporting, Files. Vendored Bootstrap/jQuery/DataTables/Chart.js under `<outdir>/assets/`; no external CDN dependencies. Source: `dashboard_builder` v0.4.6 vendored at `bin/dashboard_builder/`. Runs on the host via `executor='local'`, reusing the same conda env as VARIANT_VALIDATOR/ONCOVI/FLT3_TO_VARIANTS (`params.legacy_python_env`, override via `params.dashboard_python`). See `docs/dashboard.md` for the full reference.
 - **Clinical deliverable tree**: `<outdir>/<sample>/clinical/` assembled by the reporting subworkflow; scratch directories pruned by the `workflow.onComplete` hook.
 
 ### Resource and reference handling
