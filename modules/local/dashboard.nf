@@ -62,12 +62,14 @@ process DASHBOARD {
         path 'cohort_index.html',                          emit: cohort_html
         path 'assets',                                     emit: assets
         path '*/clinical/*_report.html',                   emit: sample_reports
+        path "*/clinical/*_cache.json",   emit: caches,          optional: true
         path 'versions.yml',                               emit: versions
 
     when:
         task.ext.when == null || task.ext.when
 
     script:
+
         def builder_dir   = "${projectDir}/bin/dashboard_builder"
         def py            = params.dashboard_python ?: "${params.legacy_python_env}/bin/python"
         def sample_ids_sh = sample_ids.collect { "'${it}'" }.join(' ')
@@ -102,11 +104,18 @@ process DASHBOARD {
         done
 
         # ----------------------------------------------------------------
-        # Run the builder.
+        # Run the builder. GeneBe annotation is added conditionally; the
+        # credentials live in an untracked credentials.config (see
+        # docs/dashboard.md for setup).
         # ----------------------------------------------------------------
         ${py} ${builder_dir}/build.py \\
             dashboard_view \\
             --subdir clinical \\
+            ${ params.genebe_enabled ? "--annotate-genebe" : "" } \\
+            ${ params.genebe_enabled && params.genebe_user ? "--genebe-user '" + params.genebe_user + "'" : "" } \\
+            ${ params.genebe_enabled && params.genebe_key  ? "--genebe-key '"  + params.genebe_key  + "'" : "" } \\
+            ${ params.oncokb_enabled ? "--annotate-oncokb" : "" } \\
+            ${ params.oncokb_enabled && params.oncokb_token ? "--oncokb-token '" + params.oncokb_token + "'" : "" } \\
             ${task.ext.args ?: ''}
 
         # ----------------------------------------------------------------

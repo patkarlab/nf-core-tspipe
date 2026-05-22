@@ -215,3 +215,159 @@ If `params.dashboard_python = null` in `nextflow.config` (the
 default) and `params.legacy_python_env` is set, the fall-through
 fires and the dashboard uses the legacy env's python. If both
 are null, Nextflow will fail with an undefined-parameter error.
+
+
+## GeneBe annotation (optional)
+
+The dashboard can call the GeneBe API (https://genebe.net) per
+clinical variant to add ACMG classification, ClinVar status, and
+gnomAD population frequencies to the Variants — Clinical tab. This
+is opt-in and requires credentials.
+
+GeneBe's auth model is HTTP Basic with the user's account email and
+an API key. Calls without credentials still work but are
+rate-limited; with credentials, the throughput is high enough that
+the per-variant calls finish in seconds for typical samples.
+Responses are cached to `<sample>/clinical/<sample>_genebe_cache.json`
+so re-runs of the dashboard hit the cache, not the API.
+
+### Setup
+
+Credentials live in a per-user file outside the repository, loaded
+conditionally by `nextflow.config`. This keeps the API key out of
+version control entirely.
+
+```bash
+mkdir -p ~/.config/nf-core-tspipe
+chmod 700 ~/.config/nf-core-tspipe
+touch ~/.config/nf-core-tspipe/credentials.config
+chmod 600 ~/.config/nf-core-tspipe/credentials.config
+```
+
+Then populate the file (use an editor; do not commit it anywhere):
+
+```groovy
+// ~/.config/nf-core-tspipe/credentials.config
+params {
+    genebe_enabled = true
+    genebe_user    = 'you@example.org'
+    genebe_key     = 'ak-...'
+}
+```
+
+### Verify
+
+After the credentials file is in place, a one-off check:
+
+```bash
+ls -la ~/.config/nf-core-tspipe/credentials.config
+# Expected: -rw------- 1 <user> <group> ... credentials.config
+```
+
+The next pipeline run will pass `--annotate-genebe --genebe-user
+... --genebe-key ...` to the dashboard_builder. To confirm GeneBe
+fired, look for the per-variant cache after a run:
+
+```bash
+ls <outdir>/<sample>/clinical/<sample>_genebe_cache.json
+```
+
+The cache contains a `chr:pos:ref:alt` → annotation map. If the file
+is missing the annotation didn't run; if it exists but is `{}`, the
+clinical TSV had no rows for the parser to query.
+
+### Disabling for a single run
+
+Override on the CLI:
+
+```bash
+nextflow run . --genebe_enabled false ...
+```
+
+Or disable globally by editing the credentials file:
+
+```groovy
+params { genebe_enabled = false }
+```
+
+The credentials remain on disk but the dashboard ignores them until
+re-enabled. Cached annotations on disk continue to populate the
+Variants tab from earlier runs.
+
+### Rotating the key
+
+If the API key is ever pasted into a chat, ticket, screenshot, or
+otherwise leaves the credentials file:
+
+1. Log in to GeneBe → Account → API keys → revoke the old key.
+2. Generate a new one.
+3. Update `~/.config/nf-core-tspipe/credentials.config` with the new
+   value. No pipeline restart needed; the new key is picked up on
+   the next run.
+
+
+## OncoKB annotation (optional)
+
+The dashboard can also call the OncoKB API
+(https://www.oncokb.org) per clinical variant to add OncoKB's
+oncogenicity and therapeutic-evidence annotations to the Variants -
+Clinical tab. This is opt-in and requires a free academic API
+token from https://www.oncokb.org/account/register.
+
+OncoKB's auth model is HTTP Bearer with a single token. Cached
+responses are written to
+`<sample>/clinical/<sample>_oncokb_cache.json`, so re-runs of the
+dashboard hit the cache, not the API.
+
+### Setup
+
+Append OncoKB credentials to the same per-user credentials file
+already used for GeneBe (see the GeneBe section above):
+
+```groovy
+// ~/.config/nf-core-tspipe/credentials.config
+params {
+    genebe_enabled = true
+    genebe_user    = 'you@example.org'
+    genebe_key     = 'ak-...'
+
+    oncokb_enabled = true
+    oncokb_token   = '<your-oncokb-bearer-token>'
+}
+```
+
+Confirm the file is mode 0600 (it should already be, from the
+GeneBe setup):
+
+```bash
+ls -la ~/.config/nf-core-tspipe/credentials.config
+```
+
+### Verify
+
+After the next run, the OncoKB cache should appear next to the
+GeneBe cache:
+
+```bash
+ls <outdir>/<sample>/clinical/<sample>_oncokb_cache.json
+```
+
+If the file is missing, the parser did not run; if it exists but
+is `{}`, the clinical TSV had no rows for the parser to query.
+
+### Cache file publishing
+
+Both GeneBe and OncoKB caches are now published alongside the
+per-sample report under `<outdir>/<sample>/clinical/`. This means
+they travel with the deliverable tree and can be inspected for
+audit. They are also re-used on `-resume` runs of the dashboard,
+so the API is only hit once per variant per sample.
+
+### Rotating the OncoKB token
+
+OncoKB tokens are tied to the user's account. To rotate:
+
+1. Log in to OncoKB -> Account -> API tokens -> regenerate.
+2. Update `~/.config/nf-core-tspipe/credentials.config` with the
+   new value. No pipeline restart needed; the new token is picked
+   up on the next run.
