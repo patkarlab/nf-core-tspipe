@@ -262,8 +262,9 @@ workflow TSPIPE {
     )
 
     // ----- 9. REPORT_BUNDLE: zip per-sample shareable bundles ---------
+    // sample_ids inferred inside the module from clinical/ contents,
+    // avoiding misalignment with DASHBOARD's glob-ordered output.
     REPORT_BUNDLE(
-        ch_dashboard_in.sample_ids,
         DASHBOARD.out.clinical_dirs,
         DASHBOARD.out.assets,
     )

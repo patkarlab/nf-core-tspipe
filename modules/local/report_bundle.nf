@@ -15,27 +15,30 @@
  * Design notes:
  *
  * 1. Cohort-level process, like DASHBOARD. Consumes the patched
- *    clinical/ directories DASHBOARD produces (those have the IGV
- *    hash-router patch applied to <sample>_igv_report.html), plus
- *    the shared assets/ directory DASHBOARD emits. Stages them into
- *    a bundle_view/ tree that the bundler script expects, then runs
- *    the bundler over all samples in a single invocation.
+ *    clinical/ directories DASHBOARD produces, plus the shared
+ *    assets/ directory DASHBOARD emits.
  *
- * 2. Host execution. The bundler is stdlib-only Python 3, no extra
- *    dependencies. Same executor='local' pattern as DASHBOARD, but
- *    uses plain python3 on PATH (no need for the legacy env).
+ * 2. Sample IDs are inferred from the *_report.html filename inside
+ *    each staged clinical/ directory (v2: bash-glob skips IGV reports
+ *    without using regex). This is robust against DASHBOARD's
+ *    *\/clinical glob being emitted in an order that does not match
+ *    the workflow's original sample channel ordering. Previous
+ *    versions of this module took a parallel val sample_ids list and
+ *    zipped it positionally with the staged dirs, which could
+ *    mis-pair when glob expansion reordered things.
  *
- * 3. publishDir scope. params.outdir is the run directory. The
+ * 3. Host execution. The bundler is stdlib-only Python 3, no extra
+ *    dependencies.
+ *
+ * 4. publishDir scope: params.outdir is the run directory. The
  *    bundler writes zips as <sample>/<sample>_report.zip; publishDir
- *    copies them to ${params.outdir}/<sample>/<sample>_report.zip
- *    alongside the existing clinical/ folder.
+ *    copies them to the run directory alongside the existing
+ *    clinical/ folder.
  *
- * 4. Symlink staging. cnvkit_plots can be ~35 MB per sample. We
- *    symlink the staged inputs into bundle_view/ rather than copying,
- *    so the only real I/O is the zip write itself. shutil.copytree
- *    in the bundler follows symlinks for source paths.
+ * 5. Symlink staging. cnvkit_plots can be ~35 MB per sample. We
+ *    symlink rather than copy so the only real I/O is the zip write.
  *
- * 5. --force at every invocation. A Nextflow re-run that bypasses
+ * 6. --force at every invocation. A Nextflow re-run that bypasses
  *    cache legitimately wants to replace existing zips, so we always
  *    pass --force. The bundler is idempotent.
  */
@@ -51,10 +54,9 @@ process REPORT_BUNDLE {
         saveAs:  { fn -> fn == 'versions.yml' ? null : fn }
 
     input:
-        // Same shape as DASHBOARD: parallel lists of sample IDs and
-        // their (patched) clinical directories, plus the shared
-        // assets/ directory.
-        val  sample_ids
+        // DASHBOARD's patched per-sample clinical/ directories and the
+        // shared assets/ directory. Sample IDs are derived from file
+        // naming inside each clinical dir (see design note 2).
         path clinical_dirs, stageAs: 'src/?/clinical'
         path assets_dir,    stageAs: 'assets'
 
@@ -66,29 +68,46 @@ process REPORT_BUNDLE {
         task.ext.when == null || task.ext.when
 
     script:
-        def bundler_py    = "${projectDir}/tools/make_report_bundle.py"
-        def sample_ids_sh = sample_ids.collect { "'${it}'" }.join(' ')
+        def bundler_py = "${projectDir}/tools/make_report_bundle.py"
         """
         set -euo pipefail
 
         # ----------------------------------------------------------------
         # Re-stage: src/<i>/clinical/  +  ./assets/   ->   bundle_view/
         # ----------------------------------------------------------------
-        # The bundler expects the layout:
-        #     <outdir>/<sample>/clinical/...
-        #     <outdir>/assets/...
-        # Build that under bundle_view/ via symlinks. Avoids copying
-        # the ~35 MB of cnvkit_plots per sample before the zip step.
+        # For each staged clinical dir, find its sample ID by scanning
+        # for the per-sample <sid>_report.html file (NOT the IGV one).
+        # Pure bash globbing, no regex inside the GString.
+        #
+        # Symlink rather than copy: cnvkit_plots is ~35 MB per sample
+        # and we do not need a duplicate copy before the zip step.
 
         mkdir -p bundle_view
         ln -sfn "\$(readlink -f assets)" bundle_view/assets
 
-        sample_ids=( ${sample_ids_sh} )
-        i=1
-        for sid in "\${sample_ids[@]}"; do
+        for src in src/*/clinical; do
+            report=""
+            for f in "\${src}"/*_report.html; do
+                # If the glob did not match, f is the literal pattern.
+                if [[ ! -f "\$f" ]]; then
+                    continue
+                fi
+                # Skip the IGV per-sample report.
+                if [[ "\$f" == *_igv_report.html ]]; then
+                    continue
+                fi
+                report="\$f"
+                break
+            done
+
+            if [[ -z "\$report" ]]; then
+                echo "ERROR: no per-sample *_report.html in \${src}" >&2
+                exit 1
+            fi
+
+            sid=\$(basename "\$report" _report.html)
             mkdir -p "bundle_view/\${sid}"
-            ln -sfn "\$(readlink -f src/\${i}/clinical)" "bundle_view/\${sid}/clinical"
-            i=\$((i + 1))
+            ln -sfn "\$(readlink -f "\$src")" "bundle_view/\${sid}/clinical"
         done
 
         # ----------------------------------------------------------------
@@ -102,22 +121,29 @@ process REPORT_BUNDLE {
         #     <outdir>/<sample>/<sample>_report.zip
         # rather than under a bundle_view/ prefix.
         # ----------------------------------------------------------------
-        for sid in "\${sample_ids[@]}"; do
+        for bundle_zip in bundle_view/*/*_report.zip; do
+            if [[ ! -e "\$bundle_zip" ]]; then
+                continue
+            fi
+            sid=\$(basename "\$bundle_zip" _report.zip)
             mkdir -p "\${sid}"
-            mv "bundle_view/\${sid}/\${sid}_report.zip" "\${sid}/\${sid}_report.zip"
+            mv "\$bundle_zip" "\${sid}/\${sid}_report.zip"
         done
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             python: \$(python3 --version 2>&1 | awk '{print \$2}')
-            make_report_bundle: '0.1'
+            make_report_bundle: '0.2'
         END_VERSIONS
         """
 
     stub:
-        def sample_ids_sh = sample_ids.collect { "'${it}'" }.join(' ')
         """
-        for sid in ${sample_ids_sh}; do
+        # Stub: emit one placeholder zip per staged clinical dir.
+        i=0
+        for src in src/*/clinical; do
+            i=\$((i + 1))
+            sid="STUB_SAMPLE_\${i}"
             mkdir -p "\${sid}"
             touch "\${sid}/\${sid}_report.zip"
         done
