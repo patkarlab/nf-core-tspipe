@@ -198,9 +198,23 @@ def parse(sample_dir, sample):
         if g not in priority_set
     ]
 
+    # ---- Primary genome-wide scatter (added 2026-05-24) ----
+    # The clean genome-wide scatter is the primary view for arm-level
+    # CNV events. The parser pulls it out of the generic overview list
+    # into its own slot so the template can render it at full width as
+    # the first thing in the CNV tab.
+    primary_genome_scatter = None
+    clean_scatter_path = plots_dir / "overview" / f"{sample}_genome_scatter_clean.png"
+    if clean_scatter_path.exists():
+        primary_genome_scatter = _rel(clean_scatter_path, sample_dir)
+        # Remove from the generic overview list to avoid duplicate rendering
+        overview = [item for item in overview
+                    if item.get("path") != primary_genome_scatter]
+
     return {
         "clinical_table":     clinical_table,
         "scatter_png":        scatter_png,
+        "primary_genome_scatter": primary_genome_scatter,
         "diagram_pdf":        diagram_pdf,
         "overview":           overview,
         "combined":           combined,

@@ -296,6 +296,25 @@
           <div class="tspipe-empty">No clinical CNV calls table available.</div>
         {% endif %}
 
+        {# ---- Primary genome-wide CNV scatter (target + backbone) (added 2026-05-24) ---- #}
+        {% if ctx.cnv.primary_genome_scatter %}
+          <h5 class="mt-4">Genome-wide CNV (target + backbone)</h5>
+          <p class="text-muted small mb-2">
+            Bin-level genome-wide copy number from the backbone PoN.
+            Target bins (gene-resolution) and backbone bins are both shown.
+            Y-axis is clipped to a clinical range so chromosome-arm events
+            (e.g.&nbsp;-7, -5q, +8) are immediately visible. Segment lines
+            from the .call.cns are overlaid in colour.
+          </p>
+          <div class="row g-3 mb-4">
+            {{ macros.render_cnv_plot_card(
+                 'primary_scatter::clean',
+                 'Genome-wide CNV (target + backbone)',
+                 ctx.cnv.primary_genome_scatter,
+                 'col-12') }}
+          </div>
+        {% endif %}
+
         {# ---- Genome-wide overview ---- #}
         {% if ctx.cnv.scatter_png or ctx.cnv.overview %}
           <h5 class="mt-4">Genome-wide overview</h5>
