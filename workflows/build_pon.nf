@@ -35,9 +35,12 @@ include { BUILD_SEX_PON     } from '../modules/local/build_sex_pon'
 workflow BUILD_PON {
 
     // ----- Validate -----------------------------------------------------
-    if (!params.input)     { error "Missing --input (samplesheet of normals)"   }
-    if (!params.reference) { error "Missing --reference (hg38 masked FASTA)"    }
-    if (!params.bed)       { error "Missing --bed (panel BED)"                  }
+    if (!params.input)        { error "Missing --input (samplesheet of normals)"     }
+    if (!params.reference)    { error "Missing --reference (hg38 masked FASTA)"      }
+    if (!params.bed)          { error "Missing --bed (panel BED)"                    }
+    if (!params.exonwise_bed) { error "Missing --exonwise_bed (exon-collapsed BED for mosdepth)" }
+    if (!params.dbsnp_vcf)    { error "Missing --dbsnp_vcf (BQSR known-sites)"       }
+    if (!params.mills_vcf)    { error "Missing --mills_vcf (BQSR known-sites)"       }
 
     // ----- Channels -----------------------------------------------------
     ch_reference = Channel.value([
@@ -45,7 +48,21 @@ workflow BUILD_PON {
         file(params.reference + '.fai', checkIfExists: true),
         file(params.reference.replaceFirst(/\.fa(sta)?$/, '.dict'), checkIfExists: true)
     ])
-    ch_bed       = Channel.fromPath(params.bed, checkIfExists: true)
+    // ch_bed is a VALUE channel (matches TSPIPE): a queue channel of a single
+    // element would be consumed by the first downstream process and starve
+    // subsequent consumers (fastp, BWA, mosdepth all read ch_bed).
+    ch_bed          = Channel.value(file(params.bed, checkIfExists: true))
+    ch_exonwise_bed = Channel.value(file(params.exonwise_bed, checkIfExists: true))
+
+    // Known-sites VCFs for BQSR. Each tuple is [vcf, tbi]. Mirrors TSPIPE.
+    ch_dbsnp = Channel.value([
+        file(params.dbsnp_vcf, checkIfExists: true),
+        file(params.dbsnp_vcf + '.tbi', checkIfExists: true)
+    ])
+    ch_mills = Channel.value([
+        file(params.mills_vcf, checkIfExists: true),
+        file(params.mills_vcf + '.tbi', checkIfExists: true)
+    ])
 
     // Parse the normals samplesheet -- same schema as the main pipeline.
     // Samples flagged as exclude=true (e.g. OCIAML3) get filtered out before
@@ -64,7 +81,7 @@ workflow BUILD_PON {
         }
 
     // ----- 1. Preprocess every normal in parallel ------------------------
-    PREPROCESSING(ch_normals, ch_reference, ch_bed)
+    PREPROCESSING(ch_normals, ch_reference, ch_bed, ch_exonwise_bed, ch_dbsnp, ch_mills)
 
     // PREPROCESSING.out.final_bam = [meta, bam, bai] per sample
     // We want one big channel of files (BAMs and indices flattened) for the

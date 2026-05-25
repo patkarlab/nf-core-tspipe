@@ -163,7 +163,7 @@ def main():
     if males:
         male_cov = collect_coverage_files(cov_dir, males)
         if male_cov:
-            male_out = out_dir / "cnvkit_hg38_pon_male.cnn"
+            male_out = out_dir / "cnvkit_pon_male.cnn"
             build_reference(male_cov, male_out, "male")
         else:
             log.warning("No male coverage files found; skipping male PON.")
@@ -174,7 +174,7 @@ def main():
     if females:
         female_cov = collect_coverage_files(cov_dir, females)
         if female_cov:
-            female_out = out_dir / "cnvkit_hg38_pon_female.cnn"
+            female_out = out_dir / "cnvkit_pon_female.cnn"
             build_reference(female_cov, female_out, "female")
         else:
             log.warning("No female coverage files found; skipping female PON.")

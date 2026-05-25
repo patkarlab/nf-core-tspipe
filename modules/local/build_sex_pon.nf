@@ -36,7 +36,11 @@ process BUILD_SEX_PON {
 
     script:
         def excludes = task.ext.exclude_samples ?: 'OCIAML3'
-        def thresh   = task.ext.chrx_threshold  ?: -0.4
+        // chrX-log2 threshold depends on the reference type CNV_LOO_QC used:
+        //   male_reference=true  -> LOO ran with -y; males X~0, females X~+1; threshold ~+0.5
+        //   male_reference=false -> LOO ran without -y; males X~-1, females X~0; threshold ~-0.5
+        // params.chrx_threshold overrides the auto-derived default.
+        def thresh   = params.chrx_threshold ?: (params.male_reference ? 0.5 : -0.5)
         """
         build_sex_pon.py \\
             --cov-dir ${cov_dir} \\
