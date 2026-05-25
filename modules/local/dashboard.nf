@@ -62,6 +62,7 @@ process DASHBOARD {
         path 'cohort_index.html',                          emit: cohort_html
         path 'assets',                                     emit: assets
         path '*/clinical/*_report.html',                   emit: sample_reports
+        path '*/clinical',                                 emit: clinical_dirs
         path "*/clinical/*_cache.json",   emit: caches,          optional: true
         path 'versions.yml',                               emit: versions
 

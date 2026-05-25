@@ -29,6 +29,7 @@ include { REPORTING           } from '../subworkflows/local/reporting'
 include { IGV_REPORTS         } from '../modules/local/igv_reports'
 include { ORGANIZE_OUTPUT     } from '../modules/local/organize_output'
 include { DASHBOARD           } from '../modules/local/dashboard'
+include { REPORT_BUNDLE       } from '../modules/local/report_bundle'
 
 workflow TSPIPE {
 
@@ -258,5 +259,12 @@ workflow TSPIPE {
     DASHBOARD(
         ch_dashboard_in.sample_ids,
         ch_dashboard_in.clinical_dirs,
+    )
+
+    // ----- 9. REPORT_BUNDLE: zip per-sample shareable bundles ---------
+    REPORT_BUNDLE(
+        ch_dashboard_in.sample_ids,
+        DASHBOARD.out.clinical_dirs,
+        DASHBOARD.out.assets,
     )
 }
