@@ -45,3 +45,13 @@ tmux-*.log
 /SOMATICSEQ_ENSEMBLE
 /SV_CALLING
 /VARIANT_CALLING
+
+# Per-run scratch in repo root (added 2026-05-25)
+/.nextflow.pid
+/samp.dat
+/samplesheet.csv
+/bnc_samplesheet.csv
+/samplesheet_gen.sh
+/script.log
+/test_samples.dat
+/run_tspipe.sh
