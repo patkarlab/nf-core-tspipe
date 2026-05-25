@@ -1695,6 +1695,155 @@ def plot_chr_gene_scatter(cnr, cns, regions_path, sample, plot_dir):
     return True
 
 
+# ----------------------------------------------------------------------
+# Clean genome-wide scatter (added 2026-05-24)
+#
+# Renders a genome-wide log2 scatter that:
+#   - excludes alt/decoy/chrM contigs (defensive; the current panel BED
+#     no longer contains any, but the function would also tolerate a
+#     future panel that did)
+#   - clips the y-axis to a clinical range (default +/- 2.5) so the
+#     [-1, +1] region is fully readable
+#   - shows target bins (gene-resolution) and backbone bins (Antitarget)
+#     in different styles, so the genome-wide coverage from the backbone
+#     PoN is visible without overwhelming the gene-level signal
+#   - overlays segment calls from the .call.cns
+#
+# Output: <plot_dir>/<sample>_genome_scatter_clean.png
+# ----------------------------------------------------------------------
+
+GENOME_CLEAN_CANONICAL_CHROMS = (
+    ["chr%d" % i for i in range(1, 23)] + ["chrX", "chrY"]
+)
+
+# Approximate hg38 chromosome lengths from UCSC (bp). Used to lay out
+# the x-axis with chromosomes sized by physical length.
+GENOME_CLEAN_HG38_LENGTHS = {
+    "chr1": 248956422, "chr2": 242193529, "chr3": 198295559,
+    "chr4": 190214555, "chr5": 181538259, "chr6": 170805979,
+    "chr7": 159345973, "chr8": 145138636, "chr9": 138394717,
+    "chr10": 133797422, "chr11": 135086622, "chr12": 133275309,
+    "chr13": 114364328, "chr14": 107043718, "chr15": 101991189,
+    "chr16": 90338345, "chr17": 83257441, "chr18": 80373285,
+    "chr19": 58617616, "chr20": 64444167, "chr21": 46709983,
+    "chr22": 50818468, "chrX": 156040895, "chrY": 57227415,
+}
+
+
+def plot_genome_wide_clean(cnr, cns, sample, plot_dir, ylim=2.5):
+    """
+    Render a clinically-useful genome-wide scatter: target + backbone
+    bins, y-axis clipped to a clinical range, segment overlay.
+
+    Parameters
+    ----------
+    cnr : pandas.DataFrame
+        CNVkit .cnr (must have columns chromosome, start, end, gene, log2).
+    cns : pandas.DataFrame
+        Segment calls (.call.cns preferred). May be None.
+    sample : str
+        Sample id, used in filename and title.
+    plot_dir : str
+        Output directory.
+    ylim : float
+        Symmetric y-axis range. Bins outside [-ylim, +ylim] are clipped
+        to the chart edge (not dropped), so true outliers are still
+        visible without compressing the rest of the data.
+    """
+    log.info("Plotting clean genome-wide scatter (target + backbone)...")
+
+    df = cnr[cnr["chromosome"].isin(GENOME_CLEAN_CANONICAL_CHROMS)].copy()
+    n_dropped = len(cnr) - len(df)
+    if n_dropped > 0:
+        log.info("  Dropped %d bins on non-canonical contigs", n_dropped)
+
+    df["is_backbone"] = df["gene"].astype(str).str.contains(
+        "Antitarget", case=False, na=False
+    )
+
+    chroms_present = set(df["chromosome"].unique())
+    ordered = [c for c in GENOME_CLEAN_CANONICAL_CHROMS if c in chroms_present]
+    offsets = {}
+    cur = 0
+    for c in ordered:
+        offsets[c] = cur
+        cur += GENOME_CLEAN_HG38_LENGTHS.get(c, 0)
+    total_len = cur
+
+    df["x"] = df.apply(
+        lambda r: offsets[r["chromosome"]] + (r["start"] + r["end"]) // 2,
+        axis=1,
+    )
+    df["y_plot"] = df["log2"].clip(-ylim, ylim)
+
+    fig, ax = plt.subplots(figsize=(16, 5))
+
+    backbone = df[df["is_backbone"]]
+    targets = df[~df["is_backbone"]]
+    ax.scatter(
+        backbone["x"], backbone["y_plot"],
+        s=2, c="#a0a0a0", alpha=0.35, linewidths=0,
+        rasterized=True,
+        label="Backbone bins (n=%d)" % len(backbone),
+    )
+    ax.scatter(
+        targets["x"], targets["y_plot"],
+        s=6, c="#404040", alpha=0.7, linewidths=0,
+        rasterized=True,
+        label="Target bins (n=%d)" % len(targets),
+    )
+
+    if cns is not None and len(cns) > 0:
+        for _, seg in cns.iterrows():
+            chrom = seg["chromosome"]
+            if chrom not in offsets:
+                continue
+            x_start = offsets[chrom] + seg["start"]
+            x_end = offsets[chrom] + seg["end"]
+            y = max(min(seg["log2"], ylim), -ylim)
+            if seg["log2"] >= THRESH_GAIN_SOFT:
+                color = COLOR_GAIN
+            elif seg["log2"] <= THRESH_LOSS_SOFT:
+                color = COLOR_LOSS
+            else:
+                color = "#e67e22"
+            ax.plot([x_start, x_end], [y, y],
+                    color=color, linewidth=2.0, solid_capstyle="butt")
+
+    for c in ordered:
+        x = offsets[c] + GENOME_CLEAN_HG38_LENGTHS[c]
+        ax.axvline(x, color="black", linewidth=0.4, alpha=0.6)
+    ax.axhline(0.0, color="black", linewidth=0.6, alpha=0.8)
+    ax.axhline(THRESH_GAIN_SOFT, color=COLOR_GAIN,
+               linewidth=0.5, alpha=0.4, linestyle="--")
+    ax.axhline(THRESH_LOSS_SOFT, color=COLOR_LOSS,
+               linewidth=0.5, alpha=0.4, linestyle="--")
+
+    label_positions = [
+        offsets[c] + GENOME_CLEAN_HG38_LENGTHS[c] // 2 for c in ordered
+    ]
+    label_texts = [c.replace("chr", "") for c in ordered]
+    ax.set_xticks(label_positions)
+    ax.set_xticklabels(label_texts, fontsize=9)
+
+    ax.set_xlim(0, total_len)
+    ax.set_ylim(-ylim, ylim)
+    ax.set_ylabel("Copy ratio (log2)", fontsize=10)
+    ax.set_xlabel("Chromosome", fontsize=10)
+    ax.set_title("%s - genome-wide CNV (target + backbone bins)" % sample,
+                 fontsize=11)
+    ax.legend(loc="upper right", fontsize=8, framealpha=0.9, markerscale=2.5)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    plt.tight_layout()
+    out = os.path.join(plot_dir, "%s_genome_scatter_clean.png" % sample)
+    plt.savefig(out, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    log.info("  Saved: %s", out)
+
+
+
 def main():
     t0 = time.time()
     args = parse_args()
@@ -1747,6 +1896,7 @@ def main():
     plot_per_chromosome(cnr, cns, genes, sample, chr_dir, bands_dict, gene_annot)
     plot_per_gene(cnr_target, cns, call_cns, genes, sample, gene_dir, gene_annot)
     plot_genome_wide(cnr, cns, genes, sample, overview_dir, bands_dict, gene_annot)
+    plot_genome_wide_clean(cnr, cns, sample, overview_dir)
     plot_gene_summary_heatmap(cnr_target, cns, call_cns, genes, sample, overview_dir)
     plot_combined_chromosome(cnr, cnr_target, cns, call_cns, genes, sample,
                              combined_dir, bands_dict, gene_annot)
