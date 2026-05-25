@@ -1,0 +1,11 @@
+# Seeded:    2026-05-24T08:19:57+00:00
+# Outdir:    /goast/hemat_data/nfcore_runs/pon_myeloid_cnv_20260524_104140
+# Work LOO:  /goast/hemat_data/nf-core-tspipe/work/74/4a45951314871dadf957b5afd259ef
+# Script:    seed_myeloid_cnv_assets.py
+dest_filename	source_path	md5	size_bytes	source_mtime_utc	validation
+cnvkit_pon_male.cnn	/goast/hemat_data/nfcore_runs/pon_myeloid_cnv_20260524_104140/pon/cnvkit_pon_male.cnn	0d120a0ec44346b1b7b7aadeea6da8bd	2220830	2026-05-24T11:54:35+00:00	ok (7 cols, 24815 bins)
+cnvkit_pon_female.cnn	/goast/hemat_data/nfcore_runs/pon_myeloid_cnv_20260524_104140/pon/cnvkit_pon_female.cnn	9a8e1c7f509c4ef685d4bd5463ce02f0	2220798	2026-05-24T11:54:35+00:00	ok (7 cols, 24815 bins)
+cnvkit_loo_summary.tsv	/goast/hemat_data/nf-core-tspipe/work/74/4a45951314871dadf957b5afd259ef/references/myeloid_cnv/cnvkit_loo_summary.tsv	8d8964a2429255d07b9a6206214dd97e	11937	2026-05-24T07:10:53+00:00	ok (144 genes)
+cnvkit_noisy_bins.bed	/goast/hemat_data/nf-core-tspipe/work/74/4a45951314871dadf957b5afd259ef/references/myeloid_cnv/cnvkit_noisy_bins.bed	0310c68c8f8f6b1b6b5b288379129a69	513894	2026-05-24T07:10:45+00:00	ok (9613 bins)
+loo_bin_noise_profile.tsv	/goast/hemat_data/nf-core-tspipe/work/74/4a45951314871dadf957b5afd259ef/loo_qc/loo_bin_noise_profile.tsv	a9d21a1e655070aa1326ee4777dcbc5c	2113011	2026-05-24T07:10:34+00:00	ok (23792 bins)
+cnvkit_pon_sex_assignment.tsv	/goast/hemat_data/nfcore_runs/pon_myeloid_cnv_20260524_104140/pon/cnvkit_pon_sex_assignment.tsv	e9213a01aedf8ee8c1ce05ecc548913f	513	2026-05-24T07:16:57+00:00	ok (13 male, 12 female)
