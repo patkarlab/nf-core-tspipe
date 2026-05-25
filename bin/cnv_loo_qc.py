@@ -602,8 +602,13 @@ def main():
 
     # Create output directories
     os.makedirs(args.outdir, exist_ok=True)
-    # Panel-namespaced reference directory (e.g. references/myeloid/).
-    ref_dir = os.path.join(PIPELINE_DIR, "references", args.panel)
+    # Panel-namespaced reference directory (e.g. references/myeloid/),
+    # CWD-relative so the script works in both:
+    #   - Production pipeline (the runner cd's to the pipeline root before
+    #     invoking, so CWD == PIPELINE_DIR and behavior is unchanged).
+    #   - nf-core BUILD_PON (CWD == Nextflow work dir; publishDir expects
+    #     outputs at <work>/references/<panel>/).
+    ref_dir = os.path.join("references", args.panel)
     os.makedirs(ref_dir, exist_ok=True)
     log.info("Reference output directory: %s", ref_dir)
 
