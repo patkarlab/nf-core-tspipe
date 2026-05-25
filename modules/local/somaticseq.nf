@@ -165,8 +165,31 @@ process SOMATICSEQ_ENSEMBLE {
                 echo "[somaticseq] \$CALLER: no SNV/INDEL records after filter, skipping" 1>&2
                 continue
             fi
-            N=\$N_FILT
-            SRC="\$FILTERED"
+            # ----------------------------------------------------------------
+            # Drop alt-contig and decoy records (2026-05-24).
+            # SomaticSeq enforces reference-dict ordering: chr1..chr22, chrX,
+            # chrY, chrM, then alt/decoy. The `sort -V` below misorders alt
+            # contigs (places chr1_KI270706v1_random between chr1 and chr2
+            # because `_` sorts after digits in version-sort), and SomaticSeq's
+            # vcf2tsv rejects the file. Alt-contig somatic calls have no
+            # clinical interpretation in panel sequencing of unplaced sequence,
+            # so dropping them here is safe. Upstream variant callers and
+            # CNV_CALLING still see the alt contig.
+            # ----------------------------------------------------------------
+            PURGED="\${CALLER}.main_chroms_only.vcf"
+            awk 'BEGIN{FS=OFS="\\t"} /^#/ {print; next} \$1 ~ /^chr([1-9]|1[0-9]|2[0-2]|X|Y|M)\$/ {print}' "\$FILTERED" > "\$PURGED"
+            N_PURGE=\$(grep -cv '^#' "\$PURGED" 2>/dev/null) || N_PURGE=0
+            DROPPED_ALT=\$((N_FILT - N_PURGE))
+            if [ "\$DROPPED_ALT" -gt 0 ]; then
+                echo "[somaticseq] \$CALLER: dropped \$DROPPED_ALT records on alt/decoy contigs" 1>&2
+            fi
+            if [ "\$N_PURGE" -eq 0 ]; then
+                echo "[somaticseq] \$CALLER: no main-chromosome records after alt-drop, skipping" 1>&2
+                continue
+            fi
+
+            N=\$N_PURGE
+            SRC="\$PURGED"
 
             # Sort the source VCF (headers first, then chr/pos sort)
             SORTED="\${CALLER}.sorted.vcf"
