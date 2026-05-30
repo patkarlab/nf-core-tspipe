@@ -27,6 +27,7 @@ The injection is delimited by HTML comment sentinels and can be re-run safely.
 
 import argparse
 import logging
+import re
 import shutil
 import sys
 from datetime import datetime
@@ -49,7 +50,7 @@ from parsers import oncokb as p_oncokb
 from parsers import cancervar as p_cancervar
 
 
-BUILDER_VERSION = "0.4.6-nfcore-filenames"
+BUILDER_VERSION = "0.5.0-triage+exon"
 
 # Directories under a run dir that are NOT samples.
 NON_SAMPLE_DIRS = {"pipeline_info", "assets"}
@@ -102,11 +103,102 @@ def discover_samples(run_dir):
     return samples
 
 
+# Exon token from a panel-BED column-4 label, e.g.
+#   "Target=1;ProbeIdx=12;GNB1_Ex_11"      -> "11"
+#   "926537_53648240_ARID1A_Ex_1_1"        -> "1"
+#   "WT1_Ex_1A"                            -> "1A"
+# Captures digits plus an optional single trailing letter (1A/1B/8A exist in
+# the myeloid panel); the probe-index suffix (_1) after that is ignored.
+_BED_EXON_RE = re.compile(r"_Ex_?([0-9]+[A-Za-z']?)", re.IGNORECASE)
+
+
+def _load_panel_bed_exons(path):
+    """Build {chrom: [(start, end, exon_token), ...]} from a panel BED.
+
+    Returns None if the path is falsy or unreadable so callers can skip the
+    BED step cleanly. BED is 0-based half-open; we keep coordinates as-is and
+    test with start <= pos < end after converting the variant's 1-based POS.
+    """
+    if not path:
+        return None
+    p = Path(path)
+    if not p.exists():
+        logging.warning("--panel-bed not found, skipping BED exon fallback: %s", path)
+        return None
+    index = {}
+    try:
+        with open(p) as fh:
+            for line in fh:
+                if not line.strip() or line.startswith(("#", "track", "browser")):
+                    continue
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) < 4:
+                    continue
+                chrom = parts[0]
+                try:
+                    start = int(parts[1])
+                    end = int(parts[2])
+                except ValueError:
+                    continue
+                m = _BED_EXON_RE.search(parts[3])
+                if not m:
+                    continue
+                index.setdefault(chrom, []).append((start, end, m.group(1)))
+    except OSError as exc:
+        logging.warning("could not read --panel-bed (%s): %s", path, exc)
+        return None
+    logging.info("Loaded panel BED exon index: %d contigs", len(index))
+    return index
+
+
+def _bed_exon_for(bed_index, chrom, pos_1based):
+    """Return the exon token whose BED interval contains the 1-based position."""
+    if not bed_index or not chrom:
+        return ""
+    try:
+        pos0 = int(str(pos_1based)) - 1
+    except (TypeError, ValueError):
+        return ""
+    for start, end, exon in bed_index.get(chrom, ()):
+        if start <= pos0 < end:
+            return exon
+    return ""
+
+
+def _report_exon(row, bed_index):
+    """Effective reporting exon for one variant row.
+
+    Precedence: VariantValidator (VV_Exon) -> panel BED -> VEP EXON. Each source
+    is treated as missing when blank or the pipeline's "-1" sentinel. VEP's EXON
+    is "<n>/<total>" (e.g. "8/52"); we keep only the exon number.
+    """
+    vv = str(row.get("VV_Exon", "") or "").strip()
+    if vv and vv != "-1":
+        return vv
+    bed = _bed_exon_for(bed_index, row.get("Chr", ""), row.get("Start", ""))
+    if bed:
+        return bed
+    vep = str(row.get("EXON", "") or "").strip()
+    if vep and vep != "-1":
+        return vep.split("/")[0]
+    return ""
+
+
+def _apply_report_exon(parsed, bed_index):
+    """Add an EXON_REPORT key to every row of a parsed-variant dict, in place."""
+    if not parsed or not parsed.get("rows"):
+        return
+    for row in parsed["rows"]:
+        row["EXON_REPORT"] = _report_exon(row, bed_index)
+    if "EXON_REPORT" not in parsed["columns"]:
+        parsed["columns"].append("EXON_REPORT")
+
+
 def collect_sample_context(sample_dir, build_time, subdir="",
                            annotate_genebe=False, genebe_user=None, genebe_key=None,
                            annotate_mobidetails=False,
                            annotate_oncokb=False, oncokb_token=None,
-                           annotate_cancervar=False):
+                           annotate_cancervar=False, panel_bed_index=None):
     """Run every parser on one sample directory; return a context dict for the template.
 
     ``subdir`` (default ``""``) is an optional path component appended to
@@ -161,6 +253,7 @@ def collect_sample_context(sample_dir, build_time, subdir="",
         clinical_path = effective_dir / f"{sample}_somaticseq_clinical_final.tsv"
     try:
         ctx["clinical"] = p_variants.parse(clinical_path)
+        _apply_report_exon(ctx["clinical"], panel_bed_index)
     except Exception as exc:
         logging.warning("[%s] clinical variants parse failed: %s", sample, exc)
 
@@ -177,6 +270,7 @@ def collect_sample_context(sample_dir, build_time, subdir="",
         filtered_path = effective_dir / f"{sample}_somaticseq_filtered.tsv"
     try:
         ctx["filtered"] = p_variants.parse(filtered_path)
+        _apply_report_exon(ctx["filtered"], panel_bed_index)
     except Exception as exc:
         logging.warning("[%s] filtered variants parse failed: %s", sample, exc)
 
@@ -328,7 +422,7 @@ def build(run_dir, subdir="",
           annotate_genebe=False, genebe_user=None, genebe_key=None,
           annotate_mobidetails=False,
           annotate_oncokb=False, oncokb_token=None,
-          annotate_cancervar=False):
+          annotate_cancervar=False, panel_bed=None):
     run_dir = Path(run_dir).resolve()
     if not run_dir.is_dir():
         raise SystemExit(f"Not a directory: {run_dir}")
@@ -352,6 +446,10 @@ def build(run_dir, subdir="",
     macros = env.get_template("macros.html.j2").module
 
     build_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Panel BED exon index (used as the fallback exon source when a variant has
+    # no VV_Exon). Loaded once and shared across samples.
+    panel_bed_index = _load_panel_bed_exons(panel_bed)
 
     # Per-sample report sits at <run_dir>/<sample>/<subdir>/<sample>_report.html
     # The depth below run_dir is 1 (sample dir) + however many parts in subdir.
@@ -388,6 +486,7 @@ def build(run_dir, subdir="",
             annotate_oncokb=annotate_oncokb,
             oncokb_token=oncokb_token,
             annotate_cancervar=annotate_cancervar,
+            panel_bed_index=panel_bed_index,
         )
         out_dir = (sample_dir / subdir) if subdir else sample_dir
         if not out_dir.is_dir():
@@ -471,6 +570,14 @@ def main():
              "present, the Reporting tab's tier column is pre-filled with the "
              "CancerVar tier for newly-selected variants."
     )
+    parser.add_argument(
+        "--panel-bed", default=None,
+        help="Panel BED whose column-4 labels carry exon names (e.g. "
+             "GNB1_Ex_11). Used as the fallback exon source for the Reporting "
+             "tab and the per-variant Copy Exon action when a variant has no "
+             "VariantValidator VV_Exon. Optional; without it, exon falls back "
+             "to VEP's EXON column."
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -488,6 +595,7 @@ def main():
         annotate_oncokb=args.annotate_oncokb,
         oncokb_token=args.oncokb_token,
         annotate_cancervar=args.annotate_cancervar,
+        panel_bed=args.panel_bed,
     )
     print(f"\nDashboard built. Open:\n  {cohort_path}\n")
 

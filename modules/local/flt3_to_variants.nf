@@ -42,7 +42,7 @@ process FLT3_TO_VARIANTS {
         ln -sf ${flt3_consensus_tsv} flt3/${meta.id}_flt3_consensus.tsv
 
         ${params.legacy_python_env}/bin/python \\
-            ${params.legacy_root}/scripts/17b_flt3_to_variants.py \\
+            ${projectDir}/bin/flt3_to_variants.py \\
             --sample-dir . \\
             --sample ${meta.id} \\
             --variant-tsv ${clinical_tsv}

@@ -69,7 +69,61 @@
     }
 
     function isSelected(kind, id) {
-      return load().some(function (it) { return it.kind === kind && it.id === id; });
+      // "selected" historically meant "in the report". With three-state triage,
+      // an item can be present but marked "exclude"; those are NOT selected.
+      // Legacy items written before triage have no decision -> treated include.
+      return load().some(function (it) {
+        return it.kind === kind && it.id === id && (it.decision || "include") === "include";
+      });
+    }
+
+    // Three-state triage: "" (neutral, not in store) | "include" | "exclude".
+    function getDecision(kind, id) {
+      const it = load().find(function (x) { return x.kind === kind && x.id === id; });
+      if (!it) return "";
+      return it.decision || "include";
+    }
+
+    function setDecision(kind, id, decision, snapshot) {
+      const items = load();
+      const idx = items.findIndex(function (it) { return it.kind === kind && it.id === id; });
+      if (!decision) {
+        // Neutral: drop the item entirely and clear its exclude reason.
+        if (idx >= 0) items.splice(idx, 1);
+        setExcludeReason(id, "");
+        save(items);
+        return;
+      }
+      if (idx >= 0) {
+        items[idx].decision = decision;
+        if (snapshot) items[idx].snapshot = snapshot;
+      } else {
+        items.push({ kind: kind, id: id, decision: decision, snapshot: snapshot || {} });
+      }
+      if (decision !== "exclude") setExcludeReason(id, "");
+      save(items);
+    }
+
+    // Exclude reason -- the short note on why a reviewed variant is not reported.
+    // Same persistence model as tier values.
+    const EXCLUDE_REASON_KEY_PREFIX = "tspipe-exclude-reason:";
+
+    function getExcludeReason(id) {
+      if (!sampleKey || !HAS_STORAGE) return "";
+      try {
+        return window.localStorage.getItem(EXCLUDE_REASON_KEY_PREFIX + sampleKey + ":" + id) || "";
+      } catch (e) { return ""; }
+    }
+
+    function setExcludeReason(id, text) {
+      if (!sampleKey || !HAS_STORAGE) return;
+      try {
+        if (text) {
+          window.localStorage.setItem(EXCLUDE_REASON_KEY_PREFIX + sampleKey + ":" + id, text);
+        } else {
+          window.localStorage.removeItem(EXCLUDE_REASON_KEY_PREFIX + sampleKey + ":" + id);
+        }
+      } catch (e) {}
     }
 
     function toggle(kind, id, snapshot) {
@@ -142,6 +196,10 @@
       setSample: setSample,
       load: load,
       isSelected: isSelected,
+      getDecision: getDecision,
+      setDecision: setDecision,
+      getExcludeReason: getExcludeReason,
+      setExcludeReason: setExcludeReason,
       toggle: toggle,
       clearAll: clearAll,
       getTier: getTier,
@@ -407,19 +465,20 @@
       r._igvKey = (r.Chr || "") + ":" + (r.Start || "") + ":" + (r.Ref || "") + ":" + (r.Alt || "");
     });
 
-    // Keep checkboxes in sync when the selection store changes from elsewhere
-    // (e.g. the Reporting tab's "Clear all" button). We don't re-render the
-    // whole list -- just flip the .checked property on the affected boxes.
+    // Keep the triage buttons in sync when the selection store changes from
+    // elsewhere (e.g. the Reporting tab's "Clear all"). We don't re-render the
+    // whole list -- just flip the .active class on the affected buttons.
     if (enableReportSelect && window.tspipeReporting) {
       window.tspipeReporting.onChange(function (items) {
-        const selectedKeys = new Set(items
-          .filter(function (it) { return it.kind === "variant"; })
-          .map(function (it) { return it.id; }));
-        const boxes = listEl.querySelectorAll(".vb-select-variant");
-        boxes.forEach(function (box) {
-          const k = box.getAttribute("data-vb-key");
-          const shouldBe = selectedKeys.has(k);
-          if (box.checked !== shouldBe) box.checked = shouldBe;
+        const decisionByKey = {};
+        items.filter(function (it) { return it.kind === "variant"; })
+             .forEach(function (it) { decisionByKey[it.id] = it.decision || "include"; });
+        const btns = listEl.querySelectorAll(".vb-triage-btn");
+        btns.forEach(function (btn) {
+          const k = btn.getAttribute("data-vb-key");
+          const want = btn.getAttribute("data-decision");
+          const shouldBe = decisionByKey[k] === want;
+          btn.classList.toggle("active", shouldBe);
         });
       });
     }
@@ -556,11 +615,12 @@
 
     // List interactions: card expand, IGV chip click, IGV jump button, GeneBe link, MobiDetails copy+open
     listEl.addEventListener("click", function (ev) {
-      // Report-selection checkbox (clinical browser only)
-      const selectBox = ev.target.closest(".vb-select-variant");
-      if (selectBox) {
+      // Report-triage buttons (Include / Exclude) -- clinical browser only.
+      const triageBtn = ev.target.closest(".vb-triage-btn");
+      if (triageBtn) {
         ev.stopPropagation(); // don't expand the card
-        const igvKey = selectBox.getAttribute("data-vb-key");
+        const igvKey = triageBtn.getAttribute("data-vb-key");
+        const clicked = triageBtn.getAttribute("data-decision"); // "include" | "exclude"
         if (igvKey && window.tspipeReporting) {
           const row = variants.find(function (r) { return r._igvKey === igvKey; });
           if (row) {
@@ -577,7 +637,7 @@
               hgvsG:    row.VV_HGVSg || row.HGVSg || "",
               hgvsP:    row.VV_HGVSp || row.HGVSp || "",
               hgvsC:    row.VV_HGVSc || row.HGVSc || "",
-              exon:     row.EXON || "",
+              exon:     row.EXON_REPORT || row.EXON || "",
               cosmic:   window.tspipeReporting.extractCosmicIds(row.Existing_variation),
               vaf:      row.VAF_pct || "",
               chr:      row.Chr || "",
@@ -586,14 +646,16 @@
               alt:      row.Alt || "",
               cancervar_tier: cvTier,   // for audit; the live value lives in localStorage
             };
-            const wasSelected = window.tspipeReporting.isSelected("variant", igvKey);
-            window.tspipeReporting.toggle("variant", igvKey, snapshot);
 
-            // After a select-on event (was not selected, now is): if the user
-            // has no existing manual tier entry AND CancerVar has a suggestion,
-            // prefill the editable tier so the Reporting table shows it
-            // immediately. Editing or clearing the input still wins.
-            if (!wasSelected && cvTier && !window.tspipeReporting.getTier(igvKey)) {
+            // Clicking the already-active state clears to neutral; otherwise
+            // switch to the clicked state. Include/Exclude are mutually exclusive.
+            const current = window.tspipeReporting.getDecision("variant", igvKey);
+            const next = (current === clicked) ? "" : clicked;
+            window.tspipeReporting.setDecision("variant", igvKey, next, snapshot);
+
+            // On a fresh Include with no manual tier yet, prefill the CancerVar
+            // suggestion so the Reporting table shows it immediately.
+            if (next === "include" && cvTier && !window.tspipeReporting.getTier(igvKey)) {
               window.tspipeReporting.setTier(igvKey, cvTier);
             }
           }
@@ -751,19 +813,25 @@
         }
       }
 
-      // Report-selection checkbox -- only rendered on the clinical browser.
-      // The checkbox state is read fresh from the selection store on every
-      // render so it stays consistent if the user toggles selection from
-      // another tab (e.g. clears all from the Reporting tab).
+      // Report-triage control -- only rendered on the clinical browser. Three
+      // states: neutral, Include, Exclude (Include/Exclude mutually exclusive).
+      // State is read fresh from the store on every render so it stays in sync
+      // when changed from another tab (e.g. Clear all on the Reporting tab).
       let selectCheckbox = "";
       if (enableReportSelect) {
-        const isSel = window.tspipeReporting && window.tspipeReporting.isSelected("variant", r._igvKey);
+        const decision = window.tspipeReporting ? window.tspipeReporting.getDecision("variant", r._igvKey) : "";
+        const key = escapeHtml(r._igvKey);
         selectCheckbox =
-          '<div class="form-check vb-report-check pt-1 me-1" ' +
-               'title="Select this variant for the Reporting table">' +
-            '<input class="form-check-input vb-select-variant" type="checkbox" ' +
-                   'data-vb-key="' + escapeHtml(r._igvKey) + '"' +
-                   (isSel ? " checked" : "") + ">" +
+          '<div class="btn-group-vertical btn-group-sm vb-triage pt-1 me-1" role="group" ' +
+               'aria-label="Report triage">' +
+            '<button type="button" class="btn btn-outline-success vb-triage-btn' +
+                   (decision === "include" ? " active" : "") + '" ' +
+                   'data-vb-key="' + key + '" data-decision="include" ' +
+                   'title="Include in report">Incl</button>' +
+            '<button type="button" class="btn btn-outline-danger vb-triage-btn' +
+                   (decision === "exclude" ? " active" : "") + '" ' +
+                   'data-vb-key="' + key + '" data-decision="exclude" ' +
+                   'title="Exclude (reviewed, not reported)">Excl</button>' +
           "</div>";
       }
 
@@ -847,9 +915,13 @@
         { code: "P", field: "VV_HGVSp", label: "Copy VV_HGVS_P" },
         { code: "G", field: "VV_HGVSg", label: "Copy VV_HGVS_G" },
       ];
+      // Effective exon for copy: VV_Exon -> panel-BED -> VEP EXON, precomputed
+      // at build time into EXON_REPORT (falls back to raw EXON for older builds).
+      const exonVal = String(r.EXON_REPORT || r.EXON || "").trim();
+      const hasExon = hasUsefulValue(exonVal);
       const anyHgvs = hgvsItems.some(function (it) { return hasUsefulValue(r[it.field]); });
-      if (anyHgvs) {
-        const itemsHtml = hgvsItems.map(function (it) {
+      if (anyHgvs || hasExon) {
+        let itemsHtml = hgvsItems.map(function (it) {
           const v = r[it.field];
           if (hasUsefulValue(v)) {
             return '<li><button type="button" class="dropdown-item vb-copy-hgvs" ' +
@@ -861,6 +933,16 @@
                    'title="' + escapeHtml(it.field) + ' not available">' +
                    escapeHtml(it.label) + " (n/a)</button></li>";
         }).join("");
+        // Exon item (copies the bare exon token).
+        itemsHtml += '<li><hr class="dropdown-divider"></li>';
+        if (hasExon) {
+          itemsHtml += '<li><button type="button" class="dropdown-item vb-copy-hgvs" ' +
+                         'data-hgvs="' + escapeHtml(exonVal) + '" ' +
+                         'title="Exon ' + escapeHtml(exonVal) + '">Copy Exon</button></li>';
+        } else {
+          itemsHtml += '<li><button type="button" class="dropdown-item disabled" disabled ' +
+                         'title="Exon not available">Copy Exon (n/a)</button></li>';
+        }
         extButtons +=
           '<div class="dropdown d-inline-block">' +
             '<button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" ' +

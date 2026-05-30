@@ -194,7 +194,7 @@ table.dataTable tr.verdict-reject td { color: #adb5bd; font-style: italic; }
 }
 .vb-copied-toast.visible { opacity: 1; }
 
-/* Report-selection checkbox on the compact variant card */
+/* Report-selection checkbox on the compact variant card (legacy) */
 .vb-report-check {
   margin-left: 0;
   margin-right: 0.25rem;
@@ -203,6 +203,17 @@ table.dataTable tr.verdict-reject td { color: #adb5bd; font-style: italic; }
 .vb-report-check .form-check-input {
   margin-top: 0;
   cursor: pointer;
+}
+
+/* Include/Exclude triage control on the compact variant card */
+.vb-triage {
+  flex: 0 0 auto;
+}
+.vb-triage .vb-triage-btn {
+  --bs-btn-padding-y: 0.05rem;
+  --bs-btn-padding-x: 0.4rem;
+  --bs-btn-font-size: 0.7rem;
+  line-height: 1.2;
 }
 
 /* Reporting tab tier input */
@@ -282,11 +293,11 @@ table.dataTable tr.verdict-reject td { color: #adb5bd; font-style: italic; }
   /* Hide everything except the Reporting tab content */
   .tspipe-sidebar, .nav-pills, .tab-pane:not(#tab-reporting), .vb-copied-toast,
   #reporting-copy-btn, #reporting-clear-btn, #reporting-clear-cnv-btn,
-  .vb-cnv-remove {
+  .vb-cnv-remove, .reporting-unexclude-btn {
     display: none !important;
   }
   /* Tier inputs and caption textareas: remove the form border so they read as text */
-  .reporting-tier-input, .vb-cnv-caption-input {
+  .reporting-tier-input, .vb-cnv-caption-input, .reporting-reason-input {
     border: none !important;
     padding: 0 !important;
     background: transparent !important;

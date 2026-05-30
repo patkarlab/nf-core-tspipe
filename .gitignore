@@ -55,3 +55,7 @@ tmux-*.log
 /script.log
 /test_samples.dat
 /run_tspipe.sh
+resume.log
+.nextflow*
+work/
+test_run/

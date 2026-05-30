@@ -45,9 +45,10 @@ process ONCOVI {
         fi
 
         ${params.legacy_python_env}/bin/python \\
-            ${params.legacy_root}/scripts/15_oncovi.py \\
+            ${projectDir}/bin/oncovi.py \\
             --sample ${meta.id} \\
-            --outdir .
+            --outdir . \\
+            --oncovi-dir ${params.oncovi_dir}
 
         # Rename to match the channel emit declared in this module
         if [ -f "${meta.id}.somaticseq.clinical.final.tsv" ]; then

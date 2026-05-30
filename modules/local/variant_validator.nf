@@ -49,7 +49,7 @@ process VARIANT_VALIDATOR {
         fi
 
         ${params.legacy_python_env}/bin/python \\
-            ${params.legacy_root}/scripts/17_variant_validator.py \\
+            ${projectDir}/bin/17_variant_validator.py \\
             --sample ${meta.id} \\
             --input ${meta.id}.somaticseq.clinical.tsv \\
             --outdir . \\

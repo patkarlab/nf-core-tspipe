@@ -48,6 +48,10 @@ def parse_args():
     parser.add_argument("-s", "--sample", required=True, help="Sample name (e.g. 26CGH40)")
     parser.add_argument("-o", "--outdir", default=None,
                         help="Output directory (default: results/{sample}/annotation)")
+    parser.add_argument("--oncovi-dir", default=None,
+                        help="Path to the OncoVI install (must contain src/ and "
+                             "resources/). Default: <repo>/software/oncovi relative "
+                             "to this script.")
     return parser.parse_args()
 
 
@@ -203,6 +207,16 @@ def merge_results(clinical_df, oncovi_results):
 def main():
     args = parse_args()
     sample = args.sample
+
+    # Locate the OncoVI engine + resources. Default (PIPELINE_DIR/software/oncovi)
+    # is kept for backward compatibility; --oncovi-dir lets the pipeline point at
+    # an install that lives outside this repo (OncoVI is third-party software,
+    # not vendored into the pipeline repo).
+    if args.oncovi_dir:
+        global ONCOVI_SCRIPT, ONCOVI_RESOURCES
+        _base = os.path.abspath(args.oncovi_dir)
+        ONCOVI_SCRIPT = os.path.join(_base, "src", "03_OncoVI_SOP.py")
+        ONCOVI_RESOURCES = os.path.join(_base, "resources")
 
     # Input: clinical TSV from variant filter — derive from -o so batch runner's outdir is respected
     outdir = args.outdir or os.path.join(PIPELINE_DIR, "results", sample, "annotation")

@@ -73,14 +73,14 @@
           <div class="col-md-3">
             <div class="tspipe-summary-card">
               <div class="label">% Target &ge; 100x (Picard)</div>
-              <div class="value">{{ (m.PCT_TARGET_BASES_100X * 100) | format_num(1) if m.PCT_TARGET_BASES_100X is not none else '—' }}%</div>
+              <div class="value">{{ (m.PCT_TARGET_BASES_100X * 100) | format_num(1) if m.PCT_TARGET_BASES_100X is defined and m.PCT_TARGET_BASES_100X is not none else '—' }}%</div>
               <div class="subvalue">Picard, dup-filtered</div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="tspipe-summary-card">
               <div class="label">Fold-80 Penalty</div>
-              <div class="value">{{ m.FOLD_80_BASE_PENALTY | format_num(2) if m.FOLD_80_BASE_PENALTY is not none else '—' }}</div>
+              <div class="value">{{ m.FOLD_80_BASE_PENALTY | format_num(2) if m.FOLD_80_BASE_PENALTY is defined and m.FOLD_80_BASE_PENALTY is not none else '—' }}</div>
               <div class="subvalue">Uniformity</div>
             </div>
           </div>
@@ -88,13 +88,13 @@
           <div class="col-md-3">
             <div class="tspipe-summary-card">
               <div class="label">AT Dropout</div>
-              <div class="value">{{ m.AT_DROPOUT | format_num(2) if m.AT_DROPOUT is not none else '—' }}</div>
+              <div class="value">{{ m.AT_DROPOUT | format_num(2) if m.AT_DROPOUT is defined and m.AT_DROPOUT is not none else '—' }}</div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="tspipe-summary-card">
               <div class="label">GC Dropout</div>
-              <div class="value">{{ m.GC_DROPOUT | format_num(2) if m.GC_DROPOUT is not none else '—' }}</div>
+              <div class="value">{{ m.GC_DROPOUT | format_num(2) if m.GC_DROPOUT is defined and m.GC_DROPOUT is not none else '—' }}</div>
             </div>
           </div>
           <div class="col-md-3">
@@ -429,9 +429,10 @@
         </div>
 
         <div id="reporting-empty" class="tspipe-empty">
-          Nothing selected yet. Open the "Variants &mdash; Clinical" tab and tick
-          a variant card, and/or open the "CNV" tab and tick a plot's "Include"
-          checkbox.
+          Nothing triaged yet. Open the "Variants &mdash; Clinical" tab and mark a
+          variant <strong>Incl</strong> (include in report) or <strong>Excl</strong>
+          (reviewed, not reported), and/or open the "CNV" tab and tick a plot's
+          "Include" checkbox.
         </div>
 
         {# ----- Variants section ----- #}
@@ -448,12 +449,43 @@
                   <th scope="col">Genomic variant</th>
                   <th scope="col">Protein variant</th>
                   <th scope="col">Transcript Variant</th>
+                  <th scope="col">Exon</th>
                   <th scope="col">COSMIC database reference</th>
                   <th scope="col">VAF (%)</th>
                   <th scope="col" style="width:160px">AMP/ASCO/CAP Tier (somatic)</th>
                 </tr>
               </thead>
               <tbody id="reporting-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        {# ----- Excluded variants section (reviewed, not reported) ----- #}
+        <div id="reporting-excluded-section" class="mt-4" style="display:none">
+          <h5 class="mt-2 mb-2">
+            Excluded &mdash; reviewed, not reported
+            <span id="reporting-excluded-count-badge" class="badge bg-secondary ms-1">0</span>
+          </h5>
+          <p class="text-muted small mb-2">
+            Variants marked <strong>Excl</strong> in the Clinical tab. The reason
+            is editable and persists in this browser; it is included in the
+            copied TSV so the audit trail stays with the report.
+          </p>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle" id="reporting-excluded-table">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" style="width:32px"></th>
+                  <th scope="col">Gene</th>
+                  <th scope="col">Genomic variant</th>
+                  <th scope="col">Protein variant</th>
+                  <th scope="col">Transcript Variant</th>
+                  <th scope="col">Exon</th>
+                  <th scope="col">Reason not reported</th>
+                  <th scope="col" style="width:32px"></th>
+                </tr>
+              </thead>
+              <tbody id="reporting-excluded-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -607,6 +639,9 @@
   function initReportingTab() {
     const tbody = document.getElementById("reporting-tbody");
     const variantsSection = document.getElementById("reporting-variants-section");
+    const excludedSection = document.getElementById("reporting-excluded-section");
+    const excludedTbody = document.getElementById("reporting-excluded-tbody");
+    const excludedCountBadge = document.getElementById("reporting-excluded-count-badge");
     const cnvSection = document.getElementById("reporting-cnv-section");
     const cnvList = document.getElementById("reporting-cnv-list");
     const emptyState = document.getElementById("reporting-empty");
@@ -620,9 +655,13 @@
     if (!tbody || !window.tspipeReporting) return;
 
     const VARIANT_COLUMNS = [
-      "Gene", "Genomic variant", "Protein variant", "Transcript Variant",
+      "Gene", "Genomic variant", "Protein variant", "Transcript Variant", "Exon",
       "COSMIC database reference", "Variant allele frequency (%)",
       "AMP/ASCO/CAP Tier (somatic)"
+    ];
+    const EXCLUDED_COLUMNS = [
+      "Gene", "Genomic variant", "Protein variant", "Transcript Variant", "Exon",
+      "Reason not reported"
     ];
     const CNV_COLUMNS = ["Label", "Image path", "Interpretation"];
 
@@ -636,8 +675,15 @@
       const tier = window.tspipeReporting.getTier(it.id) || "";
       const s = it.snapshot || {};
       const vaf = s.vaf ? Number(s.vaf).toFixed(1) : "";
-      return [s.gene || "", s.hgvsG || "", s.hgvsP || "", s.hgvsC || "",
+      return [s.gene || "", s.hgvsG || "", s.hgvsP || "", s.hgvsC || "", s.exon || "",
               s.cosmic || "", vaf, tier].join("\t");
+    }
+
+    function excludedRowToTsv(it) {
+      const s = it.snapshot || {};
+      const reason = (window.tspipeReporting.getExcludeReason(it.id) || "").replace(/\s+/g, " ");
+      return [s.gene || "", s.hgvsG || "", s.hgvsP || "", s.hgvsC || "", s.exon || "",
+              reason].join("\t");
     }
 
     function cnvRowToTsv(it) {
@@ -666,6 +712,7 @@
                  '<td class="font-monospace small">' + escapeHtml(s.hgvsG) + '</td>' +
                  '<td class="font-monospace small">' + escapeHtml(s.hgvsP) + '</td>' +
                  '<td class="font-monospace small">' + escapeHtml(s.hgvsC) + '</td>' +
+                 '<td>' + escapeHtml(s.exon || "") + '</td>' +
                  '<td class="font-monospace small">' + escapeHtml(s.cosmic) + '</td>' +
                  '<td>' + escapeHtml(vaf) + '</td>' +
                  '<td><input type="text" class="form-control form-control-sm reporting-tier-input" ' +
@@ -674,6 +721,35 @@
                '</tr>';
       }).join("");
       tbody.innerHTML = html;
+    }
+
+    function renderExcluded(excluded) {
+      if (excluded.length === 0) {
+        excludedSection.style.display = "none";
+        excludedTbody.innerHTML = "";
+        return;
+      }
+      excludedSection.style.display = "";
+      excludedCountBadge.textContent = String(excluded.length);
+
+      const html = excluded.map(function (it, idx) {
+        const s = it.snapshot || {};
+        const reason = escapeHtml(window.tspipeReporting.getExcludeReason(it.id) || "");
+        return '<tr data-vb-key="' + escapeHtml(it.id) + '">' +
+                 '<td class="text-muted small">' + (idx + 1) + '</td>' +
+                 '<td>' + escapeHtml(s.gene) + '</td>' +
+                 '<td class="font-monospace small">' + escapeHtml(s.hgvsG) + '</td>' +
+                 '<td class="font-monospace small">' + escapeHtml(s.hgvsP) + '</td>' +
+                 '<td class="font-monospace small">' + escapeHtml(s.hgvsC) + '</td>' +
+                 '<td>' + escapeHtml(s.exon || "") + '</td>' +
+                 '<td><input type="text" class="form-control form-control-sm reporting-reason-input" ' +
+                       'data-vb-key="' + escapeHtml(it.id) + '" ' +
+                       'placeholder="reason not reported" value="' + reason + '" maxlength="200"></td>' +
+                 '<td><button type="button" class="btn btn-sm btn-outline-secondary reporting-unexclude-btn" ' +
+                       'data-vb-key="' + escapeHtml(it.id) + '" title="Remove from excluded list">&times;</button></td>' +
+               '</tr>';
+      }).join("");
+      excludedTbody.innerHTML = html;
     }
 
     function renderCnvs(cnvs) {
@@ -718,11 +794,13 @@
 
     function render(items) {
       const all = items || window.tspipeReporting.load();
-      const variants = all.filter(function (it) { return it.kind === "variant"; });
+      const allVariants = all.filter(function (it) { return it.kind === "variant"; });
+      const variants = allVariants.filter(function (it) { return (it.decision || "include") === "include"; });
+      const excluded = allVariants.filter(function (it) { return it.decision === "exclude"; });
       const cnvs = all.filter(function (it) { return it.kind === "cnv_plot"; });
-      const total = variants.length + cnvs.length;
+      const total = variants.length + excluded.length + cnvs.length;
 
-      // Tab nav badge -- combined count
+      // Tab nav badge -- combined count of everything triaged
       if (tabBadge) {
         tabBadge.textContent = String(total);
         tabBadge.style.display = total ? "inline-block" : "none";
@@ -732,6 +810,7 @@
       if (total === 0) {
         emptyState.style.display = "";
         variantsSection.style.display = "none";
+        excludedSection.style.display = "none";
         cnvSection.style.display = "none";
         copyBtn.disabled = true;
         clearBtn.disabled = true;
@@ -742,18 +821,27 @@
       clearBtn.disabled = false;
 
       renderVariants(variants);
+      renderExcluded(excluded);
       renderCnvs(cnvs);
     }
 
     function buildTsv() {
       const all = window.tspipeReporting.load();
-      const variants = all.filter(function (it) { return it.kind === "variant"; });
+      const allVariants = all.filter(function (it) { return it.kind === "variant"; });
+      const variants = allVariants.filter(function (it) { return (it.decision || "include") === "include"; });
+      const excluded = allVariants.filter(function (it) { return it.decision === "exclude"; });
       const cnvs = all.filter(function (it) { return it.kind === "cnv_plot"; });
       const sections = [];
       if (variants.length) {
         sections.push("# Variants");
         sections.push(VARIANT_COLUMNS.join("\t"));
         variants.forEach(function (it) { sections.push(variantRowToTsv(it)); });
+      }
+      if (excluded.length) {
+        if (sections.length) sections.push("");  // blank separator line
+        sections.push("# Excluded (reviewed, not reported)");
+        sections.push(EXCLUDED_COLUMNS.join("\t"));
+        excluded.forEach(function (it) { sections.push(excludedRowToTsv(it)); });
       }
       if (cnvs.length) {
         if (sections.length) sections.push("");  // blank separator line
@@ -795,11 +883,14 @@
     // Wire actions
     copyBtn.addEventListener("click", copyTsv);
     clearBtn.addEventListener("click", function () {
-      if (confirm("Clear all selections (variants + CNVs)? Tier values and CNV interpretation captions will also be cleared.")) {
-        // Wipe tier values for all selected variants
+      if (confirm("Clear everything triaged (Include + Exclude variants and CNVs)? Tier values, exclude reasons, and CNV interpretation captions will also be cleared.")) {
+        // Wipe tier values for all included/excluded variants
         window.tspipeReporting.load()
           .filter(function (it) { return it.kind === "variant"; })
-          .forEach(function (it) { window.tspipeReporting.setTier(it.id, ""); });
+          .forEach(function (it) {
+            window.tspipeReporting.setTier(it.id, "");
+            window.tspipeReporting.setExcludeReason(it.id, "");
+          });
         // Wipe captions for all selected CNVs
         window.tspipeReporting.load()
           .filter(function (it) { return it.kind === "cnv_plot"; })
@@ -828,6 +919,23 @@
       if (!inp) return;
       const key = inp.getAttribute("data-vb-key");
       window.tspipeReporting.setTier(key, inp.value.trim());
+    });
+
+    // Exclude-reason inline edits -- persist on input. We do NOT re-render on
+    // every keystroke (that would lose focus); the value is read live for TSV.
+    excludedTbody.addEventListener("input", function (ev) {
+      const inp = ev.target.closest(".reporting-reason-input");
+      if (!inp) return;
+      const key = inp.getAttribute("data-vb-key");
+      window.tspipeReporting.setExcludeReason(key, inp.value);
+    });
+
+    // Un-exclude button -- return the variant to neutral (drops it from store).
+    excludedTbody.addEventListener("click", function (ev) {
+      const btn = ev.target.closest(".reporting-unexclude-btn");
+      if (!btn) return;
+      const key = btn.getAttribute("data-vb-key");
+      window.tspipeReporting.setDecision("variant", key, "");  // clears reason too
     });
 
     // CNV interpretation textarea edits -- persist on input
