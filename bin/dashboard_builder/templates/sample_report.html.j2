@@ -555,6 +555,122 @@
     // new tab doesn't blend selections.
     if (window.tspipeReporting) {
       window.tspipeReporting.setSample({{ ctx.sample | tojson }});
+
+      /* [triage-share export/import] Per-reviewer decision sharing across machines.
+         Save downloads <sample>.triage.<reviewer>.json; Load imports one back.
+         Decisions live in localStorage (per-machine), so this is how a
+         resident's triage reaches another computer: save, drop on the shared
+         drive, the next person loads it. Imported state is editable; saving
+         always writes under the loader's own name. */
+      (function () {
+        var SAMPLE = {{ ctx.sample | tojson }};
+        var NAME_KEY = "tspipe_reviewer_name";
+
+        function reviewerName(forcePrompt) {
+          var n = "";
+          try { n = window.localStorage.getItem(NAME_KEY) || ""; } catch (e) {}
+          if (!n || forcePrompt) {
+            n = window.prompt("Your name (used to label your decisions file):", n || "");
+            if (n) { try { window.localStorage.setItem(NAME_KEY, n); } catch (e) {} }
+          }
+          return n || "";
+        }
+
+        function safe(s) { return String(s || "").replace(/[^A-Za-z0-9._-]+/g, "_"); }
+
+        function doSave() {
+          var name = reviewerName(false);
+          if (!name) return;
+          var bundle = window.tspipeReporting.exportAll(name);
+          if (!bundle) { alert("Nothing to save yet, or storage is unavailable."); return; }
+          var blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = safe(SAMPLE) + ".triage." + safe(name) + ".json";
+          document.body.appendChild(a); a.click();
+          document.body.removeChild(a); URL.revokeObjectURL(url);
+          setBanner("Saved decisions as " + a.download + " - move it to the shared drive.");
+        }
+
+        function doLoad(file) {
+          var reader = new FileReader();
+          reader.onload = function () {
+            var bundle;
+            try { bundle = JSON.parse(reader.result); }
+            catch (e) { alert("Could not read that file (not valid JSON)."); return; }
+            var res = window.tspipeReporting.importAll(bundle);
+            if (!res.ok) {
+              if (res.reason === "sample-mismatch") {
+                alert("That file is for sample '" + res.got + "', but this report is '" +
+                      res.want + "'. Not loaded.");
+              } else {
+                alert("Could not load that file (" + res.reason + ").");
+              }
+              return;
+            }
+            setBanner("Loaded decisions from " + (res.reviewer || "unknown") +
+                      (res.savedAt ? " (saved " + res.savedAt.slice(0, 10) + ")" : "") +
+                      " - your edits will save under your own name.");
+            /* repaint the Reporting table if a renderer hook exists */
+            if (typeof window.tspipeRenderReporting === "function") {
+              try { window.tspipeRenderReporting(); } catch (e) {}
+            } else {
+              window.tspipeReporting.onChange && window.tspipeReporting.load();
+            }
+          };
+          reader.readAsText(file);
+        }
+
+        var bannerEl = null;
+        function setBanner(msg) {
+          if (!bannerEl) return;
+          bannerEl.textContent = msg;
+          bannerEl.style.display = msg ? "" : "none";
+        }
+
+        function mount() {
+          var pane = document.getElementById("tab-reporting") ||
+                     document.querySelector('[id*="reporting"]');
+          if (!pane) return;
+          var bar = document.createElement("div");
+          bar.className = "d-flex align-items-center gap-2 mb-2 flex-wrap";
+          var save = document.createElement("button");
+          save.type = "button";
+          save.className = "btn btn-sm btn-outline-primary";
+          save.textContent = "Save my decisions";
+          save.addEventListener("click", doSave);
+          var load = document.createElement("button");
+          load.type = "button";
+          load.className = "btn btn-sm btn-outline-secondary";
+          load.textContent = "Load decisions";
+          var picker = document.createElement("input");
+          picker.type = "file"; picker.accept = ".json"; picker.style.display = "none";
+          picker.addEventListener("change", function () {
+            if (picker.files && picker.files[0]) doLoad(picker.files[0]);
+            picker.value = "";
+          });
+          load.addEventListener("click", function () { picker.click(); });
+          var changeName = document.createElement("button");
+          changeName.type = "button";
+          changeName.className = "btn btn-sm btn-link text-muted p-0 ms-1";
+          changeName.textContent = "(change name)";
+          changeName.addEventListener("click", function () { reviewerName(true); });
+          bannerEl = document.createElement("div");
+          bannerEl.className = "text-muted small w-100";
+          bannerEl.style.display = "none";
+          bar.appendChild(save); bar.appendChild(load);
+          bar.appendChild(picker); bar.appendChild(changeName);
+          bar.appendChild(bannerEl);
+          pane.insertBefore(bar, pane.firstChild);
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", mount);
+        } else {
+          mount();
+        }
+      })();
     }
 
     // ---- Lazy-load iframes on first tab activation ----

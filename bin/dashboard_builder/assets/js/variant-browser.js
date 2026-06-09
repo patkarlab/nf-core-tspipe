@@ -192,8 +192,69 @@
         .join(";");
     }
 
+    // [triage-share export/import]
+    // Gather every stored key for this sample across all four namespaces and
+    // bundle them for export. Reads localStorage directly so nothing is missed.
+    function exportAll(reviewer) {
+      if (!sampleKey || !HAS_STORAGE) return null;
+      var bundle = {
+        schema: 1,
+        sample: sampleKey,
+        reviewer: reviewer || "",
+        savedAt: new Date().toISOString(),
+        selection: load(),
+        excludeReasons: {},
+        tiers: {},
+        cnvCaptions: {}
+      };
+      var prefixes = [
+        [EXCLUDE_REASON_KEY_PREFIX, bundle.excludeReasons],
+        [TIER_KEY_PREFIX, bundle.tiers],
+        [CNV_CAPTION_KEY_PREFIX, bundle.cnvCaptions]
+      ];
+      try {
+        for (var i = 0; i < window.localStorage.length; i++) {
+          var k = window.localStorage.key(i);
+          for (var p = 0; p < prefixes.length; p++) {
+            var pre = prefixes[p][0] + sampleKey + ":";
+            if (k.indexOf(pre) === 0) {
+              var id = k.slice(pre.length);
+              prefixes[p][1][id] = window.localStorage.getItem(k);
+            }
+          }
+        }
+      } catch (e) { /* storage iteration failed; return what we have */ }
+      return bundle;
+    }
+
+    // Restore a bundle into localStorage for the CURRENT sample. Refuses a
+    // bundle whose sample id does not match (clinical safety). Uses the existing
+    // setters so listeners fire and the Reporting table repaints. Imported state
+    // is an editable starting point; the reviewer saves under their own name.
+    function importAll(bundle) {
+      if (!sampleKey || !HAS_STORAGE) return { ok: false, reason: "no-storage" };
+      if (!bundle || typeof bundle !== "object") return { ok: false, reason: "bad-file" };
+      if (bundle.sample && bundle.sample !== sampleKey) {
+        return { ok: false, reason: "sample-mismatch", got: bundle.sample, want: sampleKey };
+      }
+      try {
+        save(Array.isArray(bundle.selection) ? bundle.selection : []);
+        var er = bundle.excludeReasons || {};
+        Object.keys(er).forEach(function (id) { setExcludeReason(id, er[id]); });
+        var ti = bundle.tiers || {};
+        Object.keys(ti).forEach(function (id) { setTier(id, ti[id]); });
+        var cc = bundle.cnvCaptions || {};
+        Object.keys(cc).forEach(function (id) { setCnvCaption(id, cc[id]); });
+      } catch (e) {
+        return { ok: false, reason: "write-failed" };
+      }
+      return { ok: true, reviewer: bundle.reviewer || "", savedAt: bundle.savedAt || "" };
+    }
+
     return {
       setSample: setSample,
+      exportAll: exportAll,        // [triage-share export/import]
+      importAll: importAll,        // [triage-share export/import]
       load: load,
       isSelected: isSelected,
       getDecision: getDecision,
