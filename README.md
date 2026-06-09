@@ -2,8 +2,7 @@
 
 **A clinical targeted-sequencing analysis pipeline for myeloid leukaemia panels.**
 
-`nf-core-tspipe` takes paired-end FASTQ from a hybrid-capture or amplicon
-leukaemia panel and produces a complete, sign-out-ready clinical deliverable per
+`nf-core-tspipe` takes paired-end FASTQ from a hybrid-capture panel and produces a complete, sign-out-ready clinical deliverable per
 sample: a curated and oncogenicity-scored variant table, an FLT3-ITD ensemble
 call, sex-stratified copy-number results, and per-variant IGV pileup views. It is
 built on Nextflow DSL2 following nf-core conventions, runs every step in a pinned
