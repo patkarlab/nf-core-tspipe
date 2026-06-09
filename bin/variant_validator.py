@@ -129,6 +129,7 @@ def query_variant(hgvsc, base_url, timeout):
         "VV_HGVSc": "",
         "VV_HGVSp": "",
         "VV_HGVSg": "",
+        "VV_Exon": "",
         "VV_Transcript": "",
         "VV_Valid": False,
         "VV_Warnings": "",
@@ -241,6 +242,27 @@ def query_variant(hgvsc, base_url, timeout):
     grch38 = pal.get("grch38", {})
     result["VV_HGVSg"] = grch38.get("hgvs_genomic_description", "")
 
+    # Exon number from VariantValidator's variant_exonic_positions. Keyed by
+    # RefSeq chromosome accession; start_exon == end_exon for a typical SNV.
+    # Exon numbering is transcript-based and identical across genome builds, so
+    # if the GRCh38 accession is not present we fall back to any available key.
+    # Intronic variants have no exonic position -> VV_Exon stays "".
+    exon = ""
+    vep = vdata.get("variant_exonic_positions", {})
+    if isinstance(vep, dict) and vep:
+        acc = result["VV_HGVSg"].split(":")[0] if result["VV_HGVSg"] else ""
+        ep = vep.get(acc)
+        if ep is None:
+            ep = next(iter(vep.values()))
+        if isinstance(ep, dict):
+            se = str(ep.get("start_exon", "")).strip()
+            ee = str(ep.get("end_exon", "")).strip()
+            if se and ee:
+                exon = se if se == ee else (se + "-" + ee)
+            elif se:
+                exon = se
+    result["VV_Exon"] = exon
+
     # Validation warnings
     vw = vdata.get("validation_warnings", [])
     if vw:
@@ -291,7 +313,7 @@ def validate_variants(df, base_url, threads, timeout):
     log.info(f"Unique query HGVS values: {len(unique_hgvsc)} ({no_query_count} could not be converted)")
 
     # Initialize result columns
-    for col in ["VV_HGVSc", "VV_HGVSp", "VV_HGVSg", "VV_Transcript", "VV_Warnings"]:
+    for col in ["VV_HGVSc", "VV_HGVSp", "VV_HGVSg", "VV_Exon", "VV_Transcript", "VV_Warnings"]:
         df[col] = ""
     df["VV_Valid"] = ""
 
@@ -316,7 +338,7 @@ def validate_variants(df, base_url, threads, timeout):
             except Exception as e:
                 result = {
                     "VV_HGVSc": "", "VV_HGVSp": "", "VV_HGVSg": "",
-                    "VV_Transcript": "", "VV_Valid": False,
+                    "VV_Exon": "", "VV_Transcript": "", "VV_Valid": False,
                     "VV_Warnings": f"EXCEPTION: {e}",
                 }
 
@@ -335,7 +357,7 @@ def validate_variants(df, base_url, threads, timeout):
     for query_hgvs, indices in query_to_indices.items():
         result = results.get(query_hgvs, {})
         for idx in indices:
-            for col in ["VV_HGVSc", "VV_HGVSp", "VV_HGVSg", "VV_Transcript", "VV_Warnings"]:
+            for col in ["VV_HGVSc", "VV_HGVSp", "VV_HGVSg", "VV_Exon", "VV_Transcript", "VV_Warnings"]:
                 df.at[idx, col] = result.get(col, "")
             df.at[idx, "VV_Valid"] = result.get("VV_Valid", False)
 
