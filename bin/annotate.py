@@ -445,10 +445,11 @@ def parse_vep_csq(vep_vcf):
                     (e.g. ['Allele', 'Consequence', 'IMPACT', 'SYMBOL', ...])
       - variants    is a dict keyed by chr:pos:ref:alt with subfield -> value
 
-    VEP was invoked with --pick, so only the first CSQ annotation per
-    variant is taken (VEP's pick algorithm chooses the canonical
-    consequence). PORT NOTE: bit-for-bit identical to production's
-    parse_vep_csq().
+    VEP is invoked with --flag_pick (not --pick), so every transcript
+    consequence is emitted; selection is severity-based over all CSQ blocks
+    (see _pick_csq), so an overlapping neighbouring transcript can no longer
+    mask a co-located coding call. PORT NOTE: this DIVERGES from production's
+    parse_vep_csq(), which took the first CSQ block.
     """
     variants = {}
     csq_fields = []

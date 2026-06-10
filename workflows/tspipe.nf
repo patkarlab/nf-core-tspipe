@@ -5,8 +5,13 @@
  *
  * Step ordering matches the original runner:
  *     PREPROCESSING -> VARIANT_CALLING -> SOMATICSEQ_ENSEMBLE -> FLT3_ITD
- *                   -> CNV_CALLING -> SV_CALLING
- *                   -> ANNOTATION -> REPORTING
+ *                   -> CNV_CALLING -> ANNOTATION
+ *                   -> IGV_REPORTS -> ORGANIZE_OUTPUT -> DASHBOARD -> REPORT_BUNDLE
+ *
+ * NOTE: SV_CALLING and REPORTING are intentionally not wired into the active
+ * DAG. SV calling is disabled (no SV deliverable on this panel yet); final
+ * assembly is done directly via IGV_REPORTS + ORGANIZE_OUTPUT below rather than
+ * through the REPORTING subworkflow.
  *
  * As in the original, U2AF1 rescue branches off the final ABRA2 BAM in parallel
  * with variant calling; FLT3 consensus depends on Pindel (step 08) too, so it
@@ -23,9 +28,7 @@ include { SOMATICSEQ_ENSEMBLE } from '../modules/local/somaticseq'
 include { SOMATICSEQ_POSTPROCESS } from '../modules/local/somaticseq_postprocess'
 include { FLT3_ITD            } from '../subworkflows/local/flt3_itd'
 include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
-include { SV_CALLING          } from '../subworkflows/local/sv_calling'
 include { ANNOTATION          } from '../subworkflows/local/annotation'
-include { REPORTING           } from '../subworkflows/local/reporting'
 include { IGV_REPORTS         } from '../modules/local/igv_reports'
 include { ORGANIZE_OUTPUT     } from '../modules/local/organize_output'
 include { DASHBOARD           } from '../modules/local/dashboard'
