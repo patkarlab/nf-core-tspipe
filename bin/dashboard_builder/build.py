@@ -293,7 +293,8 @@ def collect_sample_context(sample_dir, build_time, subdir="",
         ctx["cnv"] = p_cnv.parse(effective_dir, sample)
     except Exception as exc:
         logging.warning("[%s] cnv parse failed: %s", sample, exc)
-        ctx["cnv"] = {"clinical_table": None, "scatter_png": None, "diagram_pdf": None,
+        ctx["cnv"] = {"clinical_table": None, "annotated_table": None,
+                      "scatter_png": None, "diagram_pdf": None,
                       "per_chrom_pngs": [], "per_gene_pngs": []}
 
     # --- IGV lookup + idempotent hash-router injection ---

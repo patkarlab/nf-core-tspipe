@@ -296,6 +296,17 @@
           <div class="tspipe-empty">No clinical CNV calls table available.</div>
         {% endif %}
 
+        {# ---- Per-gene CNV annotation table (cytoband, ClinGen dosage, gene role, heme) ---- #}
+        {% if ctx.cnv.annotated_table and ctx.cnv.annotated_table.rows %}
+          <h5 class="mt-4">Per-gene annotation</h5>
+          <p class="text-muted small mb-2">
+            Cytoband, ClinGen haploinsufficiency/triplosensitivity, gene role, and heme
+            significance from <code>cnv_annotate.py</code>, including CDKN2A/2B and 9p/9q
+            co-deletion rescue comments.
+          </p>
+          {{ macros.render_datatable('cnv-annotated-table', ctx.cnv.annotated_table.columns, ctx.cnv.annotated_table.rows) }}
+        {% endif %}
+
         {# ---- Primary genome-wide CNV scatter (target + backbone) (added 2026-05-24) ---- #}
         {% if ctx.cnv.primary_genome_scatter %}
           <h5 class="mt-4">Genome-wide CNV (target + backbone)</h5>
@@ -747,6 +758,7 @@
 
     if ($('#coverage-table').length)     { $('#coverage-table').DataTable({ pageLength: 25, order: [] }); }
     if ($('#cnv-clinical-table').length) { $('#cnv-clinical-table').DataTable({ pageLength: 25, order: [] }); }
+    if ($('#cnv-annotated-table').length) { $('#cnv-annotated-table').DataTable({ pageLength: 25, order: [] }); }
   });
 
   // ---------------------------------------------------------------------------

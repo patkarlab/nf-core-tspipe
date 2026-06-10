@@ -111,6 +111,27 @@ def parse(sample_dir, sample):
         except (OSError, pd.errors.ParserError, pd.errors.EmptyDataError):
             clinical_table = None
 
+    # ---- Per-gene annotated CNV table (cytoband, ClinGen, gene role, heme) ----
+    # Richer per-gene annotation from cnv_annotate.py: cytoband, ClinGen HI/TS
+    # dosage scores, gene role, heme significance, and CDKN2A/2B + 9p/9q rescue
+    # comments. Delivered alongside the tiered clinical table; rendered as a
+    # second table in the CNV tab.
+    annotated_path = sample_dir / "cnv_consensus" / f"{sample}_cnv_annotated.tsv"
+    annotated_table = None
+    if annotated_path.exists():
+        try:
+            adf = pd.read_csv(
+                annotated_path, sep="\t", dtype=str,
+                keep_default_na=False, na_values=[""],
+            ).fillna("")
+            annotated_table = {
+                "columns": list(adf.columns),
+                "rows":    adf.to_dict(orient="records"),
+                "n":       len(adf),
+            }
+        except (OSError, pd.errors.ParserError, pd.errors.EmptyDataError):
+            annotated_table = None
+
     # ---- Genome-wide scatter PNG / diagram PDF ----
     # Be permissive about dot vs underscore separator.
     scatter_png = None
@@ -213,6 +234,7 @@ def parse(sample_dir, sample):
 
     return {
         "clinical_table":     clinical_table,
+        "annotated_table":    annotated_table,
         "scatter_png":        scatter_png,
         "primary_genome_scatter": primary_genome_scatter,
         "diagram_pdf":        diagram_pdf,
