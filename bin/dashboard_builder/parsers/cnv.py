@@ -23,7 +23,7 @@ NOTE on filename convention: the cnvkit `batch --scatter --diagram` outputs use
 An earlier version of this parser used the underscore form and therefore never
 matched the real files. We now glob both forms to be permissive.
 
-The CNV clinical TSV columns we expect (from the pipeline's cnv_annotate.py)::
+The CNV clinical TSV columns we expect (from the pipeline's cnv_clinical_report.py)::
 
   gene tier call chromosome arm start end cnvkit_log2 cn_estimate
   zscore LOO_FP_pct cnvkit_confidence concordance arm_level_event

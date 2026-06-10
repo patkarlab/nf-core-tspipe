@@ -128,6 +128,7 @@ def main():
     parser.add_argument("--igv-report", required=True,
                         help="IGV HTML report from create_report")
     parser.add_argument("--cnv-clinical-tsv", required=True)
+    parser.add_argument("--cnv-annotated-tsv", required=True)
     parser.add_argument("--cnvkit-diagram-pdf", required=True)
     parser.add_argument("--cnvkit-scatter-png", required=True)
     parser.add_argument("--cnvkit-plots-dir", required=True)
@@ -196,6 +197,9 @@ def main():
     hardlink(args.cnv_clinical_tsv,
              cnv_dst / (s + "_cnv_clinical.tsv"),
              "CNV consensus clinical TSV")
+    hardlink(args.cnv_annotated_tsv,
+             cnv_dst / (s + "_cnv_annotated.tsv"),
+             "CNV per-gene annotated table (cytoband, ClinGen HI/TS, gene role, heme significance, CDKN2A/2B + 9p/9q rescue)")
 
     plot_dst = out / "cnvkit_plots"
     hardlink(args.cnvkit_diagram_pdf,

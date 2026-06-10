@@ -244,6 +244,7 @@ workflow TSPIPE {
         .join(IGV_REPORTS.out.html)                                           // + igv_report (D2)
         .join(PREPROCESSING.out.dashboard)                                   // + dashboard
         .join(CNV_CALLING.out.clinical_report)                               // + cnv_clinical_tsv
+        .join(CNV_CALLING.out.annotated)                                     // + cnv_annotated_tsv
         .join(CNV_CALLING.out.cnvkit_diagram_pdf)                            // + cnvkit_diagram
         .join(CNV_CALLING.out.cnvkit_scatter_png)                            // + cnvkit_scatter
         .join(CNV_CALLING.out.plots_dir)                                     // + cnvkit_plots_dir

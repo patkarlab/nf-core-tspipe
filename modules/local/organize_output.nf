@@ -19,6 +19,7 @@ process ORGANIZE_OUTPUT {
               path(igv_report),
               path(dashboard),
               path(cnv_clinical_tsv),
+              path(cnv_annotated_tsv),
               path(cnvkit_diagram),
               path(cnvkit_scatter),
               path(cnvkit_plots_dir)
@@ -45,6 +46,7 @@ process ORGANIZE_OUTPUT {
             --igv-report          ${igv_report} \\
             --dashboard           ${dashboard} \\
             --cnv-clinical-tsv    ${cnv_clinical_tsv} \\
+            --cnv-annotated-tsv   ${cnv_annotated_tsv} \\
             --cnvkit-diagram-pdf  ${cnvkit_diagram} \\
             --cnvkit-scatter-png  ${cnvkit_scatter} \\
             --cnvkit-plots-dir    ${cnvkit_plots_dir}
