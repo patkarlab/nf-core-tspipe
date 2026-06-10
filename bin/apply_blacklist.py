@@ -11,7 +11,7 @@ USAGE A: As a library (preferred, used by 14_variant_filter.py)
 -----------------------------------------------------------------
     from apply_blacklist import load_blacklist, variant_matches_blacklist
 
-    entries = load_blacklist("references/blacklist_snvs_hg38.tsv")
+    entries = load_blacklist("references/blacklist_file.tsv")
     hit = variant_matches_blacklist("chr17", 7846896, "C", "CACC", entries)
     if hit is not None:
         print("Blacklisted:", hit["gene"], hit["reason"])
@@ -20,7 +20,7 @@ USAGE B: As a standalone CLI (for ad-hoc filtering of an existing TSV)
 ----------------------------------------------------------------------
     python apply_blacklist.py \\
         --input  results/<sample>/annotation/<sample>.somaticseq.filtered.tsv \\
-        --blacklist references/blacklist_snvs_hg38.tsv \\
+        --blacklist references/blacklist_file.tsv \\
         --output results/<sample>/annotation/<sample>.somaticseq.blacklisted.tsv
 
 INPUT TSV ASSUMPTIONS:
@@ -67,11 +67,13 @@ def load_blacklist(path):
     Lines starting with '#' or '##' are comments and are skipped.
     """
     entries = []
+    n_candidates = 0   # non-blank, non-comment lines actually attempted (zero-entry guard)
     with open(path) as fh:
         for line_num, raw in enumerate(fh, start=1):
             line = raw.rstrip("\n")
             if not line.strip() or line.lstrip().startswith("#"):
                 continue
+            n_candidates += 1
             fields = line.split("\t")
             if len(fields) < 11:
                 sys.stderr.write(
@@ -98,6 +100,19 @@ def load_blacklist(path):
                 )
                 continue
             entries.append(entry)
+    # [blacklist zero-entry guard]
+    # A blacklist supplied with data lines but zero parsed entries almost always
+    # means a schema mismatch (e.g. the legacy 4-column Chr/Start/Ref/Alt file
+    # fed to this 11-column parser), which would silently disable artefact
+    # filtering. Fail loudly. An all-comment / header-only file (no data lines)
+    # is still allowed through as a legitimately empty blacklist.
+    if n_candidates > 0 and not entries:
+        raise ValueError(
+            "blacklist %s: %d data line(s) present but none parsed as valid "
+            "11-column entries (expected: chrom start end match_mode pos_exact "
+            "ref_exact alt_exact gene reason evidence date_added). Refusing to "
+            "run with a silently-empty blacklist." % (path, n_candidates)
+        )
     return entries
 
 
@@ -254,7 +269,7 @@ def main():
     )
     p.add_argument("--input", required=True, help="annotated variant TSV")
     p.add_argument("--blacklist", required=True,
-                   help="blacklist TSV (e.g. references/blacklist_snvs_hg38.tsv)")
+                   help="blacklist TSV (e.g. references/blacklist_file.tsv)")
     p.add_argument("--output", required=True,
                    help="output TSV with Filter column updated")
     args = p.parse_args()
