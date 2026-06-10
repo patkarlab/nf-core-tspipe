@@ -54,10 +54,41 @@ process FLT3_ITD_EXT {
         // container, where CWD is the bind-mounted work dir.
         """
         mkdir -p flt3_itd_ext_out
+
+        # [flt3_itd_ext no-ITD sentinel]
+        # FLT3_ITD_ext exits non-zero on ITD-negative specimens
+        # ("NO ITD CANDIDATE CLUSTERS GENERATED") and writes no VCF. Capture the
+        # exit code so the benign no-ITD case is told apart from a genuine
+        # failure, then guarantee both declared outputs exist as valid (possibly
+        # empty) files. This lets output collection succeed and gives
+        # FLT3_CONSENSUS a parseable zero-record VCF instead of the placeholder.
+        set +e
         flt3_itd_ext \\
             -b \$(pwd)/${bam} \\
             -o \$(pwd)/flt3_itd_ext_out \\
             -n HC \\
-            -g hg38
+            -g hg38 > flt3_itd_ext_run.log 2>&1
+        rc=\$?
+        set -e
+        cat flt3_itd_ext_run.log
+
+        vcf="flt3_itd_ext_out/${meta.id}.final_FLT3_ITD.vcf"
+        summary="flt3_itd_ext_out/${meta.id}.final_FLT3_ITD_summary.txt"
+
+        if [ "\$rc" -ne 0 ]; then
+            if grep -q "NO ITD CANDIDATE CLUSTERS GENERATED" flt3_itd_ext_run.log; then
+                echo "[flt3_itd_ext] ITD-negative specimen (rc=\$rc); writing header-only sentinel outputs."
+            else
+                echo "[flt3_itd_ext] failed (rc=\$rc) for a reason other than no-ITD; propagating." >&2
+                exit \$rc
+            fi
+        fi
+
+        if [ ! -s "\$vcf" ]; then
+            printf '##fileformat=VCFv4.2\\n##source=FLT3_ITD_ext_sentinel_no_itd\\n#CHROM\\tPOS\\tID\\tREF\\tALT\\tQUAL\\tFILTER\\tINFO\\n' > "\$vcf"
+        fi
+        if [ ! -f "\$summary" ]; then
+            : > "\$summary"
+        fi
         """
 }
