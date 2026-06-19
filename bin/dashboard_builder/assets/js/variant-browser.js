@@ -104,6 +104,32 @@
       save(items);
     }
 
+    // Reorder an item within its display group (same kind and same decision).
+    // dir = -1 moves it one position earlier, +1 one later. Items of other
+    // kinds or other decisions are skipped, so reordering the included
+    // variants never disturbs excluded variants or CNV selections. The new
+    // order persists in the selection array, so the TSV export and shared
+    // triage bundles follow it automatically.
+    function move(kind, id, dir) {
+      if (dir !== 1 && dir !== -1) return;
+      const items = load();
+      const ti = items.findIndex(function (it) { return it.kind === kind && it.id === id; });
+      if (ti < 0) return;
+      const decision = items[ti].decision || "include";
+      const group = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === kind && (items[i].decision || "include") === decision) group.push(i);
+      }
+      const p = group.indexOf(ti);
+      const q = p + dir;
+      if (q < 0 || q >= group.length) return;   // already at an end
+      const a = group[p], b = group[q];
+      const tmp = items[a];
+      items[a] = items[b];
+      items[b] = tmp;
+      save(items);                              // fires onChange -> render
+    }
+
     // Exclude reason -- the short note on why a reviewed variant is not reported.
     // Same persistence model as tier values.
     const EXCLUDE_REASON_KEY_PREFIX = "tspipe-exclude-reason:";
@@ -259,6 +285,7 @@
       isSelected: isSelected,
       getDecision: getDecision,
       setDecision: setDecision,
+      move: move,
       getExcludeReason: getExcludeReason,
       setExcludeReason: setExcludeReason,
       toggle: toggle,
@@ -336,9 +363,9 @@
       type: "button-group",
       options: [
         { id: "any", label: "Any", test: function () { return true; } },
+        { id: "gt1", label: ">1",  test: function (v) { return v !== null && v > 1; } },
         { id: "gt2", label: ">2",  test: function (v) { return v !== null && v > 2; } },
         { id: "gt3", label: ">3",  test: function (v) { return v !== null && v > 3; } },
-        { id: "gt4", label: ">4",  test: function (v) { return v !== null && v > 4; } },
       ],
       default: "any",
     },
@@ -499,6 +526,16 @@
     return "https://genebe.net/variant/hg38/chr" + c + "-" + pos + "-" + ref + "-" + alt;
   }
 
+  // Build an hg38 Franklin (Genoox) deep link. The Franklin variant page
+  // accepts a -hg38 reference suffix on the chr-pos-ref-alt slug, which
+  // resolves the variant in GRCh38 coordinates (verified against the live
+  // page). No API token or network call is involved; the reviewer clicks
+  // through to the full Franklin ACMG interpretation. Slug keeps "chr".
+  function franklinUrl(chr, pos, ref, alt) {
+    const c = String(chr || "").replace(/^chr/, "");
+    return "https://franklin.genoox.com/clinical-db/variant/snp/chr" + c + "-" + pos + "-" + ref + "-" + alt + "-hg38";
+  }
+
   // True iff a TSV cell carries a real value (not blank and not the
   // "-1" sentinel that somaticseq writes for missing fields).
   function hasUsefulValue(v) {
@@ -519,6 +556,7 @@
     const genebeAnnotations = config.genebeAnnotations || {};
     const oncokbAnnotations = config.oncokbAnnotations || {};
     const cancervarAnnotations = config.cancervarAnnotations || {};
+    const mobidetailsAnnotations = config.mobidetailsAnnotations || {};
     const enableReportSelect = !!config.enableReportSelect;
 
     variants.forEach(function (r, i) {
@@ -957,10 +995,13 @@
       // External-link buttons (always visible)
       const chrClean = String(r.Chr || "").replace(/^chr/, "");
       const gbUrl = genebeUrl(chrClean, r.Start, r.Ref, r.Alt);
+      const flUrl = franklinUrl(chrClean, r.Start, r.Ref, r.Alt);
 
       let extButtons =
         '<a href="' + escapeHtml(gbUrl) + '" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">' +
-          "Open in GeneBe \u2197</a>";
+          "Open in GeneBe \u2197</a>" +
+        '<a href="' + escapeHtml(flUrl) + '" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">' +
+          "Open in Franklin \u2197</a>";
 
       // Copy VV_HGVS dropdown -- c / p / g. Items for empty/-1 fields are
       // rendered disabled so the user can see which projections are available.
@@ -1049,15 +1090,192 @@
         oncokbBlock = renderOncokbBlock(oncoAnn);
       }
 
+      // MobiDetails annotation block (only present when --annotate-mobidetails was used at build time)
+      let mobidetailsBlock = "";
+      const mdAnn = mobidetailsAnnotations[r._igvKey];
+      if (mdAnn) {
+        mobidetailsBlock = renderMobidetailsBlock(mdAnn);
+      }
+
       return '<div class="vb-card-detail mt-3 pt-3 border-top">' +
                '<div class="row g-3">' + groups.join("") + "</div>" +
                genebeBlock +
                cancervarBlock +
                oncokbBlock +
+               mobidetailsBlock +
                '<div class="vb-ext-links mt-3 justify-content-end">' +
                   extButtons + igvButton +
                   '<span class="vb-copied-toast">Copied!</span>' +
                '</div>' +
+             "</div>";
+    }
+
+    // ---- MobiDetails: render the full variant_data object, every non-empty field ----
+    function mdHumanizeKey(k) {
+      return String(k)
+        .replace(/_/g, " ")
+        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+        .replace(/^./, function (c) { return c.toUpperCase(); });
+    }
+    function mdIsEmpty(v) {
+      if (v === null || v === undefined) return true;
+      const s = String(v).trim();
+      return s === "" || s === "None" || s === "." || s === "NA" ||
+             s === "nan" || s === "Not performed" || s.indexOf("No match") === 0;
+    }
+    function mdFlatten(obj, prefix, out) {
+      if (Array.isArray(obj)) {
+        obj.forEach(function (item) { mdFlatten(item, prefix, out); });
+      } else if (obj && typeof obj === "object") {
+        Object.keys(obj).forEach(function (k) {
+          const label = prefix ? prefix + " " + mdHumanizeKey(k) : mdHumanizeKey(k);
+          mdFlatten(obj[k], label, out);
+        });
+      } else if (!mdIsEmpty(obj)) {
+        out.push([prefix, obj]);
+      }
+    }
+    // Friendlier headings for known groups; anything else falls back to a
+    // humanised key, so fields MobiDetails adds later still render.
+    const MD_GROUP_ORDER = [
+      "gene", "nomenclatures", "VCF", "frequenciesDatabases", "overallPredictions",
+      "missensePredictions", "splicingPredictions", "nonCodingPredictions",
+      "miRNATargetSitesPredictions", "positions", "functionalStudies", "morfeedb",
+      "sequences", "admin"
+    ];
+    const MD_GROUP_LABELS = {
+      VCF: "VCF", frequenciesDatabases: "Frequencies & ClinVar",
+      overallPredictions: "Overall predictions", missensePredictions: "Missense predictions",
+      splicingPredictions: "Splicing predictions", nonCodingPredictions: "Non-coding predictions",
+      miRNATargetSitesPredictions: "miRNA target sites", functionalStudies: "Functional studies",
+      morfeedb: "MORFEE (uORF)", admin: "Record"
+    };
+    // Coerce MobiDetails booleans, which arrive as real bools or "True"/"False".
+    function mdTruthy(v) {
+      return v === true || v === "True" || v === "true" || v === 1 || v === "1";
+    }
+    // "0.107 (Benign)" when both are present; just the score otherwise.
+    function mdScorePred(score, pred) {
+      if (mdIsEmpty(score)) return "";
+      return !mdIsEmpty(pred) ? String(score) + " (" + String(pred) + ")" : String(score);
+    }
+    // Largest of the four SpliceAI delta scores, e.g. "0.03 (max \u0394)".
+    function mdSpliceaiMax(sp) {
+      if (!sp || typeof sp !== "object") return "";
+      const vals = ["spliceai_DS_AG", "spliceai_DS_AL", "spliceai_DS_DG", "spliceai_DS_DL"]
+        .map(function (k) { return parseFloat(sp[k]); })
+        .filter(function (x) { return !isNaN(x); });
+      if (vals.length === 0) return "";
+      return Math.max.apply(null, vals).toFixed(2) + " (max \u0394)";
+    }
+    function mdGeneRole(g) {
+      if (!g) return "";
+      const roles = [];
+      if (mdTruthy(g.isOncogene)) roles.push("oncogene");
+      if (mdTruthy(g.isTumorSuppressor)) roles.push("tumor suppressor");
+      return roles.join(", ");
+    }
+    function mdVariantLocation(p) {
+      if (!p) return "";
+      // Prefer "exon 13" (segment type + number); fall back to the coarse location.
+      if (!mdIsEmpty(p.segmentStartType) && !mdIsEmpty(p.segmentStartNumber)) {
+        return String(p.segmentStartType) + " " + String(p.segmentStartNumber);
+      }
+      return mdIsEmpty(p.variantLocation) ? "" : String(p.variantLocation);
+    }
+    // Curated field set. Empty / "not found" values drop out via mdIsEmpty, so a
+    // given variant shows only the fields it actually carries.
+    function mdCuratedRows(data) {
+      const f = data.frequenciesDatabases || {};
+      const m = data.missensePredictions || {};
+      const o = data.overallPredictions || {};
+      const sp = data.splicingPredictions || {};
+      const g = data.gene || {};
+      const p = data.positions || {};
+      const clinvar = mdIsEmpty(f.clinvarClinsig) ? "" :
+        (!mdIsEmpty(f.clinvarClinRevStat)
+          ? String(f.clinvarClinsig) + " (" + String(f.clinvarClinRevStat) + ")"
+          : String(f.clinvarClinsig));
+      const candidates = [
+        ["ClinVar", clinvar],
+        ["gnomAD v4 exome", mdIsEmpty(f.gnomADv4Exome) ? "" : String(f.gnomADv4Exome)],
+        ["gnomAD v4 genome", mdIsEmpty(f.gnomADv4Genome) ? "" : String(f.gnomADv4Genome)],
+        ["dbSNP", mdIsEmpty(f.dbSNPrsid) ? "" : String(f.dbSNPrsid)],
+        ["REVEL", mdScorePred(m.revelScore, m.revelPred)],
+        ["AlphaMissense", mdScorePred(m.amScore, m.amPred)],
+        ["CADD (Phred)", mdIsEmpty(o.caddPhred) ? "" : String(o.caddPhred)],
+        ["SpliceAI", mdSpliceaiMax(sp)],
+        ["MPA", mdScorePred(o.mpaImpact, o.mpaScore)],
+        ["Gene role", mdGeneRole(g)],
+        ["ClinGen criteria", mdIsEmpty(g.clingenCriteriaSpec) ? "" : String(g.clingenCriteriaSpec)],
+        ["Variant location", mdVariantLocation(p)]
+      ];
+      return candidates.filter(function (r) { return r[1] !== ""; });
+    }
+    // Full, every-field dump -- kept behind a collapsed toggle.
+    function mdRenderAllGroups(data) {
+      const seen = {};
+      const order = MD_GROUP_ORDER.concat(
+        Object.keys(data).filter(function (k) { return MD_GROUP_ORDER.indexOf(k) === -1; })
+      );
+      const cols = [];
+      order.forEach(function (g) {
+        if (seen[g]) return;
+        seen[g] = true;
+        if (g === "variantId") return;            // surfaced via the link
+        if (!(g in data)) return;
+        const pairs = [];
+        mdFlatten(data[g], "", pairs);
+        if (pairs.length === 0) return;           // skip empty groups
+        const rows = pairs.map(function (p) {
+          return '<dt class="col-sm-6 text-muted fw-normal small">' + escapeHtml(p[0]) + "</dt>" +
+                 '<dd class="col-sm-6 small mb-1">' + escapeHtml(String(p[1])) + "</dd>";
+        }).join("");
+        cols.push(
+          '<div class="col-md-6">' +
+            '<h6 class="text-uppercase text-muted small mt-3 mb-2">' +
+              escapeHtml(MD_GROUP_LABELS[g] || mdHumanizeKey(g)) + "</h6>" +
+            '<dl class="row mb-0">' + rows + "</dl>" +
+          "</div>"
+        );
+      });
+      return '<div class="row g-3">' + cols.join("") + "</div>";
+    }
+    function renderMobidetailsBlock(annEntry) {
+      const data = annEntry && annEntry.data;
+      const vid = (annEntry && annEntry.mobidetails_id) || (data && data.variantId);
+      const link = (annEntry && annEntry.url) ||
+        (vid ? "https://mobidetails.chu-montpellier.fr/api/variant/" + vid + "/browser/" : "");
+
+      let body;
+      if (data && typeof data === "object") {
+        const rows = mdCuratedRows(data);
+        if (rows.length) {
+          const dl = rows.map(function (r) {
+            return '<dt class="col-sm-5 text-muted fw-normal small">' + escapeHtml(r[0]) + "</dt>" +
+                   '<dd class="col-sm-7 small mb-1">' + escapeHtml(r[1]) + "</dd>";
+          }).join("");
+          body = '<dl class="row mb-0">' + dl + "</dl>";
+        } else {
+          body = '<p class="text-muted small mb-0">Resolved in MobiDetails; no curated fields populated.</p>';
+        }
+        // Every raw field, collapsed by default.
+        body += '<details class="vb-md-all mt-2">' +
+                  '<summary class="small text-muted" style="cursor:pointer;">Show all MobiDetails fields</summary>' +
+                  '<div class="mt-2">' + mdRenderAllGroups(data) + "</div>" +
+                "</details>";
+      } else {
+        body = '<p class="text-muted small mb-0">Resolved in MobiDetails; full annotation not retrieved.</p>';
+      }
+
+      const linkHtml = link
+        ? '<a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" ' +
+            'class="btn btn-sm btn-outline-primary mt-2">Open in MobiDetails \u2197</a>'
+        : "";
+
+      return '<div class="vb-md-block mt-3 pt-3 border-top">' +
+               '<h6 class="text-uppercase text-muted small mb-2">MobiDetails (build-time)</h6>' +
+               body + linkHtml +
              "</div>";
     }
 

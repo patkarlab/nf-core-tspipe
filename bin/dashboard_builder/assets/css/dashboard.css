@@ -184,6 +184,16 @@ table.dataTable tr.verdict-reject td { color: #adb5bd; font-style: italic; }
   align-items: center;
 }
 .vb-ext-links .btn { font-size: 0.85rem; }
+
+/* Reporting tab: compact up/down reorder control in the row-number cell. */
+.reporting-move-group { gap: 1px; }
+.reporting-move-group .btn {
+  padding: 0 0.3rem;
+  font-size: 0.6rem;
+  line-height: 1.25;
+  border-radius: 0.2rem;
+}
+.reporting-move-group .btn:disabled { opacity: 0.35; }
 .vb-copied-toast {
   display: inline-block;
   font-size: 0.8rem;

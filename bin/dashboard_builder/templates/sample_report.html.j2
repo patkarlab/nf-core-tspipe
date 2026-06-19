@@ -455,7 +455,7 @@
             <table class="table table-sm table-hover align-middle" id="reporting-table">
               <thead class="table-light">
                 <tr>
-                  <th scope="col" style="width:32px"></th>
+                  <th scope="col" style="width:72px"></th>
                   <th scope="col">Gene</th>
                   <th scope="col">Genomic variant</th>
                   <th scope="col">Protein variant</th>
@@ -548,6 +548,9 @@
 
   // Optional GeneBe annotations, populated only when --annotate-genebe was used.
   const genebeAnnotations = {{ ctx.genebe | tojson }};
+
+  // Optional MobiDetails annotations (full variant_data), only when --annotate-mobidetails was used.
+  const mobidetailsAnnotations = {{ ctx.mobidetails | tojson }};
 
   // Optional OncoKB annotations, populated only when --annotate-oncokb was used.
   const oncokbAnnotations = {{ ctx.oncokb | tojson }};
@@ -716,6 +719,7 @@
         genebeAnnotations: genebeAnnotations,
         oncokbAnnotations: oncokbAnnotations,
         cancervarAnnotations: cancervarAnnotations,
+        mobidetailsAnnotations: mobidetailsAnnotations,
         enableReportSelect: true
       });
     }
@@ -743,6 +747,7 @@
           genebeAnnotations: {},      // filtered tab: no external annotation (large set)
           oncokbAnnotations: {},      // ditto for OncoKB
           cancervarAnnotations: {},   // ditto for CancerVar
+          mobidetailsAnnotations: {}, // ditto for MobiDetails
           enableReportSelect: false   // filtered tab is read-only for reporting
         });
       };
@@ -834,8 +839,18 @@
         const s = it.snapshot || {};
         const tier = escapeHtml(window.tspipeReporting.getTier(it.id) || "");
         const vaf = s.vaf ? Number(s.vaf).toFixed(1) : "";
+        const upDisabled = idx === 0 ? " disabled" : "";
+        const downDisabled = idx === variants.length - 1 ? " disabled" : "";
         return '<tr data-vb-key="' + escapeHtml(it.id) + '">' +
-                 '<td class="text-muted small">' + (idx + 1) + '</td>' +
+                 '<td class="text-muted small">' +
+                   '<div class="d-flex align-items-center gap-1">' +
+                     '<span>' + (idx + 1) + '</span>' +
+                     '<div class="btn-group-vertical reporting-move-group" role="group" aria-label="Reorder variant">' +
+                       '<button type="button" class="btn btn-outline-secondary reporting-move-up" data-vb-key="' + escapeHtml(it.id) + '" title="Move up"' + upDisabled + '>\u25B2</button>' +
+                       '<button type="button" class="btn btn-outline-secondary reporting-move-down" data-vb-key="' + escapeHtml(it.id) + '" title="Move down"' + downDisabled + '>\u25BC</button>' +
+                     '</div>' +
+                   '</div>' +
+                 '</td>' +
                  '<td>' + escapeHtml(s.gene) + '</td>' +
                  '<td class="font-monospace small">' + escapeHtml(s.hgvsG) + '</td>' +
                  '<td class="font-monospace small">' + escapeHtml(s.hgvsP) + '</td>' +
@@ -1047,6 +1062,18 @@
       if (!inp) return;
       const key = inp.getAttribute("data-vb-key");
       window.tspipeReporting.setTier(key, inp.value.trim());
+    });
+
+    // Up/down reorder of included variants. Mutating the store fires the
+    // onChange -> render hook, which repaints the table with refreshed row
+    // numbers and disabled states. The order persists for the TSV export and
+    // for shared triage bundles. Disabled buttons do not emit click events.
+    tbody.addEventListener("click", function (ev) {
+      const up = ev.target.closest(".reporting-move-up");
+      const down = ev.target.closest(".reporting-move-down");
+      if (!up && !down) return;
+      const key = (up || down).getAttribute("data-vb-key");
+      window.tspipeReporting.move("variant", key, up ? -1 : 1);
     });
 
     // Exclude-reason inline edits -- persist on input. We do NOT re-render on

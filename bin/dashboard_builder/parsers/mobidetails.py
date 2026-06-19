@@ -36,6 +36,10 @@ from urllib.parse import quote
 
 
 MD_EXISTS_URL = "https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}"
+# Full variant_data JSON for a resolved MD id. Keyless: the academic tier
+# returns the complete annotation with no API key (the trailing slash is the
+# empty api_key path segment). 'cli' = JSON without SPiP.
+MD_VARIANT_URL = "https://mobidetails.chu-montpellier.fr/api/variant/{vid}/cli/"
 TIMEOUT_S = 30
 # Politeness pause between requests. The endpoint has no documented rate limit
 # but a small delay keeps us a good citizen for unauthenticated lookups.
@@ -52,6 +56,35 @@ def _is_useful(value):
         return False
     s = str(value).strip()
     return s != "" and s != "-1" and s != "-1.0"
+
+
+def _fetch_variant_data(requests, vid, sample):
+    """Fetch the full MobiDetails variant_data JSON for a resolved MD id.
+
+    Keyless: the academic tier returns the complete annotation with no API key.
+    Returns the parsed dict, or None on any failure (the caller still keeps the
+    id/url so the link and a not-found state keep working).
+    """
+    if vid is None:
+        return None
+    try:
+        resp = requests.get(
+            MD_VARIANT_URL.format(vid=vid),
+            timeout=TIMEOUT_S,
+            headers={"Accept": "application/json"},
+        )
+    except requests.RequestException as exc:
+        logging.warning("[%s] MobiDetails variant_data request failed for id %s: %s", sample, vid, exc)
+        return None
+    if resp.status_code != 200:
+        logging.warning("[%s] MobiDetails variant_data HTTP %s for id %s", sample, resp.status_code, vid)
+        return None
+    try:
+        out = resp.json()
+    except ValueError:
+        logging.warning("[%s] MobiDetails variant_data non-JSON for id %s", sample, vid)
+        return None
+    return out if isinstance(out, dict) else None
 
 
 def annotate(clinical_rows, sample_dir, sample):
@@ -163,12 +196,18 @@ def annotate(clinical_rows, sample_dir, sample):
             continue
 
         if isinstance(data, dict) and "mobidetails_id" in data:
-            cache[key] = {
-                "mobidetails_id": data.get("mobidetails_id"),
+            vid = data.get("mobidetails_id")
+            entry = {
+                "mobidetails_id": vid,
                 "url":            data.get("url"),
                 "hgvs_g":         hgvs_g,
                 "_fetched_at":    timestamp,
             }
+            # Follow-up call: pull the full variant_data JSON (keyless) and store
+            # it whole so the dashboard can render every field MD returns.
+            entry["data"] = _fetch_variant_data(requests, vid, sample)
+            time.sleep(SLEEP_BETWEEN_REQUESTS_S)
+            cache[key] = entry
             n_hit += 1
         elif isinstance(data, dict) and "mobidetails_warning" in data:
             cache[key] = {
@@ -227,6 +266,7 @@ def filter_for_frontend(cache):
         out[key] = {
             "url":            url,
             "mobidetails_id": ann.get("mobidetails_id"),
+            "data":           ann.get("data"),
             "_fetched_at":    ann.get("_fetched_at"),
         }
     return out
