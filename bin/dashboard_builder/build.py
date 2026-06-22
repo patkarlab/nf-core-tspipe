@@ -195,8 +195,8 @@ def _apply_report_exon(parsed, bed_index):
 
 
 def collect_sample_context(sample_dir, build_time, subdir="",
-                           annotate_genebe=False, genebe_user=None, genebe_key=None,
-                           annotate_mobidetails=False,
+                           annotate_genebe=True, genebe_user=None, genebe_key=None,
+                           annotate_mobidetails=True,
                            annotate_oncokb=False, oncokb_token=None,
                            annotate_cancervar=False, panel_bed_index=None):
     """Run every parser on one sample directory; return a context dict for the template.
@@ -420,8 +420,8 @@ def format_num_filter(value, ndigits=2):
 
 
 def build(run_dir, subdir="",
-          annotate_genebe=False, genebe_user=None, genebe_key=None,
-          annotate_mobidetails=False,
+          annotate_genebe=True, genebe_user=None, genebe_key=None,
+          annotate_mobidetails=True,
           annotate_oncokb=False, oncokb_token=None,
           annotate_cancervar=False, panel_bed=None):
     run_dir = Path(run_dir).resolve()
@@ -531,8 +531,14 @@ def main():
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
     parser.add_argument(
-        "--annotate-genebe", action="store_true",
-        help="Annotate clinical variants via the GeneBe REST API at build time (network required)."
+        "--annotate-genebe", dest="annotate_genebe", action="store_true", default=True,
+        help="Annotate clinical variants via the GeneBe REST API at build time "
+             "(network required). On by default; works anonymously (rate-limited) "
+             "or with --genebe-user/--genebe-key. Use --no-annotate-genebe to disable."
+    )
+    parser.add_argument(
+        "--no-annotate-genebe", dest="annotate_genebe", action="store_false",
+        help="Disable the default GeneBe annotation for this run."
     )
     parser.add_argument(
         "--genebe-user", default=None,
@@ -545,13 +551,17 @@ def main():
              "Used only when --annotate-genebe is set."
     )
     parser.add_argument(
-        "--annotate-mobidetails", action="store_true",
-        help="Resolve clinical variants to MobiDetails record IDs at build time "
-             "via the /api/variant/exists endpoint (network required, no API key). "
-             "Writes <sample>_mobidetails_cache.json with which variants are known "
-             "to MD. Note: this does NOT add UI links -- MD has no reliable "
-             "anonymous deep link, so the cache is for audit purposes only. "
-             "The user-facing path is the Copy VV_HGVS dropdown."
+        "--annotate-mobidetails", dest="annotate_mobidetails", action="store_true", default=True,
+        help="Annotate clinical variants via the MobiDetails API at build time "
+             "(network required, keyless academic API). Fetches the full variant "
+             "record and renders a curated clinical block (ClinVar, gnomAD v4, "
+             "REVEL, AlphaMissense, CADD, SpliceAI, MPA, etc.) in each variant's "
+             "detail panel, caching to <sample>_mobidetails_cache.json. On by "
+             "default; use --no-annotate-mobidetails to disable."
+    )
+    parser.add_argument(
+        "--no-annotate-mobidetails", dest="annotate_mobidetails", action="store_false",
+        help="Disable the default MobiDetails annotation for this run."
     )
     parser.add_argument(
         "--annotate-oncokb", action="store_true",

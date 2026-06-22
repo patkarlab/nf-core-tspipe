@@ -112,9 +112,10 @@ process DASHBOARD {
         ${py} ${builder_dir}/build.py \\
             dashboard_view \\
             --subdir clinical \\
-            ${ params.genebe_enabled ? "--annotate-genebe" : "" } \\
+            ${ params.genebe_enabled ? "" : "--no-annotate-genebe" } \\
             ${ params.genebe_enabled && params.genebe_user ? "--genebe-user '" + params.genebe_user + "'" : "" } \\
             ${ params.genebe_enabled && params.genebe_key  ? "--genebe-key '"  + params.genebe_key  + "'" : "" } \\
+            ${ params.mobidetails_enabled ? "" : "--no-annotate-mobidetails" } \\
             ${ params.oncokb_enabled ? "--annotate-oncokb" : "" } \\
             ${ params.oncokb_enabled && params.oncokb_token ? "--oncokb-token '" + params.oncokb_token + "'" : "" } \\
             ${task.ext.args ?: ''}
