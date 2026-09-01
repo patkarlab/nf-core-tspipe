@@ -1,0 +1,4 @@
+noisy_total 933
+noisy_chrX 409
+noisy_backbone 564
+noisy_exonic 369

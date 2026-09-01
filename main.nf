@@ -21,11 +21,16 @@ nextflow.enable.dsl = 2
 
 include { TSPIPE    } from './workflows/tspipe'
 include { BUILD_PON } from './workflows/build_pon'
+include { BUILD_PON_TWIST } from './workflows/build_pon_twist'   // BPT_ENTRY_V1 -- run with: -entry BUILD_PON_TWIST
 
 // Default entry: the per-sample pipeline.
 // Run with:   nextflow run main.nf --input samplesheet.csv ...
 workflow {
     TSPIPE()
+}
+
+workflow PON {
+    BUILD_PON()
 }
 
 // To run the PoN build instead:

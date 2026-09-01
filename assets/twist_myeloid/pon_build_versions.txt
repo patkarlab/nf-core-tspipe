@@ -1,0 +1,14 @@
+BUILD_PON_TWIST tool versions
+date: 2026-09-01 16:01:20 +0530
+host: gandalf
+python: /home/hemat/anaconda3/envs/targeted-seq/bin/python (Python 3.10.14)
+cnvkit: 0.9.12
+gatk:
+    Using GATK jar /home/hemat/anaconda3/envs/targeted-seq/share/gatk4-4.6.2.0-1/gatk-package-4.6.2.0-local.jar
+    Running:
+        java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -jar /home/hemat/anaconda3/envs/targeted-seq/share/gatk4-4.6.2.0-1/gatk-package-4.6.2.0-local.jar --version
+    The Genome Analysis Toolkit (GATK) v4.6.2.0
+    HTSJDK Version: 4.2.0
+    Picard Version: 3.4.0
+mosdepth: mosdepth 0.3.10
+samtools: samtools 1.21
