@@ -1,9 +1,10 @@
 /*
  * modules/local/bpt_cnvkit_reference.nf
  *
- * Pooled CNVkit reference for one stratum. NO -y, ever: sex is handled by
- * stratification, not by the haploid-X flag. params.male_reference is
- * retired for this panel (2026-08-30 design doc v3).
+ * Pooled CNVkit reference for one stratum. The male stratum is built
+ * with -y (haploid-X reference) so the stored chrX scale matches what
+ * the application layer declares; the female stratum is built flagless
+ * (diploid-X). See the BPT_HAPLOID_X_V1 note in the script block.
  */
 
 process BPT_CNVKIT_REFERENCE {
@@ -26,6 +27,14 @@ process BPT_CNVKIT_REFERENCE {
 
     script:
         def extra = task.ext.args ?: ''
+        // BPT_HAPLOID_X_V1: the male stratum reference is built haploid-X
+        // (-y) to match the application layer (cnvkit_wrapper.py passes -y
+        // for male samples). CNVkit sex-normalises inputs to the
+        // reference's target scale, so a flagless build from male inputs
+        // yields a diploid-X reference. Verified 2026-09-01 on build_v2:
+        // ref chrX mean log2 +0.111 vs chr1 -0.113; LOO chrX mean -0.947,
+        // fp_loss_rate 0.916 -- systematic offset, not variance.
+        def yflag = (stratum == 'male') ? '-y' : ''
         """
         n_t=\$(ls *.targetcoverage.cnn 2>/dev/null | wc -l)
         n_a=\$(ls *.antitargetcoverage.cnn 2>/dev/null | wc -l)
@@ -42,8 +51,9 @@ process BPT_CNVKIT_REFERENCE {
             *.targetcoverage.cnn *.antitargetcoverage.cnn \\
             --fasta ${fasta} \\
             ${extra} \\
+            ${yflag} \\
             -o cnvkit_pon_${stratum}.cnn
 
-        echo "[ok] wrote cnvkit_pon_${stratum}.cnn (no -y; sex handled by stratification)"
+        echo "[ok] wrote cnvkit_pon_${stratum}.cnn (haploid-X flag: '${yflag}')"
         """
 }

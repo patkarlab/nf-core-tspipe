@@ -4,7 +4,8 @@
  * Per-stratum leave-one-out CNV noise assessment. Wraps bin/cnv_loo_qc.py
  * (shared with the legacy BUILD_PON path) but:
  *   - passes --panel explicitly (script default is 'myeloid'),
- *   - never passes -y,
+ *   - passes -y for the male stratum only (haploid-X reference;
+ *     BPT_HAPLOID_X_V1),
  *   - stages the stratum's coverage .cnn files flat and passes
  *     --cov-dir .
  *
@@ -46,6 +47,7 @@ process BPT_CNV_LOO_QC {
         """
 
     script:
+        def yflag = (stratum == 'male') ? '-y' : ''
         """
         n_t=\$(ls *.targetcoverage.cnn 2>/dev/null | wc -l)
         echo "[ok] LOO stratum=${stratum}: \$n_t coverage files staged"
@@ -60,6 +62,7 @@ process BPT_CNV_LOO_QC {
             --bed ${bed} \\
             --outdir loo_qc \\
             --panel ${params.pon_panel} \\
+            ${yflag} \\
             -j ${task.cpus}
         """
 }

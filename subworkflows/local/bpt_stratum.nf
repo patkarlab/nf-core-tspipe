@@ -1,8 +1,9 @@
 /*
  * subworkflows/local/bpt_stratum.nf
  *
- * One stratum of the Twist myeloid PoN: pooled CNVkit reference (no -y;
- * params.male_reference retired for this panel), GATK read-count PoN, and
+ * One stratum of the Twist myeloid PoN: pooled CNVkit reference
+ * (haploid-X -y for the male stratum; BPT_HAPLOID_X_V1), GATK
+ * read-count PoN, and
  * per-stratum leave-one-out QC.
  *
  * Instantiated once per stratum via aliased includes in
