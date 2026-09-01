@@ -1,0 +1,287 @@
+{
+  "panel": "twist_myeloid",
+  "design_id": "TE-99430185",
+  "genome": "hg38",
+  "builder": "build_panel_assets",
+  "inputs": {
+    "main": {
+      "path": "/goast/hemat_data/nf-core-tspipe/probes_ok_ACTREC_Myeloid_TE-99430185_hg38_Main_260602213057.bed",
+      "md5": "8e71b5b6b23bd6124b251c86cda18a44",
+      "probes": 6244
+    },
+    "backbone": {
+      "path": "/goast/hemat_data/nf-core-tspipe/probes_ok_ACTREC_Myeloid_TE-99430185_CNV_Backbone_Spikein_260603122240.bed",
+      "md5": "222cee1ea5292aa6ec304c198e5d92a8",
+      "tiles": 3047
+    },
+    "fai": {
+      "path": "/goast/hemat_data/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta.fai",
+      "sequences": 3366
+    }
+  },
+  "classes": {
+    "exonic": {
+      "probes": 5838,
+      "genes": 125,
+      "cnv_eligible": true
+    },
+    "focal_cnv": {
+      "probes": 17,
+      "cnv_eligible": true
+    },
+    "hotspot": {
+      "probes": 15,
+      "cnv_eligible": false
+    },
+    "baf_17p": {
+      "probes": 370,
+      "cnv_eligible": false
+    },
+    "baf_autosomal": {
+      "probes": 4,
+      "cnv_eligible": false
+    },
+    "backbone": {
+      "tiles": 3047,
+      "cnv_eligible": true
+    }
+  },
+  "exonwise": {
+    "rows": 1795,
+    "suspicious_collapses": 0,
+    "classes_included": [
+      "exonic",
+      "focal_cnv",
+      "hotspot"
+    ]
+  },
+  "cnv_eligible_genes": [
+    "AKT1",
+    "ALAS2",
+    "ANKRD26",
+    "ARID1A",
+    "ASXL1",
+    "ASXL2",
+    "ATM",
+    "BCL11B",
+    "BCL2",
+    "BCOR",
+    "BCORL1",
+    "BIRC3",
+    "BPGM",
+    "BRINP3",
+    "BTG1",
+    "BTK",
+    "CALR",
+    "CBL",
+    "CBLB",
+    "CCNC",
+    "CCND3",
+    "CDKN1B",
+    "CDKN2A",
+    "CDKN2B",
+    "CEBPA",
+    "CSF1R",
+    "CSF3R",
+    "CSMD1",
+    "CSNK1A1",
+    "CTCF",
+    "CTNNB1",
+    "CUX1",
+    "DDX3X",
+    "DDX41",
+    "DHX15",
+    "DNMT1",
+    "DNMT3A",
+    "EED",
+    "EGLN1",
+    "ELANE",
+    "EPAS1",
+    "EPOR",
+    "ERG",
+    "ETNK1",
+    "ETV6",
+    "EZH2",
+    "FLT3",
+    "GATA1",
+    "GATA2",
+    "GFI1",
+    "GNAS",
+    "GNB1",
+    "HNRNPK",
+    "HRAS",
+    "IKZF1",
+    "IL7R",
+    "IRF1",
+    "JAK2",
+    "KDM6A",
+    "KDM6B",
+    "KIT",
+    "KMT2A",
+    "KRAS",
+    "LIG4",
+    "LUC7L2",
+    "MAP2K1",
+    "MN1",
+    "MPL",
+    "MYB",
+    "MYC",
+    "MYCN",
+    "MYD88",
+    "NAF1",
+    "NF1",
+    "NFE2",
+    "NOTCH1",
+    "NOTCH3",
+    "NPM1",
+    "NRAS",
+    "PARN",
+    "PAX5",
+    "PHF6",
+    "PIGA",
+    "PLCG2",
+    "PPM1D",
+    "PRPF40B",
+    "PRPF8",
+    "PTEN",
+    "PTPN11",
+    "RAD21",
+    "RAD51",
+    "RAD51C",
+    "RIT1",
+    "RRAS",
+    "RRAS2",
+    "RUNX1",
+    "SAMD9",
+    "SAMD9L",
+    "SETBP1",
+    "SETD1B",
+    "SETD2",
+    "SF1",
+    "SF3A1",
+    "SF3B1",
+    "SH2B3",
+    "SMC1A",
+    "SMC3",
+    "SRSF2",
+    "STAG2",
+    "STAT3",
+    "STAT5B",
+    "SUZ12",
+    "TET2",
+    "TP53",
+    "U2AF1",
+    "U2AF2",
+    "UBA1",
+    "UBE2T",
+    "UBTF",
+    "WT1",
+    "XRCC2",
+    "ZBTB7A",
+    "ZFHX4",
+    "ZNF91",
+    "ZRSR2"
+  ],
+  "cnv_excluded_genes": [
+    "BRAF",
+    "IDH1",
+    "IDH2"
+  ],
+  "compound_labels_resolved": {
+    "NOTCH1_3-UTR,NOTCH1_exon_34": "NOTCH1_exon_34",
+    "ANKRD26_5UTR,ANKRD26_5-UTR": "ANKRD26_5UTR",
+    "MLH1_5UTR_t1,MLH1_5UTR_t2": "MLH1_5UTR",
+    "HNRNPK_exon_15,HNRNPK_exon_14": "HNRNPK_exon_14",
+    "GATA2_intron4_t2,GATA2_intron4_t1": "GATA2_intron4",
+    "GATA2_intron4_t2,GATA2_intron4_t3,GATA2_intron4_t1": "GATA2_intron4",
+    "GATA2_intron4_t4,GATA2_intron4_t3,GATA2_intron4_t2": "GATA2_intron4",
+    "GATA2_intron4_t4,GATA2_intron4_t3,GATA2_intron4_t5": "GATA2_intron4",
+    "GATA2_intron4_t4,GATA2_intron4_t5": "GATA2_intron4"
+  },
+  "backbone_anomalies": [
+    {
+      "probe": "CNVbb_chr14_73467210_range=chr14_73467210_73467330",
+      "issue": "length != 120 bp",
+      "length": 121
+    },
+    {
+      "probe": "CNVbb_chr1_143997797_range=chr1_143997797_143997915",
+      "issue": "length != 120 bp",
+      "length": 119
+    },
+    {
+      "probe": "CNVbb_chr8_144281107_range=chr8_144281107_144281586",
+      "issue": "length != 120 bp",
+      "length": 480
+    }
+  ],
+  "known_design_gaps": [
+    {
+      "name": "DNMT1_exon_5",
+      "chrom": "chr19",
+      "start": 10180186,
+      "end": 10180234,
+      "note": "48 bp requested; likely below designable minimum for a 120-mer. Exons 1-4 and 6-41 delivered."
+    },
+    {
+      "name": "ZNF91_exon_2",
+      "chrom": "chr19",
+      "start": 23374637,
+      "end": 23374764,
+      "note": "127 bp requested; ZNF91 is a KRAB zinc-finger gene, probe uniqueness failure likely. Exons 1, 3, 4 delivered."
+    }
+  ],
+  "exclusions": {
+    "exon_labels": [
+      "ANKRD26_exon_19",
+      "CCNC_exon_6",
+      "ANKRD26_exon_29",
+      "CCNC_exon_7",
+      "AKT1_exon_1",
+      "PTEN_exon_3",
+      "ANKRD26_exon_5",
+      "ANKRD26_exon_28"
+    ],
+    "exon_source": {
+      "path": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/exclusions.exons.tsv",
+      "md5": "14897120448417641eb0de9a6486ed44",
+      "provenance": [
+        "# tool: derive_exclusion_list  run: 2026-09-01 09:49:39",
+        "# cohort: 24 male BAMs (8-plex, 16 hr) -- conforming capture. 24 female normals (12-plex) excluded as nonconforming.",
+        "# spread source: /goast/hemat_data/pon_twist/pon/cnvkit_pon_male.cnn  md5=04875c55ade3edc699accea2818a00fe",
+        "# criterion: ratio < 0.075 OR (ratio < 0.50 AND max_spread > 0.75); ratio = male exon median / male gene median",
+        "# exon depth source: /goast/hemat_data/nf-core-tspipe/qc/twist_pon48/exsurvey__jsoadxr (24 files)",
+        "# retained_by_decision: JAK2_exon_15; HRAS_exon_1 (2026-09-01, consistent-suppression class)"
+      ]
+    },
+    "backbone_tiles_removed": 71,
+    "backbone_source": {
+      "path": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/exclusions.backbone.tsv",
+      "md5": "e282c3e9da21c5c6c91b130e2bb5c384",
+      "provenance": [
+        "# tool: derive_exclusion_list  run: 2026-09-01 09:49:39",
+        "# cohort: 24 male BAMs (8-plex, 16 hr) -- conforming capture. 24 female normals (12-plex) excluded as nonconforming.",
+        "# spread source: /goast/hemat_data/pon_twist/pon/cnvkit_pon_male.cnn  md5=04875c55ade3edc699accea2818a00fe",
+        "# criterion: male tile median depth < 30x. Replaces retired GC<0.35 rule (derived from nonconforming 12-plex female batch).",
+        "# backbone depth source: /goast/hemat_data/nf-core-tspipe/qc/twist_pon48/backbone_male (24 files)",
+        "# gc column: annotation only, from /goast/hemat_data/nf-core-tspipe/qc/twist_early/backbone_tile_depth.tsv  md5=bc8f78e5bab041e3ebb31a30daf10193"
+      ]
+    }
+  },
+  "review_notes": [
+    "'GATA3_intronic' is not rs-named but sits beside an rs-named SNP probe. Classified as hotspot (Class C). If it is in fact a second BAF site, move it to BAF_AUTOSOMAL_NAMES."
+  ],
+  "outputs": {
+    "targets.exonic.bed": "435b70da713df569a2cdab6f81ae10fd",
+    "targets.focal_cnv.bed": "176e3b224e201446af3c3c0aa3edba28",
+    "targets.hotspot.bed": "3b2c339ef3559ab2a1b1c8ae255a934d",
+    "targets.baf_autosomal.bed": "998081e37cdb65d79ca8ab941cce2058",
+    "targets.17p_snp.bed": "049da45b960ab43e00ad2cbed75d7d26",
+    "backbone.hg38.bed": "006ee49d4c6395b44d91035b4f53487a",
+    "panel.combined.bed": "30261e68a00c7d8b6b226656f796a381",
+    "panel.combined.filtered.bed": "01d8e8ceae9dd708cff7d26ccd999649",
+    "snp_sites.baf.bed": "5528b7b1cd64fb8786755c01133359c0",
+    "targets.exonwise.bed": "25010b2a9da83a91ff81990393974dbb",
+    "exonwise_audit.tsv": "92de23a37b466792d91bad2646bf8248"
+  }
+}

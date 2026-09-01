@@ -1,0 +1,15 @@
+# tool: derive_exclusion_list  run: 2026-09-01 09:49:39
+# cohort: 24 male BAMs (8-plex, 16 hr) -- conforming capture. 24 female normals (12-plex) excluded as nonconforming.
+# spread source: /goast/hemat_data/pon_twist/pon/cnvkit_pon_male.cnn  md5=04875c55ade3edc699accea2818a00fe
+# criterion: ratio < 0.075 OR (ratio < 0.50 AND max_spread > 0.75); ratio = male exon median / male gene median
+# exon depth source: /goast/hemat_data/nf-core-tspipe/qc/twist_pon48/exsurvey__jsoadxr (24 files)
+# retained_by_decision: JAK2_exon_15; HRAS_exon_1 (2026-09-01, consistent-suppression class)
+label	gene	chrom	start	end	male_median_depth	gene_median_depth	ratio	n_bins_cnn	max_spread	min_log2	arm
+ANKRD26_exon_19	ANKRD26	chr10	27044134	27044254	8.8	887.2	0.010	1	0.762	-6.089	dead
+CCNC_exon_6	CCNC	chr6	99551785	99551905	10.7	790.0	0.014	1	0.849	-5.618	dead
+ANKRD26_exon_29	ANKRD26	chr10	27022561	27022681	14.8	887.2	0.017	1	1.079	-5.429	dead
+CCNC_exon_7	CCNC	chr6	99550974	99551094	14.0	790.0	0.018	1	1.025	-5.467	dead
+AKT1_exon_1	AKT1	chr14	104795482	104795747	39.8	955.2	0.042	1	0.594	-4.440	dead
+PTEN_exon_3	PTEN	chr10	87925474	87925594	147.1	914.7	0.161	1	0.776	-2.106	irreproducible
+ANKRD26_exon_5	ANKRD26	chr10	27086494	27086614	162.5	887.2	0.183	1	0.941	-1.682	irreproducible
+ANKRD26_exon_28	ANKRD26	chr10	27024441	27024561	196.3	887.2	0.221	1	0.756	-1.791	irreproducible
