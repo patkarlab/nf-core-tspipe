@@ -1,0 +1,30 @@
+# panel_gene_chroms.tsv -- twist_myeloid (TE-99430185)
+# Per-chromosome CNV scatter pages for cnvkit_wrapper.py --panel-gene-chroms
+# (PGC_ARG_V1). Format: chrom<TAB>comma,separated,genes. Genes label the
+# output filename and log line only; each scatter is chromosome-wide.
+#
+# DRAFT curation by Claude, 2026-09-01 -- Nikhil to review/edit.
+# Rationale per line targets the recurrent myeloid chromosome-level events:
+#
+# del(5q) / CSNK1A1 haploinsufficiency; NPM1 locus
+chr5	CSNK1A1,NPM1,DDX41
+# monosomy 7 / del(7q): EZH2-CUX1-LUC7L2 commonly deleted region; SAMD9/9L 7q21
+chr7	EZH2,CUX1,SAMD9L,IKZF1
+# trisomy 8 (most common myeloid trisomy)
+chr8	MYC,RAD21
+# 9p focal deletions (CDKN2A/B) and JAK2 locus
+chr9	CDKN2A,CDKN2B,JAK2
+# KMT2A amplification/PTD region; del(11q)/ATM
+chr11	KMT2A,ATM
+# del(12p)/ETV6
+chr12	ETV6
+# FLT3 locus / del(13q)
+chr13	FLT3
+# del(17p)/TP53; NF1 17q
+chr17	TP53,NF1
+# del(20q)
+chr20	ASXL1
+# RUNX1 alterations / chr21
+chr21	RUNX1
+# X-linked drivers recovered by the v2.1 haploid-X rebuild
+chrX	STAG2,BCOR,ZRSR2

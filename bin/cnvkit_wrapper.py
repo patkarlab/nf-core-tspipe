@@ -92,7 +92,41 @@ def parse_args():
                     help="Noisy bins BED from LOO QC")
     ap.add_argument("--loo-summary", required=True,
                     help="Gene-level LOO FP rate TSV")
+    ap.add_argument("--panel-gene-chroms", default=None,
+                    help="TSV (chrom<TAB>comma,genes) overriding the "
+                         "built-in myeloid PANEL_GENE_CHROMS map for "
+                         "per-chromosome scatters (PGC_ARG_V1)")
     return ap.parse_args()
+
+
+def load_panel_gene_chroms(path):
+    """Load a per-panel chrom -> gene-list map (PGC_ARG_V1).
+
+    Format: one line per chromosome page, chrom<TAB>comma,separated,genes.
+    Full-line '#' comments and blank lines are ignored. Genes label the
+    output filename and log line only; the scatter itself is
+    chromosome-wide (cnvkit.py scatter -c <chrom>).
+    """
+    mapping = {}
+    with open(path) as fh:
+        for lineno, line in enumerate(fh, 1):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            if len(parts) != 2:
+                log.error("panel-gene-chroms line %d: expected "
+                          "chrom<TAB>genes, got %d fields", lineno, len(parts))
+                sys.exit(1)
+            genes = [g.strip() for g in parts[1].split(",") if g.strip()]
+            if not genes:
+                log.error("panel-gene-chroms line %d: empty gene list", lineno)
+                sys.exit(1)
+            mapping[parts[0]] = genes
+    if not mapping:
+        log.error("panel-gene-chroms: no entries in %s", path)
+        sys.exit(1)
+    return mapping
 
 
 def cnvkit_batch_cmd(bam, pon_path, outdir, male_reference=False):
@@ -387,7 +421,13 @@ def main():
 
     # --- Step 7: Per-chromosome scatter for panel genes ---
     log.info("Step 7: Per-chromosome scatter plots for panel genes")
-    for chrom, genes in PANEL_GENE_CHROMS.items():
+    if args.panel_gene_chroms:
+        panel_gene_chroms = load_panel_gene_chroms(args.panel_gene_chroms)
+        log.info("  Panel gene-chrom map: %s (%d chromosomes)",
+                 args.panel_gene_chroms, len(panel_gene_chroms))
+    else:
+        panel_gene_chroms = PANEL_GENE_CHROMS
+    for chrom, genes in panel_gene_chroms.items():
         gene_label = "_".join(genes)
         chrom_png = os.path.join(
             args.outdir, f"{sample}.scatter.{chrom}_{gene_label}.png")

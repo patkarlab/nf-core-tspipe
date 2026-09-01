@@ -8,6 +8,10 @@
  * production scripts/12_cnv_calling.py (sex auto-inference removed; sex
  * resolved upstream via meta.sex).
  *
+ * PGC_ARG_V1: task.ext.args is appended to the wrapper command
+ * (empty by default). Per-panel configs use it to pass
+ * --panel-gene-chroms; legacy panels are unaffected.
+ *
  * PoN selection logic:
  *   meta.sex == 'male'   -> pon_male
  *   meta.sex == 'female' -> pon_female
@@ -82,6 +86,6 @@ process CNVKIT {
             --pon ${pon_use} \\
             --sex ${sex} \\
             --blacklist ${noisy_bins} \\
-            --loo-summary ${loo_summary}
+            --loo-summary ${loo_summary} ${task.ext.args ?: ''}
         """
 }
