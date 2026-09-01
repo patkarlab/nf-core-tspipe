@@ -195,12 +195,24 @@ workflow TSPIPE {
             gatk_ilist = params.cnv_gatk_intervals
         ch_gatk_rc_pon = Channel.value(file(params.cnv_gatk_pon, checkIfExists: true))
         ch_gatk_ilist  = Channel.value(file(gatk_ilist,          checkIfExists: true))
+        // BAF_V1: BAF SNP catalog + male-cohort background for the
+        // allele-specific track (ModelSegments) and the 17p cnLOH detector.
+        def baf_sites = "${projectDir}/assets/${params.panel}/snp_sites.baf.bed"
+        if( params.containsKey('cnv_baf_sites') && params.cnv_baf_sites )
+            baf_sites = params.cnv_baf_sites
+        def baf_bg = "${projectDir}/assets/${params.panel}/baf_background.tsv"
+        if( params.containsKey('cnv_baf_background') && params.cnv_baf_background )
+            baf_bg = params.cnv_baf_background
+        ch_baf_snp_bed    = Channel.value(file(baf_sites, checkIfExists: true))
+        ch_baf_background = Channel.value(file(baf_bg,    checkIfExists: true))
         GATK_CNV_CALLING(
             ch_final_bam,
             ch_reference,
             ch_gatk_ilist,
             ch_gatk_rc_pon,
             ch_exonwise_bed,
+            ch_baf_snp_bed,
+            ch_baf_background,
         )
     }
 
