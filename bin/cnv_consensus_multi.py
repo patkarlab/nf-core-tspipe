@@ -154,6 +154,10 @@ def main():
                  "gatk-called", "denoised", "baf-summary", "baf-sites",
                  "loo-summary", "out-prefix"]:
         ap.add_argument("--" + name, required=True)
+    ap.add_argument("--purecn-genes", default=None,
+                    help="PureCN normalised gene table (PCN_V1); optional")
+    ap.add_argument("--purecn-summary", default=None,
+                    help="PureCN summary tsv (PCN_V1); optional")
     args = ap.parse_args()
 
     for p in [args.concordance, args.cnr, args.call_cns, args.gatk_genes,
@@ -238,6 +242,21 @@ def main():
         if m else ("chr17", 0, 0)
     baf_verdict = baf.get("verdict", "NA")
 
+    # ---- PureCN (PCN_V1; optional, FAILED-tolerant)
+    purecn = {}
+    purecn_sum = {"status": "ABSENT"}
+    if args.purecn_summary and os.path.isfile(args.purecn_summary):
+        ps_rows = read_tsv(args.purecn_summary)[1]
+        if ps_rows:
+            purecn_sum = ps_rows[0]
+    if args.purecn_genes and os.path.isfile(args.purecn_genes) \
+            and purecn_sum.get("status") == "OK":
+        for r in read_tsv(args.purecn_genes)[1]:
+            purecn[r["gene"]] = r
+    elif args.purecn_genes:
+        warn("PureCN status={0}; P support omitted".format(
+            purecn_sum.get("status")))
+
     # ---- per-gene consensus
     n_consensus = 0
     for g in genes:
@@ -247,9 +266,12 @@ def main():
         lg = legacy.get(g["gene"], {})
         if z_col and lg:
             z_call = norm_call(lg.get(z_col))
+        pr = purecn.get(g["gene"], {})
+        p_call = pr.get("p_call", "NA")
         calls = {"K": k_call if k_call in ("GAIN", "LOSS") else None,
                  "Z": z_call if z_call in ("GAIN", "LOSS") else None,
-                 "G": g["g_call"] if g["g_call"] in ("GAIN", "LOSS") else None}
+                 "G": g["g_call"] if g["g_call"] in ("GAIN", "LOSS") else None,
+                 "P": p_call if p_call in ("GAIN", "LOSS") else None}
         nonneutral = dict((k, v) for k, v in calls.items() if v)
         dirs = set(nonneutral.values())
         flags = "".join(sorted(nonneutral))
@@ -268,7 +290,10 @@ def main():
             allelic = baf_verdict
         g.update({
             "k_call": k_call, "k_cn": k_cn, "k_log2": k_log2,
-            "z_call": z_call or "NA", "support": len(nonneutral),
+            "z_call": z_call or "NA",
+            "p_call": p_call, "p_C": pr.get("p_C", "NA"),
+            "p_loh": pr.get("p_loh", "NA"),
+            "support": len(nonneutral),
             "flags": flags or "-", "consensus_call": consensus,
             "loo_fp_any": loo_fp.get(g["gene"], "NA"),
             "allelic_state": allelic,
@@ -299,12 +324,13 @@ def main():
     # ---- outputs
     with open(args.out_prefix + ".genes.tsv", "w") as out:
         out.write("gene\tchrom\tstart\tend\tk_call\tk_cn\tk_log2\tz_call\t"
-                  "g_call\tg_seg_log2\tg_n_bins\tsupport\tflags\t"
-                  "consensus_call\tloo_fp_any\tallelic_state\n")
+                  "g_call\tg_seg_log2\tg_n_bins\tp_call\tp_C\tp_loh\t"
+                  "support\tflags\tconsensus_call\tloo_fp_any\tallelic_state\n")
         for g in sorted(genes, key=lambda x: (x["chrom"], x["start"])):
             out.write("\t".join(str(g[c]) for c in [
                 "gene", "chrom", "start", "end", "k_call", "k_cn", "k_log2",
-                "z_call", "g_call", "g_seg_log2", "g_n_bins", "support",
+                "z_call", "g_call", "g_seg_log2", "g_n_bins",
+                "p_call", "p_C", "p_loh", "support",
                 "flags", "consensus_call", "loo_fp_any", "allelic_state",
             ]) + "\n")
 
@@ -331,7 +357,8 @@ def main():
                   r["sample_het"] == "true"] for r in site_rows]
 
     payload = {
-        "schema": "twist_cnv_consensus4/v1",
+        "schema": "twist_cnv_consensus4/v2",
+        "purecn": purecn_sum,
         "sample": args.sample,
         "panel": "twist_myeloid",
         "baf17p": baf,

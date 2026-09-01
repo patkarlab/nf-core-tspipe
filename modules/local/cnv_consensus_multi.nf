@@ -1,5 +1,5 @@
 /*
- * modules/local/cnv_consensus_multi.nf  (CMX_V1)
+ * modules/local/cnv_consensus_multi.nf  (CMX_V1; PureCN inputs PCN_V1)
  *
  * Four-caller CNV consensus for the twist_myeloid panel: CNVkit
  * (segments -> gene calls derived from call.cns), Z-score (gene table
@@ -20,7 +20,8 @@ process CNV_CONSENSUS_MULTI {
     input:
         tuple val(meta), path(concordance), path(cnr), path(call_cns),
               path(gatk_genes), path(gatk_called), path(denoised),
-              path(baf_summary), path(baf_sites)
+              path(baf_summary), path(baf_sites),
+              path(purecn_genes), path(purecn_summary)
         path loo_summary
 
     output:
@@ -46,6 +47,8 @@ process CNV_CONSENSUS_MULTI {
             --baf-summary ${baf_summary} \\
             --baf-sites ${baf_sites} \\
             --loo-summary ${loo_summary} \\
+            --purecn-genes ${purecn_genes} \\
+            --purecn-summary ${purecn_summary} \\
             --out-prefix ${meta.id}.cnv_consensus4
         """
 }

@@ -30,6 +30,8 @@ include { FLT3_ITD            } from '../subworkflows/local/flt3_itd'
 include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
 include { GATK_CNV_CALLING    } from '../subworkflows/local/gatk_cnv_calling'   // TGC_V1
 include { CNV_CONSENSUS_MULTI } from '../modules/local/cnv_consensus_multi'   // CMX_V1
+include { PURECN_COVERAGE     } from '../modules/local/purecn_coverage'   // PCN_V1
+include { PURECN              } from '../modules/local/purecn'   // PCN_V1
 include { ANNOTATION          } from '../subworkflows/local/annotation'
 include { IGV_REPORTS         } from '../modules/local/igv_reports'
 include { ORGANIZE_OUTPUT     } from '../modules/local/organize_output'
@@ -216,7 +218,19 @@ workflow TSPIPE {
             ch_baf_background,
         )
 
-        // CMX_V1: four-caller consensus + Phase-4 JSON payload.
+        // PCN_V1: PureCN purity/ploidy/integer-CN + LOH (fifth caller).
+        // Reference set from the twist overlay params; NormalDB build:
+        // tools/build_purecn_normaldb.sh (male stratum, PureCN 2.16.0).
+        ch_purecn_intervals = Channel.value(file(params.purecn_intervals, checkIfExists: true))
+        ch_purecn_normaldb  = Channel.value(file(params.purecn_normaldb,  checkIfExists: true))
+        PURECN_COVERAGE( ch_final_bam, ch_purecn_intervals )
+        ch_mutect2_vcf_only = VARIANT_CALLING.out.mutect2_vcf
+            .map { it -> tuple(it[0], it[1]) }
+        ch_purecn_in = PURECN_COVERAGE.out.coverage
+            .join( ch_mutect2_vcf_only, by: 0 )
+        PURECN( ch_purecn_in, ch_purecn_normaldb, ch_purecn_intervals )
+
+        // CMX_V1: five-caller consensus + Phase-4 JSON payload.
         ch_consensus_in = CNV_CALLING.out.concordance
             .join( CNV_CALLING.out.cnvkit_cnr,           by: 0 )
             .join( CNV_CALLING.out.cnvkit_calls,         by: 0 )
@@ -225,6 +239,8 @@ workflow TSPIPE {
             .join( GATK_CNV_CALLING.out.denoised,        by: 0 )
             .join( GATK_CNV_CALLING.out.baf_summary,     by: 0 )
             .join( GATK_CNV_CALLING.out.baf_sites,       by: 0 )
+            .join( PURECN.out.genes,                     by: 0 )
+            .join( PURECN.out.summary,                   by: 0 )
         CNV_CONSENSUS_MULTI( ch_consensus_in, ch_cnv_loo_summary )
     }
 
