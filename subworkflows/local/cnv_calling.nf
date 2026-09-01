@@ -105,6 +105,8 @@ workflow CNV_CALLING {
 
     emit:
         cnvkit_calls       = CNVKIT.out.call_cns
+        cnvkit_cnr         = CNVKIT.out.cnr            // CMX_V1
+        cnvkit_genemetrics = CNVKIT.out.genemetrics    // CMX_V1
         zscore_calls       = ZSCORE_CNV.out.zscore_genes
         concordance        = CNV_CONCORDANCE.out.tsv
         clinical_report    = CNV_CLINICAL_REPORT.out.tsv
