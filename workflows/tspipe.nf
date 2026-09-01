@@ -28,6 +28,7 @@ include { SOMATICSEQ_ENSEMBLE } from '../modules/local/somaticseq'
 include { SOMATICSEQ_POSTPROCESS } from '../modules/local/somaticseq_postprocess'
 include { FLT3_ITD            } from '../subworkflows/local/flt3_itd'
 include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
+include { GATK_CNV_CALLING    } from '../subworkflows/local/gatk_cnv_calling'   // TGC_V1
 include { ANNOTATION          } from '../subworkflows/local/annotation'
 include { IGV_REPORTS         } from '../modules/local/igv_reports'
 include { ORGANIZE_OUTPUT     } from '../modules/local/organize_output'
@@ -183,6 +184,25 @@ workflow TSPIPE {
         ch_clingen,
         ch_scatter_regions,
     )
+
+    // ----- 4b. GATK CNV calling (TGC_V1; twist_myeloid) ---------------
+    // Gated on params.cnv_gatk_pon, defined only in conf/twist_apply.config.
+    // Legacy panels never evaluate this block; the containsKey guard also
+    // avoids undefined-parameter warnings.
+    if( params.containsKey('cnv_gatk_pon') && params.cnv_gatk_pon ) {
+        def gatk_ilist = "${projectDir}/assets/${params.panel}/targets.preprocessed.interval_list"
+        if( params.containsKey('cnv_gatk_intervals') && params.cnv_gatk_intervals )
+            gatk_ilist = params.cnv_gatk_intervals
+        ch_gatk_rc_pon = Channel.value(file(params.cnv_gatk_pon, checkIfExists: true))
+        ch_gatk_ilist  = Channel.value(file(gatk_ilist,          checkIfExists: true))
+        GATK_CNV_CALLING(
+            ch_final_bam,
+            ch_reference,
+            ch_gatk_ilist,
+            ch_gatk_rc_pon,
+            ch_exonwise_bed,
+        )
+    }
 
     // ----- 5. SV calling -----------------------------------------------
     // SV_CALLING(ch_final_bam, ch_reference, ch_bed)
