@@ -104,7 +104,8 @@ def mode_sample(args):
         args.sample, ", ".join("{0}={1}".format(k, found[k]) for k in LABELS)))
 
     prefix = "gate_{0}".format(args.sample)
-    run(["mosdepth", "-t", str(args.threads), "--flag", "772", "--no-per-base",
+    # MARKER mapq20_qc: --mapq 20 excludes MAPQ<20 reads (alt-contig blind spot, 2026-09-02)
+    run(["mosdepth", "-t", str(args.threads), "--flag", "772", "--mapq", "20", "--no-per-base",
          "--by", gate_bed, prefix, args.bam])
     means = parse_regions(prefix)
     ins = insert_size_mean(args.bam, args.threads)

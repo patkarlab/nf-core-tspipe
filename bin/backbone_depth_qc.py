@@ -139,7 +139,8 @@ def gc_of_regions(bed, reference, outdir):
 
 def mosdepth_regions(bam, bed, prefix, threads):
     """Return {region_key: depth} from a mosdepth --by run."""
-    cmd = ("mosdepth --by {bed} --flag 772 --no-per-base -t {th} {pfx} {bam}"
+    # MARKER mapq20_qc: --mapq 20 excludes MAPQ<20 reads (alt-contig blind spot, 2026-09-02)
+    cmd = ("mosdepth --by {bed} --flag 772 --mapq 20 --no-per-base -t {th} {pfx} {bam}"
            ).format(bed=bed, th=threads, pfx=prefix, bam=bam)
     r = run(cmd)
     if r.returncode != 0:

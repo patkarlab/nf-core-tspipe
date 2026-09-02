@@ -61,11 +61,13 @@ process MOSDEPTH {
         # --thresholds:          emit fraction-of-bases >= each cutoff
         # output prefix is just the sample id; mosdepth appends its
         #   own suffix for each file (.regions.bed.gz, etc.)
+        # --mapq 20: MARKER mapq20_qc -- exclude MAPQ<20 reads (alt-contig blind spot, 2026-09-02)
         mosdepth \\
             --by ${bed} \\
             --threads ${task.cpus} \\
             --no-per-base \\
             --flag 772 \\
+            --mapq 20 \\
             --thresholds 100,250,500 \\
             ${meta.id} \\
             ${bam}
