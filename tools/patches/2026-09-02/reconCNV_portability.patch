@@ -1,0 +1,64 @@
+135c135,137
+<                              text=str(row[config['files']['ratio_file']['column_names']['chromosome']]),
+---
+>                              text=(str(row[config['files']['ratio_file']['column_names']['chromosome']]).replace('chr', '')
+>                                    if config['plots']['chromosome_boundaries'].get('text_strip_chr', False)
+>                                    else str(row[config['files']['ratio_file']['column_names']['chromosome']])),
+140c142,143
+<                              text_font_style=config['plots']['chromosome_boundaries']['text_font_style'])
+---
+>                              text_font_style=config['plots']['chromosome_boundaries']['text_font_style'],
+>                              angle=config['plots']['chromosome_boundaries'].get('text_angle', 0), angle_units='deg')
+143c146,148
+<                              text=str(row[config['files']['ratio_file']['column_names']['chromosome']]),
+---
+>                              text=(str(row[config['files']['ratio_file']['column_names']['chromosome']]).replace('chr', '')
+>                                    if config['plots']['chromosome_boundaries'].get('text_strip_chr', False)
+>                                    else str(row[config['files']['ratio_file']['column_names']['chromosome']])),
+148c153,154
+<                              text_font_style=config['plots']['chromosome_boundaries']['text_font_style'])
+---
+>                              text_font_style=config['plots']['chromosome_boundaries']['text_font_style'],
+>                              angle=config['plots']['chromosome_boundaries'].get('text_angle', 0), angle_units='deg')
+166c172,174
+<                              text=str(row[config['files']['ratio_file']['column_names']['chromosome']]),
+---
+>                              text=(str(row[config['files']['ratio_file']['column_names']['chromosome']]).replace('chr', '')
+>                                    if config['plots']['chromosome_boundaries'].get('text_strip_chr', False)
+>                                    else str(row[config['files']['ratio_file']['column_names']['chromosome']])),
+171c179,180
+<                              text_font_style=config['plots']['chromosome_boundaries']['text_font_style'])
+---
+>                              text_font_style=config['plots']['chromosome_boundaries']['text_font_style'],
+>                              angle=config['plots']['chromosome_boundaries'].get('text_angle', 0), angle_units='deg')
+174c183,185
+<                              text=str(row[config['files']['ratio_file']['column_names']['chromosome']]),
+---
+>                              text=(str(row[config['files']['ratio_file']['column_names']['chromosome']]).replace('chr', '')
+>                                    if config['plots']['chromosome_boundaries'].get('text_strip_chr', False)
+>                                    else str(row[config['files']['ratio_file']['column_names']['chromosome']])),
+179c190,191
+<                              text_font_style=config['plots']['chromosome_boundaries']['text_font_style'])
+---
+>                              text_font_style=config['plots']['chromosome_boundaries']['text_font_style'],
+>                              angle=config['plots']['chromosome_boundaries'].get('text_angle', 0), angle_units='deg')
+432c444
+<                 df_vaf_seg = df_vaf_seg.groupby(['chromosome', 'start_y', 'end', 'cluster']).mean().reset_index()
+---
+>                 df_vaf_seg = df_vaf_seg.groupby(['chromosome', 'start_y', 'end', 'cluster']).mean(numeric_only=True).reset_index()
+448c460
+<                      config['files']['segmentation_file']['column_names']['end'], 'cluster']).mean().reset_index()
+---
+>                      config['files']['segmentation_file']['column_names']['end'], 'cluster']).mean(numeric_only=True).reset_index()
+459c471
+<                                                'genome_cumsum_end']).mean().reset_index()
+---
+>                                                'genome_cumsum_end']).mean(numeric_only=True).reset_index()
+1011c1023
+<     for(i = 0; i < data_gene['chrom'].length;i++){
+---
+>     for(var i = 0; i < data_gene['chrom'].length;i++){
+1090c1102
+<     for(i = 0; i < data['chrom'].length;i++){
+---
+>     for(var i = 0; i < data['chrom'].length;i++){
