@@ -110,7 +110,7 @@ def check_vv_connection(base_url,
     last_error = "no attempt made"
     for attempt in range(1, max_attempts + 1):
         try:
-            resp = requests.get(test_url, timeout=30)
+            resp = requests.get(test_url, timeout=150)  # MARKER: vv_probe_timeout -- measured ~80 s per validation
             if resp.status_code == 200:
                 data = resp.json()
                 if data.get("flag") in ("gene_variant", "warning"):

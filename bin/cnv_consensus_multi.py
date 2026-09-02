@@ -249,10 +249,19 @@ def main():
         ps_rows = read_tsv(args.purecn_summary)[1]
         if ps_rows:
             purecn_sum = ps_rows[0]
+    # MARKER: purecn_flagged_degrade
+    # A flagged fit (poor GOF, noisy log-ratio, dropout) keeps its calls in
+    # the table as advisory but contributes no consensus support.
+    p_trusted = False
     if args.purecn_genes and os.path.isfile(args.purecn_genes) \
             and purecn_sum.get("status") == "OK":
         for r in read_tsv(args.purecn_genes)[1]:
             purecn[r["gene"]] = r
+        if str(purecn_sum.get("flagged", "")).strip().upper() == "TRUE":
+            warn("PureCN flagged=TRUE ({0}); P calls retained as advisory, "
+                 "P support omitted".format(purecn_sum.get("comment", "")))
+        else:
+            p_trusted = True
     elif args.purecn_genes:
         warn("PureCN status={0}; P support omitted".format(
             purecn_sum.get("status")))
@@ -271,7 +280,7 @@ def main():
         calls = {"K": k_call if k_call in ("GAIN", "LOSS") else None,
                  "Z": z_call if z_call in ("GAIN", "LOSS") else None,
                  "G": g["g_call"] if g["g_call"] in ("GAIN", "LOSS") else None,
-                 "P": p_call if p_call in ("GAIN", "LOSS") else None}
+                 "P": p_call if (p_trusted and p_call in ("GAIN", "LOSS")) else None}
         nonneutral = dict((k, v) for k, v in calls.items() if v)
         dirs = set(nonneutral.values())
         flags = "".join(sorted(nonneutral))

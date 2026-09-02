@@ -62,7 +62,7 @@ def clean_gene(raw: str) -> str:
     m = re.search(r';([A-Za-z][A-Za-z0-9]+)_(?:Ex_?\d|Intron)', s)
     if m:
         return m.group(1)
-    m = re.search(r'_([A-Za-z][A-Za-z0-9]+)_Ex_', s)
+    m = re.search(r'_([A-Za-z][A-Za-z0-9]+)_(?:Ex|exon)_', s)
     if m:
         return m.group(1)
     m = re.search(r'_([A-Za-z][A-Za-z0-9]+)_EX_', s)
@@ -71,7 +71,7 @@ def clean_gene(raw: str) -> str:
     m = re.search(r'_([A-Za-z][A-Za-z0-9]+)_Ex\d', s)
     if m:
         return m.group(1)
-    m = re.search(r'(?:^|,)([A-Za-z][A-Za-z0-9]+)_Ex_', s)
+    m = re.search(r'(?:^|,)([A-Za-z][A-Za-z0-9]+)_(?:Ex|exon)_', s)
     if m:
         return m.group(1)
     m = re.search(r';([A-Za-z][A-Za-z0-9]+)_Ex_intr', s)

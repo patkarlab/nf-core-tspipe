@@ -66,11 +66,11 @@ def clean_gene(raw: str) -> str:
     if m:
         return m.group(1)
     # Try with _ prefix: _GENE_Ex_N
-    m = re.search(r'_([A-Za-z][A-Za-z0-9]+)_Ex_', s)
+    m = re.search(r'_([A-Za-z][A-Za-z0-9]+)_(?:Ex|exon)_', s)
     if m:
         return m.group(1)
     # Try standalone: GENE_Ex_N at start or after comma
-    m = re.search(r'(?:^|,)([A-Za-z][A-Za-z0-9]+)_Ex_', s)
+    m = re.search(r'(?:^|,)([A-Za-z][A-Za-z0-9]+)_(?:Ex|exon)_', s)
     if m:
         return m.group(1)
     # Already a clean gene name
@@ -237,8 +237,8 @@ def main():
     # --- EXON-LEVEL RESULTS ---
     # Group bins by gene+exon for more granular view
     merged["exon"] = merged["gene"].apply(
-        lambda x: re.search(r'_Ex_(\d+)', str(x)).group(1)
-        if re.search(r'_Ex_(\d+)', str(x)) else "?"
+        lambda x: re.search(r'_(?:Ex|exon)_(\d+)', str(x)).group(1)
+        if re.search(r'_(?:Ex|exon)_(\d+)', str(x)) else "?"
     )
     exon_groups = merged.groupby(["clean_gene", "exon"])
     exon_results = []

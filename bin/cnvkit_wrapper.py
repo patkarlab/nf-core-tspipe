@@ -209,7 +209,7 @@ def load_loo_fp(loo_summary_path):
 def parse_gene_from_field(gene_field):
     """Extract gene name from CNVKit gene field
     (e.g. 'Target=1;ProbeIdx=12;GNB1_Ex_11')."""
-    m = re.search(r"([A-Za-z][A-Za-z0-9]+)_Ex_", gene_field)
+    m = re.search(r"([A-Za-z][A-Za-z0-9]+)_(?:Ex|exon)_", gene_field)
     return m.group(1) if m else None
 
 
@@ -243,7 +243,16 @@ def annotate_genemetrics(genemetrics_path, blacklist_bins, loo_fp_map, output_pa
         return
     df = pd.read_csv(genemetrics_path, sep="\t")
     if df.empty:
-        log.warning("Genemetrics file is empty")
+        # MARKER: genemetrics_empty_headeronly
+        # Zero gene-level calls (e.g. copy-flat normals) is a valid
+        # result. Write a header-only annotated table so the CNVKIT
+        # module's required-output contract holds and downstream joins
+        # retain the sample.
+        log.warning("Genemetrics file is empty; writing header-only annotated table")
+        for _col in ("LOO_FP_rate", "confidence", "blacklist_frac"):
+            df[_col] = []
+        df.to_csv(output_path, sep="\t", index=False)
+        log.info("  Annotated genemetrics (header-only): %s", output_path)
         return
 
     bl_by_chrom = {}

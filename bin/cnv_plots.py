@@ -120,7 +120,7 @@ def parse_args():
 
 def parse_bed_gene_exon(name_field):
     """Extract (gene, exon_str) from BED name column."""
-    m = re.search(r"([A-Za-z][A-Za-z0-9]+)_Ex_(\w+)", name_field)
+    m = re.search(r"([A-Za-z][A-Za-z0-9]+)_(?:Ex|exon)_(\w+)", name_field)
     if m:
         return m.group(1), m.group(2)
     return None, None

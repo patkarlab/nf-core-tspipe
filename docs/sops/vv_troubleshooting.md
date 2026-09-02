@@ -640,3 +640,24 @@ CPU and the endpoint will not respond.
 `targeted-seq-pipeline` repository on GitHub. All edits should be
 made via pull request; the PDF for circulation is a rendered
 artifact and should not be edited directly.
+
+## Addendum 2026-09-02 -- root cause of Failure Mode B
+
+- The container's resolv.conf is a snapshot of the host's at container
+  start. If Tailscale holds host DNS (100.100.100.100) at that moment
+  and later stops answering, every remote lookup VariantValidator makes
+  hangs on the resolver. Symptoms: ~80 s per validation, gthread worker
+  threads blocked indefinitely (--timeout does not reap blocked
+  threads), HTTP 000 while docker ps shows Up. A container restart
+  regenerates resolv.conf from the current host file -- which is why
+  Procedure C has always worked.
+- Durable fix: `dns: [10.100.44.44, 8.8.8.8]` on the rest-variantvalidator
+  service in docker-compose.yml, then `docker compose up -d` and
+  Procedure B.
+- Gunicorn 25.1 masters run a control-socket thread; a fork can inherit
+  a held lock and the worker freezes at "Booting worker" with zero CPU.
+  After any launch verify the worker's CPU TIME is non-zero and `/`
+  returns 200. If frozen: `pkill -KILL -f 'gunicorn -b'` and relaunch.
+- Always kill with -KILL before relaunching; SIGTERM keeps the port held
+  through graceful shutdown and the new master fails with Errno 98.
+- The launcher's 60 s readiness wait is shorter than app load (~90 s).
