@@ -657,6 +657,9 @@ artifact and should not be edited directly.
   APPLIED 2026-09-02: resolv.conf now reports `ExtServers: [10.100.44.44 8.8.8.8]`
   with `Overrides: [nameservers]`; worker healthy, validation 2.5 s cold / 0.4 s warm.
   docker-compose.yml is untracked (software/), so this line is the record.
+  APPLIED 2026-09-02: resolv.conf now reports `ExtServers: [10.100.44.44 8.8.8.8]`
+  with `Overrides: [nameservers]`; worker healthy, validation 2.5 s cold / 0.4 s warm.
+  docker-compose.yml is untracked (software/), so this line is the record.
 - Gunicorn 25.1 masters run a control-socket thread; a fork can inherit
   a held lock and the worker freezes at "Booting worker" with zero CPU.
   After any launch verify the worker's CPU TIME is non-zero and `/`
