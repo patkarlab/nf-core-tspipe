@@ -28,8 +28,11 @@ workflow PREPROCESSING {
         // BWA-mem2 index files staged alongside FASTA
         ch_bwa_index = reference_ch
             .map { fasta, fai, dict ->
-                ['.amb', '.ann', '.pac', '.bwt.2bit.64', '.0123']
-                    .collect { ext -> file("${fasta.toString()}${ext}") }
+                def exts = ['.amb', '.ann', '.pac', '.bwt.2bit.64', '.0123']
+                // MARKER alt_staging: bwa-mem2 is alt-aware only when <prefix>.alt is
+                // staged beside the index in the task dir (audit 2026-09-02 D1).
+                if( file("${fasta.toString()}.alt").exists() ) exts << '.alt'
+                exts.collect { ext -> file("${fasta.toString()}${ext}") }
             }
             .flatten()
             .collect()
