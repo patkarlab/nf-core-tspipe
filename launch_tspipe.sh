@@ -155,8 +155,17 @@ if [[ ! -d "$PIPELINE_DIR" ]]; then
 fi
 
 # ---- Preflight ----
-log "VV preflight: probing $VV_URL"
-if vv_health_check ; then
+# MARKER vv_public: Docker recovery only makes sense for the local stack.
+if [[ "$VV_URL" != *localhost* && "$VV_URL" != *127.0.0.1* ]]; then
+    log "VV preflight: probing remote endpoint $VV_URL"
+    if vv_health_check ; then
+        log "VV preflight: OK (HTTP 200)"
+    else
+        err "VV preflight: remote endpoint $VV_URL not reachable; check egress or set VV_URL to the local stack."
+        exit 10
+    fi
+elif vv_health_check ; then
+    log "VV preflight: probing $VV_URL"
     log "VV preflight: OK (HTTP 200)"
 else
     log "VV preflight: initial probe FAILED. Attempting auto-recovery."

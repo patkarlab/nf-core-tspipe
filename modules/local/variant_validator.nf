@@ -53,7 +53,8 @@ process VARIANT_VALIDATOR {
             --sample ${meta.id} \\
             --input ${meta.id}.somaticseq.clinical.tsv \\
             --outdir . \\
-            --vv-url http://localhost:5001 \\
+            --vv-url ${params.vv_url} \\
+            ${params.vv_cache_dir ? "--cache-dir " + params.vv_cache_dir : ""} \\
             --threads 1 \\
             --timeout 120
 
@@ -69,7 +70,7 @@ process VARIANT_VALIDATOR {
         cat <<-END_VERSIONS > versions.yml
         "TSPIPE:ANNOTATION:VARIANT_VALIDATOR":
             python: \$(${params.legacy_python_env}/bin/python --version 2>&1 | sed 's/Python //')
-            vv_url: http://localhost:5001
+            vv_url: ${params.vv_url}   # MARKER vv_public
         END_VERSIONS
         """
 }

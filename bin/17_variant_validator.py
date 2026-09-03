@@ -26,6 +26,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import json
 import re
 
 import pandas as pd
@@ -41,6 +42,9 @@ log = logging.getLogger(__name__)
 PIPELINE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DEFAULT_VV_URL = "http://localhost:5001"
+PROBE_TIMEOUT = 150   # MARKER vv_public: measured ~80 s per validation on the local stack
+VV_VERSION = ""       # learned from the probe response metadata
+VVTA_VERSION = ""
 GENOME_BUILD = "GRCh38"
 
 # Defaults for connection-check retry behavior. Backoffs grow exponentially:
@@ -65,6 +69,9 @@ def parse_args():
                         help=f"VariantValidator base URL (default: {DEFAULT_VV_URL})")
     parser.add_argument("--threads", type=int, default=1,
                         help="Number of parallel query threads (default: 1)")
+    parser.add_argument("--cache-dir", default=None,
+                        help="Directory for per-variant response cache (keyed on build, "
+                             "query and VV version); omit to disable caching")
     parser.add_argument("--timeout", type=int, default=120,
                         help="Per-query timeout in seconds (default: 120)")
     parser.add_argument("--connect-retries", type=int, default=DEFAULT_CONNECT_RETRIES,
@@ -110,10 +117,11 @@ def check_vv_connection(base_url,
     last_error = "no attempt made"
     for attempt in range(1, max_attempts + 1):
         try:
-            resp = requests.get(test_url, timeout=150)  # MARKER: vv_probe_timeout -- measured ~80 s per validation
+            resp = requests.get(test_url, timeout=PROBE_TIMEOUT)  # MARKER: vv_probe_timeout -- measured ~80 s per validation
             if resp.status_code == 200:
                 data = resp.json()
                 if data.get("flag") in ("gene_variant", "warning"):
+                    _learn_versions(data)
                     if attempt == 1:
                         log.info(f"VariantValidator reachable at {base_url}")
                     else:
@@ -128,7 +136,7 @@ def check_vv_connection(base_url,
         except requests.ConnectionError as e:
             last_error = f"connection refused ({e.__class__.__name__})"
         except requests.Timeout:
-            last_error = "request timeout (30s)"
+            last_error = "request timeout (%ds)" % PROBE_TIMEOUT
         except ValueError:
             last_error = "invalid JSON response"
         except Exception as e:
@@ -142,6 +150,10 @@ def check_vv_connection(base_url,
             )
             time.sleep(wait)
 
+    if "localhost" not in base_url and "127.0.0.1" not in base_url:
+        log.error(f"Cannot connect to VariantValidator at {base_url} "
+                  f"after {max_attempts} attempts. Last error: {last_error}")
+        return False
     log.error(
         f"Cannot connect to VariantValidator at {base_url} "
         f"after {max_attempts} attempts. Last error: {last_error}\n"
@@ -155,6 +167,25 @@ def check_vv_connection(base_url,
         f"  See docs/sops/vv_troubleshooting.md for the full SOP."
     )
     return False
+
+
+def _learn_versions(data):
+    """Record VariantValidator and VVTA versions from a response (MARKER vv_public)."""
+    global VV_VERSION, VVTA_VERSION
+    meta = data.get("metadata", {}) if isinstance(data, dict) else {}
+    VV_VERSION = str(meta.get("variantvalidator_version", VV_VERSION) or VV_VERSION)
+    VVTA_VERSION = str(meta.get("variantvalidator_hgvs_version", "")
+                       or meta.get("vvta_version", VVTA_VERSION) or VVTA_VERSION)
+
+
+def _cache_path(cache_dir, hgvsc):
+    """Cache file for a query: <cache_dir>/<VV version>/<sha1 of build|query>.json."""
+    import hashlib
+    if not cache_dir:
+        return None
+    key = hashlib.sha1(("%s|%s|all" % (GENOME_BUILD, hgvsc)).encode("utf-8")).hexdigest()
+    sub = os.path.join(cache_dir, VV_VERSION or "unversioned")
+    return os.path.join(sub, key + ".json")
 
 
 def build_query_hgvs(hgvsc, mane_select="", hgvsg=""):
@@ -188,7 +219,7 @@ def build_query_hgvs(hgvsc, mane_select="", hgvsg=""):
     return hgvsc
 
 
-def query_variant(hgvsc, base_url, timeout):
+def query_variant(hgvsc, base_url, timeout, cache_dir=None):
     """Query VariantValidator for a single variant.
 
     Returns dict with VV_HGVSc, VV_HGVSp, VV_HGVSg, VV_Transcript, VV_Valid, VV_Warnings.
@@ -201,7 +232,21 @@ def query_variant(hgvsc, base_url, timeout):
         "VV_Transcript": "",
         "VV_Valid": False,
         "VV_Warnings": "",
+        "VV_Version": VV_VERSION,
+        "VVTA_Version": VVTA_VERSION,
+        "VV_Cached": False,
     }
+
+    # Cache lookup (MARKER vv_public)
+    cpath = _cache_path(cache_dir, hgvsc)
+    data = None
+    if cpath and os.path.isfile(cpath):
+        try:
+            with open(cpath) as fh:
+                data = json.load(fh)
+            result["VV_Cached"] = True
+        except (ValueError, OSError):
+            data = None
 
     # URL-encode the variant description
     url = (
@@ -210,7 +255,7 @@ def query_variant(hgvsc, base_url, timeout):
         f"?content-type=application/json"
     )
 
-    max_retries = 5
+    max_retries = 5 if data is None else 0
     for attempt in range(max_retries):
         try:
             resp = requests.get(url, timeout=timeout)
@@ -221,6 +266,18 @@ def query_variant(hgvsc, base_url, timeout):
                 continue
             resp.raise_for_status()
             data = resp.json()
+            _learn_versions(data)
+            result["VV_Version"] = VV_VERSION
+            result["VVTA_Version"] = VVTA_VERSION
+            if cpath:
+                try:
+                    os.makedirs(os.path.dirname(cpath), exist_ok=True)
+                    tmp = cpath + ".tmp.%d" % os.getpid()
+                    with open(tmp, "w") as fh:
+                        json.dump(data, fh)
+                    os.replace(tmp, cpath)
+                except OSError:
+                    pass
             break
         except requests.RequestException as e:
             if attempt < max_retries - 1:
@@ -232,8 +289,9 @@ def query_variant(hgvsc, base_url, timeout):
             result["VV_Warnings"] = "API_ERROR: invalid JSON response"
             return result
     else:
-        result["VV_Warnings"] = "API_ERROR: max retries exceeded (rate limited)"
-        return result
+        if data is None:
+            result["VV_Warnings"] = "API_ERROR: max retries exceeded (rate limited)"
+            return result
 
     # Check flag
     flag = data.get("flag", "")
@@ -354,7 +412,7 @@ def query_variant(hgvsc, base_url, timeout):
     return result
 
 
-def validate_variants(df, base_url, threads, timeout):
+def validate_variants(df, base_url, threads, timeout, cache_dir=None):
     """Validate all variants with HGVSc values using parallel threads."""
     # Identify rows to query
     mask = ~df["HGVSc"].isin(["-1", "", "nan"]) & df["HGVSc"].notna()
@@ -381,9 +439,11 @@ def validate_variants(df, base_url, threads, timeout):
     log.info(f"Unique query HGVS values: {len(unique_hgvsc)} ({no_query_count} could not be converted)")
 
     # Initialize result columns
-    for col in ["VV_HGVSc", "VV_HGVSp", "VV_HGVSg", "VV_Exon", "VV_Transcript", "VV_Warnings"]:
+    for col in ["VV_HGVSc", "VV_HGVSp", "VV_HGVSg", "VV_Exon", "VV_Transcript", "VV_Warnings",
+                "VV_Version", "VVTA_Version"]:
         df[col] = ""
     df["VV_Valid"] = ""
+    df["VV_Cached"] = pd.Series([""] * len(df), index=df.index, dtype=object)
 
     # Query in parallel
     results = {}
@@ -393,7 +453,7 @@ def validate_variants(df, base_url, threads, timeout):
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         future_to_hgvsc = {
-            executor.submit(query_variant, hgvsc, base_url, timeout): hgvsc
+            executor.submit(query_variant, hgvsc, base_url, timeout, cache_dir): hgvsc
             for hgvsc in unique_hgvsc
         }
 
@@ -425,9 +485,11 @@ def validate_variants(df, base_url, threads, timeout):
     for query_hgvs, indices in query_to_indices.items():
         result = results.get(query_hgvs, {})
         for idx in indices:
-            for col in ["VV_HGVSc", "VV_HGVSp", "VV_HGVSg", "VV_Exon", "VV_Transcript", "VV_Warnings"]:
+            for col in ["VV_HGVSc", "VV_HGVSp", "VV_HGVSg", "VV_Exon", "VV_Transcript", "VV_Warnings",
+                        "VV_Version", "VVTA_Version"]:
                 df.at[idx, col] = result.get(col, "")
             df.at[idx, "VV_Valid"] = result.get("VV_Valid", False)
+            df.at[idx, "VV_Cached"] = result.get("VV_Cached", False)
 
     return df, len(query_indices), len(unique_hgvsc), failed
 
@@ -467,7 +529,7 @@ def main():
 
     # Validate
     df, total_queried, unique_queried, total_failed = validate_variants(
-        df, args.vv_url, args.threads, args.timeout
+        df, args.vv_url, args.threads, args.timeout, args.cache_dir
     )
 
     # Reorder columns — keep original HGVSc/HGVSp/HGVSg alongside VV_ versions
@@ -475,6 +537,7 @@ def main():
         "Sample", "Chr", "Start", "End", "Ref", "Alt", "Gene", "Consequence",
         "HGVSc", "HGVSp", "HGVSg",
         "VV_HGVSc", "VV_HGVSp", "VV_HGVSg", "VV_Transcript", "VV_Valid", "VV_Warnings",
+        "VV_Version", "VVTA_Version", "VV_Cached",
         "OncoVI_Score", "OncoVI_Classification", "OncoVI_Criteria",
         "IMPACT", "VariantCaller_Count", "Callers", "REF_COUNT", "ALT_COUNT",
         "VAF_pct", "SomaticSeq_Verdict", "COSMIC_ID", "ClinVar", "SIFT", "PolyPhen",
@@ -506,6 +569,9 @@ def main():
     log.info(f"  With warnings:            {total_warnings}")
     log.info(f"  HGVS corrected by VV:     {total_corrected}")
     log.info(f"  Failed:                   {total_failed}")
+    cached = (df["VV_Cached"] == True).sum() + (df["VV_Cached"] == "True").sum()  # noqa
+    log.info(f"  Served from cache:        {cached}")
+    log.info(f"  VariantValidator:         {VV_VERSION or 'unknown'} (VVTA {VVTA_VERSION or 'unknown'})")
 
 
 if __name__ == "__main__":
