@@ -206,3 +206,18 @@ exons: HRAS exon 1 148x, ANKRD26 exons 5/14/28 at 170-320x, exons 19/29 at
 (DECoN exon exclusion) is therefore derivable from this table on
 `median_depth_mq20` alone. Table seeded as
 `assets/twist_myeloid/paralog_limited_exons.tsv` (+ per-sample matrix).
+
+## Addendum 2: DECoN post-hoc filter (open item 1 closed)
+
+`tools/decon/filter_decon_calls.py` classifies single-exon DECoN calls by
+overlap with `paralog_limited_exons.tsv` and the sample's own variant table:
+PARALOG_EXON (never reported), PROBE_VARIANT (PASS variant, VAF >= 30%,
+inside the call interval; never reported), LOW_POWER_EXON (exon median
+MAPQ>=20 depth < 300x; reported only at BF >= 20), else PASS at BF >= 12.
+Multi-exon calls pass at BF >= 12. Male23 ANKRD26 exon 27 (ratio 0.67, BF
+12.6) is a probe-variant dropout: two homozygous variants under the probe,
+c.3972+3A>G and p.Val1305Ile, alt fraction 1.0 at 400+ reads. On
+pool25_v4: 61 calls, 6 reportable (Male11 KRAS BF 84.9; Female16 chrX x5),
+1 LOW_POWER_EXON (Male1 HRAS exon 1, BF 13.8), 1 PROBE_VARIANT, 53 below BF.
+Zero false positives across 25 normals. Evidence table:
+`decon_pool25_v4_filtered.tsv` alongside this memo.
