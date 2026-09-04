@@ -191,3 +191,18 @@ Carried
   needs Hartwig-reference re-alignment from FASTQ and ~200 GB): after the
   above, not before.
 - MNV merging before annotation; CAVA integration (requested 09-03).
+
+## Addendum (2026-09-04, later): paralog-limited exon table built
+
+`tools/paralog_limited_exons.py` over the 23 v4 males, 1795 exons, mosdepth
+MAPQ>=0 vs MAPQ>=20. Six exons are paralog-limited (median retained < 0.80,
+all < 0.75; next on the panel NF1 exon 24 at 0.889): STAT5B exons 6, 7, 8
+(retained 0.61, 0.23, 0.40; XA locus STAT5A chr17:42.2-42.3 Mb, 97-100%) and
+SUZ12 exons 3, 6, 9 (0.44, 0.57, 0.73; SUZ12P1 chr17:30.7 Mb, 100%). ANKRD26
+is not paralog-limited (retained 1.0 throughout); the withdrawn candidate in
+open item 2. Its DECoN deletions, and HRAS exon 730's, come from low-depth
+exons: HRAS exon 1 148x, ANKRD26 exons 5/14/28 at 170-320x, exons 19/29 at
+10-16x (capture failures, with CCNC exons 6-7 and AKT1 exon 1). Open item 1
+(DECoN exon exclusion) is therefore derivable from this table on
+`median_depth_mq20` alone. Table seeded as
+`assets/twist_myeloid/paralog_limited_exons.tsv` (+ per-sample matrix).
