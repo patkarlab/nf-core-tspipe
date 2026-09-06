@@ -1,5 +1,5 @@
 /*
- * modules/local/cnv_consensus_multi.nf  (CMX_V2 arms K/G/B/P/E; PureCN PCN_V1; DECoN DECON_V1)
+ * modules/local/cnv_consensus_multi.nf  (CMX_V2 arms K/G/B/P/E; PureCN PCN_V1; DECoN DECON_V1; MARKER CMX_V2_1: --sex)
  *
  * Four-caller CNV consensus for the twist_myeloid panel: CNVkit
  * (segments -> gene calls derived from call.cns), Z-score (gene table
@@ -45,6 +45,7 @@ process CNV_CONSENSUS_MULTI {
         echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
         cnv_consensus_multi.py \\
             --sample ${meta.id} \\
+            --sex ${meta.sex ?: 'unknown'} \\
             --concordance ${concordance} \\
             --cnr ${cnr} \\
             --call-cns ${call_cns} \\

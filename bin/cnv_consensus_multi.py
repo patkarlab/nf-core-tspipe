@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Multi-arm CNV consensus + Phase-4 JSON payload (CMX_V2).
 
+MARKER CMX_V2_1 (expected chrX/chrY copy number by --sex)
 MARKER CMX_V2: Z-score is no longer an arm; the legacy concordance table still rides
 through into the JSON (legacy: {...}) for reference only.
 
@@ -122,8 +123,34 @@ def overlap(a1, a2, b1, b2):
     return max(0, min(a2, b2) - max(a1, b1))
 
 
-def cnvkit_gene_call(segs, chrom, gs, ge):
-    """Length-weighted call from call.cns integer CN over a gene span."""
+def expected_cn(chrom, sex):
+    """CMX_V2_1: expected integer copy number of a chromosome for the sample's sex.
+    None means not interpretable (X/Y with unknown sex, or chrY in a female)."""
+    c = chrom.replace("chr", "")
+    if c not in ("X", "Y"):
+        return 2
+    if sex == "male":
+        return 1
+    if sex == "female":
+        return 2 if c == "X" else None
+    return None
+
+
+def cn_call(cn, exp):
+    if cn is None:
+        return "NEUTRAL"
+    if exp is None:
+        return "NA"
+    if cn > exp:
+        return "GAIN"
+    if cn < exp:
+        return "LOSS"
+    return "NEUTRAL"
+
+
+def cnvkit_gene_call(segs, chrom, gs, ge, exp=2):
+    """Length-weighted call from call.cns integer CN over a gene span,
+    relative to the expected copy number `exp` (CMX_V2_1; None -> NA)."""
     w = {"GAIN": 0, "LOSS": 0, "NEUTRAL": 0}
     hits = []
     for s in segs:
@@ -133,16 +160,13 @@ def cnvkit_gene_call(segs, chrom, gs, ge):
         if o <= 0:
             continue
         hits.append((o, s))
-        if s["cn"] is None:
-            w["NEUTRAL"] += o
-        elif s["cn"] > 2:
-            w["GAIN"] += o
-        elif s["cn"] < 2:
-            w["LOSS"] += o
-        else:
-            w["NEUTRAL"] += o
+        call = cn_call(s["cn"], exp)
+        w[call if call in w else "NEUTRAL"] += o
     if not hits:
         return "NA", None, None
+    if exp is None:
+        top = max(hits)[1]
+        return "NA", top["cn"], top["log2"]
     call = max(w, key=lambda k: w[k])
     top = max(hits)[1]
     return call, top["cn"], top["log2"]
@@ -202,6 +226,8 @@ def main():
                     help="DECoN gene table (gene, e_call, e_bf); optional (CMX_V2 arm E)")
     ap.add_argument("--loo-fp-max", type=float, default=0.10,
                     help="LOO fp_any_rate ceiling for TIER_1/TIER_2 (fraction; default 0.10)")
+    ap.add_argument("--sex", default="unknown",
+                    help="sample sex (male|female|unknown) for the expected chrX/chrY copy number (CMX_V2_1)")
     args = ap.parse_args()
 
     for p in [args.concordance, args.cnr, args.call_cns, args.gatk_genes,
@@ -324,7 +350,8 @@ def main():
     tier_counts = {}
     for g in genes:
         k_call, k_cn, k_log2 = cnvkit_gene_call(
-            k_segs, g["chrom"], g["start"], g["end"])
+            k_segs, g["chrom"], g["start"], g["end"],
+            expected_cn(g["chrom"], args.sex))   # CMX_V2_1
         lg = legacy.get(g["gene"], {})
         pr = purecn.get(g["gene"], {})
         p_call = pr.get("p_call", "NA")
@@ -398,8 +425,7 @@ def main():
     # ---- segment intersection
     intersect = []
     for ks in k_segs:
-        k_call = "NEUTRAL" if ks["cn"] in (None, 2) else (
-            "GAIN" if ks["cn"] > 2 else "LOSS")
+        k_call = cn_call(ks["cn"], expected_cn(ks["chromosome"], args.sex))   # CMX_V2_1
         for gs in g_segs:
             if gs["chromosome"] != ks["chromosome"]:
                 continue
