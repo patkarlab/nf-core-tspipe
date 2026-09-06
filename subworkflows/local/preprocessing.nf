@@ -12,7 +12,23 @@ include { ABRA2                  } from '../../modules/local/abra2'
 include { HSMETRICS              } from '../../modules/local/hsmetrics'
 include { MOSDEPTH               } from '../../modules/local/mosdepth'
 include { PARSE_EXON_COVERAGE    } from '../../modules/local/parse_exon_coverage'
+include { SEX_CHECK              } from '../../modules/local/sex_check'   // MARKER SEX_CHECK_V1
 include { SAMPLE_DASHBOARD       } from '../../modules/local/sample_dashboard'
+
+// MARKER SEX_CHECK_V1: rewrite meta.sex on a [meta, ...] channel from the per-sample
+// resolved sex keyed on meta.id. Samplesheet male/female always wins; 'unknown'
+// takes the inference; a sample with no SEX_CHECK row keeps its meta. The key
+// set of meta is unchanged, so task hashes only move when the value moves.
+def withResolvedSex(ch, sex_by_id) {
+    ch.map { it -> [ it[0].id, it ] }
+      .join(sex_by_id, remainder: true)
+      .filter { id, tup, sex -> tup != null }
+      .map { id, tup, sex ->
+          def meta     = tup[0]
+          def resolved = (meta.sex in ['male', 'female']) ? meta.sex : (sex ?: meta.sex)
+          [ meta + [sex: resolved] ] + tup.drop(1)
+      }
+}
 
 workflow PREPROCESSING {
 
@@ -52,6 +68,23 @@ workflow PREPROCESSING {
         HSMETRICS(ABRA2.out.bam, reference_ch, bed_ch)
         MOSDEPTH(ABRA2.out.bam, exonwise_bed_ch)
         PARSE_EXON_COVERAGE(MOSDEPTH.out.regions_thresholds, exonwise_bed_ch)
+        // MARKER SEX_CHECK_V1: sex from the mosdepth regions (X/A ratio); one row per sample.
+        // resolved_sex = sheet value if male/female, else the inference.
+        SEX_CHECK(MOSDEPTH.out.regions_thresholds)
+        // MARKER SEX_CHECK_V1a: the map closure is replayed per consumer of ch_sex_by_id; log once.
+        def sex_check_logged = java.util.concurrent.ConcurrentHashMap.newKeySet()
+        ch_sex_by_id = SEX_CHECK.out.tsv
+            .splitCsv(header: true, sep: '\t', elem: 1)
+            .map { meta, row ->
+                if( sex_check_logged.add(meta.id) ) {
+                    if( row.status == 'MISMATCH' )
+                        log.warn "[SEX_CHECK] ${meta.id}: samplesheet sex=${row.sheet_sex} but data infers ${row.inferred_sex} (X/A=${row.x_auto_ratio}); keeping the samplesheet value"
+                    else if( row.sheet_sex == 'unknown' )
+                        log.info "[SEX_CHECK] ${meta.id}: samplesheet sex unknown; using inferred ${row.resolved_sex} (X/A=${row.x_auto_ratio}, status=${row.status})"
+                }
+                [ meta.id, row.resolved_sex ]
+            }
+
 
         // Per-sample dashboard: join HsMetrics + per-exon coverage on meta.id,
         // then render a self-contained HTML report. Provenance values are
@@ -66,14 +99,27 @@ workflow PREPROCESSING {
             workflow.start.format('yyyy-MM-dd')
         )
 
+        // MARKER SEX_CHECK_V1: resolved meta.sex on every emit so downstream joins stay consistent
+        ch_sexed_trimmed = withResolvedSex(FASTP.out.reads, ch_sex_by_id)
+        ch_sexed_aligned = withResolvedSex(BWA_MEM.out.bam, ch_sex_by_id)
+        ch_sexed_dedup = withResolvedSex(PICARD_MARKDUPLICATES.out.bam, ch_sex_by_id)
+        ch_sexed_recal = withResolvedSex(GATK4_BQSR.out.bam, ch_sex_by_id)
+        ch_sexed_final_bam = withResolvedSex(ABRA2.out.bam, ch_sex_by_id)
+        ch_sexed_hsmetrics = withResolvedSex(HSMETRICS.out.metrics, ch_sex_by_id)
+        ch_sexed_exon_coverage = withResolvedSex(PARSE_EXON_COVERAGE.out.tsv, ch_sex_by_id)
+        ch_sexed_dashboard = withResolvedSex(SAMPLE_DASHBOARD.out.html, ch_sex_by_id)
+        ch_sexed_fastp_html = withResolvedSex(FASTP.out.html, ch_sex_by_id)
+        ch_sexed_sex_check = withResolvedSex(SEX_CHECK.out.tsv, ch_sex_by_id)
+
     emit:
-        trimmed   = FASTP.out.reads
-        aligned   = BWA_MEM.out.bam
-        dedup     = PICARD_MARKDUPLICATES.out.bam
-        recal     = GATK4_BQSR.out.bam
-        final_bam     = ABRA2.out.bam
-        hsmetrics     = HSMETRICS.out.metrics
-        exon_coverage = PARSE_EXON_COVERAGE.out.tsv
-        dashboard     = SAMPLE_DASHBOARD.out.html
-        fastp_html    = FASTP.out.html
+        trimmed       = ch_sexed_trimmed
+        aligned       = ch_sexed_aligned
+        dedup         = ch_sexed_dedup
+        recal         = ch_sexed_recal
+        final_bam     = ch_sexed_final_bam
+        hsmetrics     = ch_sexed_hsmetrics
+        exon_coverage = ch_sexed_exon_coverage
+        dashboard     = ch_sexed_dashboard
+        fastp_html    = ch_sexed_fastp_html
+        sex_check     = ch_sexed_sex_check
 }

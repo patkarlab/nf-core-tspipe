@@ -1,0 +1,9 @@
+sample,fastq_1,fastq_2,sex
+26CGH60-TwistMyVal,/goast/hemat_data/twist_val/fastq/26CGH60-TwistMyVal_R1.fastq.gz,/goast/hemat_data/twist_val/fastq/26CGH60-TwistMyVal_R2.fastq.gz,unknown
+26CGH132-TwistMyVal,/goast/hemat_data/twist_val/fastq/26CGH132-TwistMyVal_R1.fastq.gz,/goast/hemat_data/twist_val/fastq/26CGH132-TwistMyVal_R2.fastq.gz,unknown
+26CGH799-TwistMyVal,/goast/hemat_data/twist_val/fastq/26CGH799-TwistMyVal_R1.fastq.gz,/goast/hemat_data/twist_val/fastq/26CGH799-TwistMyVal_R2.fastq.gz,unknown
+26CGH885-TwistMyVal,/goast/hemat_data/twist_val/fastq/26CGH885-TwistMyVal_R1.fastq.gz,/goast/hemat_data/twist_val/fastq/26CGH885-TwistMyVal_R2.fastq.gz,unknown
+26CGH1043-TwistMyVal,/goast/hemat_data/twist_val/fastq/26CGH1043-TwistMyVal_R1.fastq.gz,/goast/hemat_data/twist_val/fastq/26CGH1043-TwistMyVal_R2.fastq.gz,unknown
+26CGH1250-TwistMyVal,/goast/hemat_data/twist_val/fastq/26CGH1250-TwistMyVal_R1.fastq.gz,/goast/hemat_data/twist_val/fastq/26CGH1250-TwistMyVal_R2.fastq.gz,unknown
+26CGH1292-TwistMyVal,/goast/hemat_data/twist_val/fastq/26CGH1292-TwistMyVal_R1.fastq.gz,/goast/hemat_data/twist_val/fastq/26CGH1292-TwistMyVal_R2.fastq.gz,unknown
+26CGH1480-TwistMyVal,/goast/hemat_data/twist_val/fastq/26CGH1480-TwistMyVal_R1.fastq.gz,/goast/hemat_data/twist_val/fastq/26CGH1480-TwistMyVal_R2.fastq.gz,unknown
