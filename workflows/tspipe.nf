@@ -30,6 +30,7 @@ include { FLT3_ITD            } from '../subworkflows/local/flt3_itd'
 include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
 include { GATK_CNV_CALLING    } from '../subworkflows/local/gatk_cnv_calling'   // TGC_V1
 include { CNV_CONSENSUS_MULTI } from '../modules/local/cnv_consensus_multi'   // CMX_V1
+include { DECON               } from '../modules/local/decon'                 // MARKER DECON_V1a
 include { PURECN_COVERAGE     } from '../modules/local/purecn_coverage'   // PCN_V1
 include { PURECN              } from '../modules/local/purecn'   // PCN_V1
 include { ANNOTATION          } from '../subworkflows/local/annotation'
