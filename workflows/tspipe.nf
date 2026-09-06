@@ -31,6 +31,7 @@ include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
 include { GATK_CNV_CALLING    } from '../subworkflows/local/gatk_cnv_calling'   // TGC_V1
 include { CNV_CONSENSUS_MULTI } from '../modules/local/cnv_consensus_multi'   // CMX_V1
 include { DECON               } from '../modules/local/decon'                 // MARKER DECON_V1a
+include { EXON_PLOTS          } from '../modules/local/exon_plots'            // MARKER EXON_PLOTS_V1
 include { PURECN_COVERAGE     } from '../modules/local/purecn_coverage'   // PCN_V1
 include { PURECN              } from '../modules/local/purecn'   // PCN_V1
 include { ANNOTATION          } from '../subworkflows/local/annotation'
@@ -275,8 +276,10 @@ workflow TSPIPE {
             ch_paralog_exons = Channel.value(file("${projectDir}/assets/${params.panel}/paralog_limited_exons.tsv", checkIfExists: true))
             DECON( ch_final_bam, ch_reference, ch_decon_exons, ch_decon_pool_male, ch_decon_pool_female, ch_paralog_exons )
             ch_decon_genes = DECON.out.genes
+            ch_decon_filtered = DECON.out.filtered   // EXON_PLOTS_V1
         } else {
             ch_decon_genes = ch_final_bam.map { m, _b, _i -> [ m, [] ] }
+            ch_decon_filtered = ch_final_bam.map { m, _b, _i -> [ m, [] ] }   // EXON_PLOTS_V1
         }
 
         // CMX_V1: five-caller consensus + Phase-4 JSON payload.
@@ -292,6 +295,13 @@ workflow TSPIPE {
             .join( PURECN.out.summary,                   by: 0 )
             .join( ch_decon_genes,                        by: 0 )   // DECON_V1
         CNV_CONSENSUS_MULTI( ch_consensus_in, ch_cnv_loo_summary, ch_cnv_loo_summary_female )   // SEXSTRAT_V1
+        // EXON_PLOTS_V1: per-chromosome exon figures from the consensus bins (+ DECoN brackets)
+        def focal_bed = "${projectDir}/assets/${params.panel}/targets.focal_cnv.bed"
+        ch_focal_bed = file(focal_bed).exists() ? Channel.value(file(focal_bed)) : Channel.value([])
+        ch_exon_plots_in = CNV_CONSENSUS_MULTI.out.json
+            .join( CNV_CONSENSUS_MULTI.out.genes, by: 0 )
+            .join( ch_decon_filtered,             by: 0 )
+        EXON_PLOTS( ch_exon_plots_in, ch_focal_bed )
     }
 
     // ----- 5. SV calling -----------------------------------------------
