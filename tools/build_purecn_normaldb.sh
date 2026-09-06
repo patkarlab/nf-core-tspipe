@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# tools/build_purecn_normaldb.sh  (PCN_V1)
+# tools/build_purecn_normaldb.sh  (PCN_V1; MARKER PCN_SEX_V1: --sex stratum)
 #
 # One-time PureCN reference build for the twist_myeloid panel:
 #   1. IntervalFile.R  -- panel.combined.filtered.bed -> PureCN intervals
 #      (GC + gene annotation; off-target DISABLED: the in-panel CNV
 #      backbone already provides genome-wide bins, matching the
 #      empty-antitarget doctrine of the CNVkit build).
-#   2. Coverage.R      -- GC-normalised loess coverage per male normal
+#   2. Coverage.R      -- GC-normalised loess coverage per normal of the
+#      chosen stratum (--sex male|female; default male)
 #      (include_in_pon=true rows of the committed samplesheet), run in
 #      parallel.
 #   3. NormalDB.R      -- normalDB RDS + interval weights.
@@ -19,7 +20,8 @@
 
 set -euo pipefail
 
-SHEET="pon_samplesheets/twist_normals_48.csv"
+SHEET="pon_samplesheets/twist_normals_48_v4.csv"
+SEX="male"
 BED="assets/twist_myeloid/panel.combined.filtered.bed"
 FASTA="/goast/hemat_data/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta"
 OUTDIR="assets/twist_myeloid"
@@ -37,9 +39,18 @@ while [ $# -gt 0 ]; do
         --workdir) WORKDIR="$2"; shift 2 ;;
         --env)     ENVDIR="$2"; shift 2 ;;
         --jobs)    JOBS="$2"; shift 2 ;;
+        --sex)     SEX="$2"; shift 2 ;;
         *) echo "[error] unknown argument: $1" >&2; exit 1 ;;
     esac
 done
+
+case "$SEX" in
+    male)   ASSAY="twist_myeloid";        MIN_N=20; MD5NAME="purecn_normaldb.md5" ;;
+    female) ASSAY="twist_myeloid_female"; MIN_N=6;  MD5NAME="purecn_normaldb_female.md5" ;;
+    *) echo "[error] --sex must be male or female (got: $SEX)" >&2; exit 1 ;;
+esac
+NDB_DIR="$WORKDIR/normaldb_$SEX"
+echo "[ok] stratum=$SEX assay=$ASSAY normaldb_dir=$NDB_DIR"
 
 RS="$ENVDIR/bin/Rscript"
 EXTDATA="$ENVDIR/lib/R/library/PureCN/extdata"
@@ -50,7 +61,7 @@ for f in "$SHEET" "$BED" "$FASTA"; do
     [ -s "$f" ] || { echo "[error] missing or empty: $f" >&2; exit 1; }
 done
 
-mkdir -p "$WORKDIR/coverage"
+mkdir -p "$WORKDIR/coverage" "$NDB_DIR"
 
 echo "[ok] PureCN $("$RS" -e 'cat(as.character(packageVersion("PureCN")))' 2>/dev/null)"
 
@@ -71,11 +82,11 @@ n_int=$(grep -vc '^Target' "$INTERVALS" || true)
 echo "[ok] intervals: $n_int rows"
 [ "$n_int" -ge 5000 ] || { echo "[error] implausibly few interval rows" >&2; exit 1; }
 
-# ---- 2. Coverage over the male normals ------------------------------------
-BAMS=$(awk -F',' 'NR>1 && $2=="male" && $6=="true" {print $3}' "$SHEET")
+# ---- 2. Coverage over the normals of the chosen stratum --------------------
+BAMS=$(awk -F',' -v sex="$SEX" 'NR>1 && $2==sex && $6=="true" {print $3}' "$SHEET")
 n_bam=$(echo "$BAMS" | grep -c . || true)
-echo "[ok] male include_in_pon normals: $n_bam"
-[ "$n_bam" -ge 20 ] || { echo "[error] expected ~24 male normals, found $n_bam" >&2; exit 1; }
+echo "[ok] $SEX include_in_pon normals: $n_bam"
+[ "$n_bam" -ge "$MIN_N" ] || { echo "[error] expected >= $MIN_N $SEX normals, found $n_bam" >&2; exit 1; }
 
 echo "$BAMS" | xargs -P "$JOBS" -I{} bash -c '
     bam="{}"
@@ -94,28 +105,34 @@ echo "$BAMS" | xargs -P "$JOBS" -I{} bash -c '
     fi
 '
 
-ls "$WORKDIR"/coverage/*_coverage_loess.txt.gz > "$WORKDIR/normals_coverage.list"
-n_cov=$(wc -l < "$WORKDIR/normals_coverage.list")
+COVLIST="$WORKDIR/normals_coverage_$SEX.list"
+: > "$COVLIST"
+for bam in $BAMS; do
+    cov="$WORKDIR/coverage/$(basename "$bam" .bam)_coverage_loess.txt.gz"
+    [ -s "$cov" ] || { echo "[error] coverage missing: $cov" >&2; exit 1; }
+    echo "$cov" >> "$COVLIST"
+done
+n_cov=$(wc -l < "$COVLIST")
 echo "[ok] loess coverage files: $n_cov"
 [ "$n_cov" -eq "$n_bam" ] || { echo "[error] coverage count $n_cov != bam count $n_bam" >&2; exit 1; }
 
 # ---- 3. NormalDB -----------------------------------------------------------
 echo "[run] NormalDB.R"
 "$RS" "$EXTDATA/NormalDB.R" \
-    --out-dir "$WORKDIR" \
-    --coverage-files "$WORKDIR/normals_coverage.list" \
+    --out-dir "$NDB_DIR" \
+    --coverage-files "$COVLIST" \
     --genome hg38 \
-    --assay twist_myeloid \
+    --assay "$ASSAY" \
     --force
 
-NDB="$WORKDIR/normalDB_twist_myeloid_hg38.rds"
+NDB="$NDB_DIR/normalDB_${ASSAY}_hg38.rds"
 [ -s "$NDB" ] || { echo "[error] NormalDB output missing: $NDB" >&2; exit 1; }
 
 # ---- 4. Seed assets --------------------------------------------------------
 cp "$INTERVALS" "$OUTDIR/"
 cp "$NDB" "$OUTDIR/"
-ls "$WORKDIR"/interval_weights*.png >/dev/null 2>&1 && cp "$WORKDIR"/interval_weights*.png "$OUTDIR/" || true
-( cd "$OUTDIR" && md5sum "$(basename "$INTERVALS")" "$(basename "$NDB")" > purecn_normaldb.md5 )
+ls "$NDB_DIR"/interval_weights_${ASSAY}_*.png >/dev/null 2>&1 && cp "$NDB_DIR"/interval_weights_${ASSAY}_*.png "$OUTDIR/" || true
+( cd "$OUTDIR" && md5sum "$(basename "$INTERVALS")" "$(basename "$NDB")" > "$MD5NAME" )
 echo "[ok] seeded:"
-cat "$OUTDIR/purecn_normaldb.md5"
-echo "[done] PureCN NormalDB build complete (male stratum, n=$n_cov)"
+cat "$OUTDIR/$MD5NAME"
+echo "[done] PureCN NormalDB build complete ($SEX stratum, assay $ASSAY, n=$n_cov)"

@@ -245,15 +245,19 @@ workflow TSPIPE {
 
         // PCN_V1: PureCN purity/ploidy/integer-CN + LOH (fifth caller).
         // Reference set from the twist overlay params; NormalDB build:
-        // tools/build_purecn_normaldb.sh (male stratum, PureCN 2.16.0).
+        // tools/build_purecn_normaldb.sh --sex male|female (PureCN 2.16.0).
         ch_purecn_intervals = Channel.value(file(params.purecn_intervals, checkIfExists: true))
         ch_purecn_normaldb  = Channel.value(file(params.purecn_normaldb,  checkIfExists: true))
+        // MARKER PCN_SEX_V1: female PureCN NormalDB; the male file until the female asset exists.
+        def purecn_ndb_female = (params.containsKey('purecn_normaldb_female') && params.purecn_normaldb_female) ? params.purecn_normaldb_female : null
+        ch_purecn_normaldb_female = Channel.value( sexstratFemale(purecn_ndb_female,
+            "${projectDir}/assets/${params.panel}/normalDB_twist_myeloid_female_hg38.rds", params.purecn_normaldb) )
         PURECN_COVERAGE( ch_final_bam, ch_purecn_intervals )
         ch_mutect2_vcf_only = VARIANT_CALLING.out.mutect2_vcf
             .map { it -> tuple(it[0], it[1]) }
         ch_purecn_in = PURECN_COVERAGE.out.coverage
             .join( ch_mutect2_vcf_only, by: 0 )
-        PURECN( ch_purecn_in, ch_purecn_normaldb, ch_purecn_intervals )
+        PURECN( ch_purecn_in, ch_purecn_normaldb, ch_purecn_intervals, ch_purecn_normaldb_female )   // PCN_SEX_V1
 
         // CMX_V1: five-caller consensus + Phase-4 JSON payload.
         ch_consensus_in = CNV_CALLING.out.concordance
