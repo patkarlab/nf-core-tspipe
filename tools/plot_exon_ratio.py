@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-tools/plot_exon_ratio.py  (EXONPLOT_V1)
+tools/plot_exon_ratio.py  (EXONPLOT_V1.1)
 
 Per-exon CNVkit copy-ratio plot for a set of genes, in genomic order: one
 point per CNVkit bin (log2 vs the sex-matched PoN), dashed guide per bin,
@@ -144,22 +144,29 @@ def main():
             ax.axvline(i - 0.5, color="0.2", lw=0.8, zorder=3)
         i = j + 1
 
-    # DECoN call brackets
+    # DECoN call brackets: one per call (multi-gene calls appear once per gene
+    # in the table, so merge on coordinates), labels staggered to avoid overlap
     if args.decon:
-        starts = [b[1] for b in sel]
+        merged = {}
         for c in read_decon_calls(args.decon):
             if c["gene"] not in want:
                 continue
-            idx = [k for k, b in enumerate(sel) if b[0] == c["chrom"] and b[2] >= c["start"] and b[1] <= c["end"] and genes[k] == c["gene"]]
+            key = (c["chrom"], c["start"], c["end"], c["type"])
+            merged.setdefault(key, c)
+        drawn = 0
+        for key in sorted(merged, key=lambda k: (CHROM_ORDER.get(k[0], 99), k[1])):
+            c = merged[key]
+            idx = [k for k, b in enumerate(sel) if b[0] == c["chrom"] and b[2] >= c["start"] and b[1] <= c["end"]]
             if not idx:
                 continue
             x0, x1 = min(idx) - 0.4, max(idx) + 0.4
-            ytop = args.ymax - 0.35
+            ytop = args.ymax - 0.35 - 0.45 * (drawn % 2)
             colour = "firebrick" if c["type"].lower().startswith("del") else "darkorange"
             ax.plot([x0, x0, x1, x1], [ytop - 0.15, ytop, ytop, ytop - 0.15], color=colour, lw=1.4, zorder=6)
             ax.text((x0 + x1) / 2.0, ytop + 0.05, "DECoN %s BF %.1f ratio %.2f%s" % (
                 c["type"], c["bf"], c["ratio"], (" " + c["decision"]) if c["decision"] else ""),
                 ha="center", va="bottom", fontsize=7, color=colour, zorder=6)
+            drawn += 1
 
     ax.set_xlim(-0.6, len(sel) - 0.4)
     ax.set_ylim(ymin, args.ymax + 0.6)
