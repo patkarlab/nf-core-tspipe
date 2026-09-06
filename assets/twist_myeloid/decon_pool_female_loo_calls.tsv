@@ -1,0 +1,4 @@
+CNV.ID	Sample	Correlation	N.comp	Start.b	End.b	CNV.type	N.exons	Start	End	Chromosome	Genomic.ID	BF	Reads.expected	Reads.observed	Reads.ratio	Gene
+1	Female18-TwistMyRun2.final	0.999766620088922	5	454	454	duplication	1	134678852	134679815	7	chr7:134678852-134679815	54.4	4436	6298	1.42	BPGM
+2	Female24-TwistMyRun2.final	0.999632199956217	6	12	12	deletion	1	1890819	1891086	1	chr1:1890819-1891086	6.29	356	235	0.66	GNB1
+3	Female24-TwistMyRun2.final	0.999632199956217	6	658	658	deletion	1	136545725	136546047	9	chr9:136545725-136546047	6	534	367	0.687	NOTCH1
