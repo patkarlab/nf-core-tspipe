@@ -1,5 +1,5 @@
 /*
- * modules/local/cnv_consensus_multi.nf  (CMX_V1; PureCN inputs PCN_V1)
+ * modules/local/cnv_consensus_multi.nf  (CMX_V2 arms K/G/B/P/E; PureCN PCN_V1; DECoN DECON_V1)
  *
  * Four-caller CNV consensus for the twist_myeloid panel: CNVkit
  * (segments -> gene calls derived from call.cns), Z-score (gene table
@@ -21,7 +21,8 @@ process CNV_CONSENSUS_MULTI {
         tuple val(meta), path(concordance), path(cnr), path(call_cns),
               path(gatk_genes), path(gatk_called), path(denoised),
               path(baf_summary), path(baf_sites),
-              path(purecn_genes), path(purecn_summary)
+              path(purecn_genes), path(purecn_summary),
+              path(decon_genes)   // MARKER DECON_V1 (empty list when DECoN is off)
         path loo_summary
         path loo_summary_female, stageAs: 'female_stratum/*'   // MARKER SEXSTRAT_V1
 
@@ -39,6 +40,7 @@ process CNV_CONSENSUS_MULTI {
         // SEXSTRAT_V1
         def stratum = (meta.sex in ['male', 'female']) ? meta.sex : (params.cnv_sex_fallback ?: 'male')
         def loo_use = (stratum == 'female') ? loo_summary_female : loo_summary
+        def decon_arg = decon_genes ? "--decon-genes ${decon_genes}" : ''   // DECON_V1
         """
         echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
         cnv_consensus_multi.py \\
@@ -54,6 +56,7 @@ process CNV_CONSENSUS_MULTI {
             --loo-summary ${loo_use} \\
             --purecn-genes ${purecn_genes} \\
             --purecn-summary ${purecn_summary} \\
+            ${decon_arg} \\
             --out-prefix ${meta.id}.cnv_consensus4
         """
 }

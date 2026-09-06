@@ -259,6 +259,25 @@ workflow TSPIPE {
             .join( ch_mutect2_vcf_only, by: 0 )
         PURECN( ch_purecn_in, ch_purecn_normaldb, ch_purecn_intervals, ch_purecn_normaldb_female )   // PCN_SEX_V1
 
+        // MARKER DECON_V1: exon-level arm E (DECoN); gated on params.decon_pool_male.
+        // Without it, or while the pool asset is not built yet, the consensus
+        // receives an empty placeholder and omits E (one log.warn).
+        def decon_enabled = params.containsKey('decon_pool_male') && params.decon_pool_male && file(params.decon_pool_male).exists()
+        if( params.containsKey('decon_pool_male') && params.decon_pool_male && !decon_enabled )
+            log.warn "[DECON] pool not found: ${params.decon_pool_male}; arm E disabled for this run"
+        if( decon_enabled ) {
+            ch_decon_exons     = Channel.value(file(params.decon_exons_bed, checkIfExists: true))
+            ch_decon_pool_male = Channel.value(file(params.decon_pool_male, checkIfExists: true))
+            def decon_pool_female = (params.containsKey('decon_pool_female') && params.decon_pool_female) ? params.decon_pool_female : null
+            ch_decon_pool_female = Channel.value( sexstratFemale(decon_pool_female,
+                "${projectDir}/assets/${params.panel}/decon_pool_female.RData", params.decon_pool_male) )
+            ch_paralog_exons = Channel.value(file("${projectDir}/assets/${params.panel}/paralog_limited_exons.tsv", checkIfExists: true))
+            DECON( ch_final_bam, ch_reference, ch_decon_exons, ch_decon_pool_male, ch_decon_pool_female, ch_paralog_exons )
+            ch_decon_genes = DECON.out.genes
+        } else {
+            ch_decon_genes = ch_final_bam.map { m, _b, _i -> [ m, [] ] }
+        }
+
         // CMX_V1: five-caller consensus + Phase-4 JSON payload.
         ch_consensus_in = CNV_CALLING.out.concordance
             .join( CNV_CALLING.out.cnvkit_cnr,           by: 0 )
@@ -270,6 +289,7 @@ workflow TSPIPE {
             .join( GATK_CNV_CALLING.out.baf_sites,       by: 0 )
             .join( PURECN.out.genes,                     by: 0 )
             .join( PURECN.out.summary,                   by: 0 )
+            .join( ch_decon_genes,                        by: 0 )   // DECON_V1
         CNV_CONSENSUS_MULTI( ch_consensus_in, ch_cnv_loo_summary, ch_cnv_loo_summary_female )   // SEXSTRAT_V1
     }
 
