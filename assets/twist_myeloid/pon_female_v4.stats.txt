@@ -1,0 +1,2 @@
+pon_female_v4  built 2026-09-06  alt-aware alignments (realign_v4_female), 8 females (Female17-24; Female1-16 excluded: non-conforming capture, AT-dropout signature, single pool caveat applies)
+noisy bins: 267   LOO genes: 3103   pon rows: 6100   mean spread autosomal: 0.089 (male 0.157)

@@ -35,7 +35,7 @@ nextflow.enable.dsl = 2
 // ---------------------------------------------------------------------------
 params.pon_input         = null            // samplesheet CSV (required)
 params.pon_fasta         = null            // hg38 fasta; .fai and .dict must sit alongside (required)
-params.pon_strata        = 'male'          // comma-separated subset of: male,female
+params.pon_strata        = 'male,female'        // comma-separated subset of: male,female
 params.pon_panel         = 'twist_myeloid' // passed explicitly to cnv_loo_qc.py (its default is 'myeloid')
 params.pon_assets        = "${projectDir}/assets/twist_myeloid"
 
