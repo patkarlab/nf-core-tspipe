@@ -1,0 +1,68 @@
+Gene	Hotspot	Match_Type	Disease_Context	Tier	Therapy_Level	Reference	Notes
+IDH1	R132	residue	AML	IA	Level_1: ivosidenib (R/R; newly dx with aza); olutasidenib (R/R)	OncoKB Level 1; FDA 2018/2022; NCCN AML	Any AA at R132
+IDH1	R132	residue	CCUS_MDS_CMML	IIC	Level_3B: ivosidenib in MDS trials	OncoKB / NCCN	IDH1 inhibitors in MDS trial setting
+IDH2	R140	residue	AML	IA	Level_1: enasidenib (R/R)	OncoKB Level 1; FDA 2017	R140Q most common
+IDH2	R172	residue	AML	IA	Level_1: enasidenib (R/R)	OncoKB Level 1; FDA 2017	R172K most common
+IDH2	R140	residue	MDS_CMML	IIC	Level_3B: enasidenib in MDS trials	OncoKB	
+FLT3	ITD	exon_indel_14_15	AML	IA	Level_1: midostaurin (newly dx); gilteritinib (R/R); quizartinib (newly dx)	OncoKB Level 1; FDA 2017/2018/2023	Detected by FLT3_ITD_EXT/filt3r/getITD ensemble
+FLT3	D835	residue	AML	IA	Level_1: midostaurin; gilteritinib (R/R)	OncoKB Level 1	TKD; quizartinib NOT approved for TKD
+FLT3	I836	residue	AML	IA	Level_1: midostaurin; gilteritinib	OncoKB Level 1	TKD
+NPM1	W288fs	exon_indel_exon12	AML	IA	Level_1: revumenib (R/R FDA Oct 2025); favorable when no FLT3-ITD	FDA 2025; NCCN Cat 2A; ELN 2022	Defines AML-NPM1
+KMT2A	rearrangement	fusion	AML_ALL	IA	Level_1: revumenib (R/R KMT2A-rearr leuk FDA Nov 2024)	FDA 2024	NOT SNV; detected by SV pipeline or karyotype
+JAK2	V617F	specific_aa	MPN	IA	Level_1: ruxolitinib (MF, PV); ropeginterferon (PV)	OncoKB Level 1	MPN-defining
+JAK2	V617F	specific_aa	AML_MDS	IIC	Level_4 (no targeted Rx in AML/MDS context)	OncoKB	Same residue, different disease, different tier
+JAK2	exon12	exon_indel_exon12	MPN	IA	Level_1: ruxolitinib (PV)	OncoKB Level 1	JAK2-V617F-negative PV
+JAK2	exon16_R683	residue	B_ALL	IB	Level_4 (ruxolitinib in Ph-like ALL trials)	OncoKB Level 3B	Ph-like B-ALL
+KIT	D816	residue	SM	IA	Level_1: avapritinib (advanced SM); midostaurin (SM)	OncoKB Level 1; FDA	Systemic mastocytosis
+KIT	D816	residue	CBF_AML	IIC	Level_4 (adverse modifier; midostaurin off-label)	NCCN AML	t(8;21) and inv(16) AML adverse modifier
+KIT	N822	residue	CBF_AML	IIC	Level_4	OncoKB	CBF-AML co-mutation
+MPL	W515	residue	MPN	IA	Level_1: ruxolitinib (MF)	OncoKB Level 1	W515L/K
+CALR	exon9_indel	exon_indel_exon9	MPN	IA	Level_1: ruxolitinib (MF); ropeginterferon	OncoKB Level 1	Type 1 (52bp del) / Type 2 (5bp ins)
+BRAF	V600E	specific_aa	HCL	IA	Level_1: dabrafenib + trametinib; vemurafenib	OncoKB Level 1 (HCL)	Hairy cell leukemia
+BRAF	V600E	specific_aa	AML	IID	Level_3B	OncoKB	Rare in AML
+NRAS	G12	residue	any_myeloid	IIC	Level_4	ELN ven/aza signature; CPSS-Mol adverse	
+NRAS	G13	residue	any_myeloid	IIC	Level_4	ELN ven/aza signature; CPSS-Mol adverse	
+NRAS	Q61	residue	any_myeloid	IIC	Level_4	ELN ven/aza signature; CPSS-Mol adverse	
+NRAS	G12	residue	JMML	IB	Level_4	JMML defining (RAS pathway)	
+NRAS	G13	residue	JMML	IB	Level_4	JMML defining	
+KRAS	G12	residue	any_myeloid	IIC	Level_4 (no AML KRAS inhibitor)	ELN ven/aza signature	G12C inhibitors not approved in heme
+KRAS	G13	residue	any_myeloid	IIC	Level_4	ELN ven/aza signature	
+KRAS	Q61	residue	any_myeloid	IIC	Level_4	ELN ven/aza signature	
+KRAS	G12	residue	JMML	IB	Level_4	JMML defining (RAS pathway)	
+DNMT3A	R882	residue	any_myeloid	IIC	Level_4	Well-characterized AML hotspot; CHIP	R882H most common (dominant-negative)
+U2AF1	S34	residue	any_myeloid	IB	Level_4	IPSS-M residual; ELN MR	S34F most common
+U2AF1	Q157	residue	any_myeloid	IB	Level_4	IPSS-M residual; MIPSS70+ HMR	Q157P/R
+SRSF2	P95	residue	any_myeloid	IB	Level_4	IPSS-M residual; MIPSS70 HMR; CMML-defining	P95H/L/R
+SF3B1	K666	residue	MDS	IB	Level_4 (luspatercept for MDS-RS)	MDS-SF3B1 entity	
+SF3B1	K700	residue	MDS	IB	Level_4 (luspatercept for MDS-RS)	MDS-SF3B1; K700E most common	IPSS-M favorable alpha-class
+SF3B1	K666	residue	AML	IB	Level_4	ELN MR	
+SF3B1	K700	residue	AML	IB	Level_4	ELN MR	
+TP53	R175	residue	any_myeloid	IB	Level_4 (eprenetapopt investigational)	Classic TP53 hotspot	
+TP53	R248	residue	any_myeloid	IB	Level_4	Classic TP53 hotspot	R248Q/W
+TP53	R273	residue	any_myeloid	IB	Level_4	Classic TP53 hotspot	R273H/C
+TP53	R282	residue	any_myeloid	IB	Level_4	Classic TP53 hotspot	
+TP53	G245	residue	any_myeloid	IB	Level_4	Classic TP53 hotspot	
+TP53	Y220	residue	any_myeloid	IB	Level_4 (PC14586 in trial)	Classic TP53 hotspot	Y220C (rescue compound)
+TP53	multihit	gene_multihit	any_myeloid	IA	Level_4 (avoid intensive chemo; alloHCT outcomes poor)	IPSS-M main; MDS-biTP53	Two TP53 events OR single + del(17p)
+CEBPA	bZIP_inframe	exon_indel_bZIP	AML	IA	Level_4 (favorable risk; full-dose chemo OK)	ELN 2022 favorable; WHO/ICC AML-CEBPA	In-frame indels in bZIP domain
+CSF3R	T618I	specific_aa	CNL_aCML	IB	Level_3B: ruxolitinib (off-label CNL)	WHO 2022 CNL-defining	
+UBA1	M41	residue	VEXAS	IB	Level_4 (JAK inhibitors and HMAs in trials; alloHCT)	VEXAS syndrome	Somatic UBA1 in myeloid lineage; X-linked
+PTPN11	exon3	residue_60_76	JMML	IIC	Level_4	JMML; Noonan germline	D61/A72 region
+PTPN11	exon13	residue_500_510	JMML	IIC	Level_4	JMML	
+PIGA	any_LoF	gene_lof	PNH	IB	Level_4 (eculizumab/ravulizumab for PNH)	WHO PNH-defining	Flow cytometry primary dx; NGS confirmatory
+DDX41	R525H	specific_aa	AML_MDS	IB	Level_4	Somatic on germline DDX41 carrier	
+DDX41	M1	specific_aa	AML_MDS	IB	Level_4	Germline start-loss; AML/MDS predisposition	
+SETBP1	D868	residue	aCML_JMML	IIC	Level_4	IPSS-M residual; CPSS-Mol adverse; aCML	D868N
+RUNX1	R201	residue	any_myeloid	IB	Level_4	ELN MR; RUNT domain hotspot	
+GATA2	any_LoF	gene_lof	GATA2_deficiency	IIC	Level_4 (alloHCT for marrow failure)	GATA2 deficiency syndrome	Both germline and somatic relevant
+ASXL1	G646fs	specific_aa	any_myeloid	IB	Level_4	IPSS-M residual; MIPSS70 HMR; ELN MR	Most common ASXL1 frameshift
+NOTCH1	HD_PEST	gene_GoF	T_ALL	IB	Level_4 (gamma-secretase inhibitors in trials)	T-ALL >50%	HD domain + PEST domain mutations
+NOTCH1	HD_PEST	gene_GoF	CMML	IID	Level_4	CMML occasional	
+PHF6	any_LoF	gene_lof	T_ALL	IB	Level_4	T-ALL high frequency; X-linked	
+PHF6	any_LoF	gene_lof	any_myeloid	IIC	Level_4	IPSS-M residual	
+WT1	any	gene_any	T_ALL	IIC	Level_4	T-ALL	
+WT1	any	gene_any	any_myeloid	IIC	Level_4	IPSS-M residual	
+IKZF1	any_LoF	gene_lof	B_ALL	IB	Level_4 (high-risk B-ALL)	B-ALL adverse	Deletions also adverse
+ETV6	any_LoF	gene_lof	B_ALL	IIC	Level_4	B-ALL; germline AML predisposition	
+ETV6	any_LoF	gene_lof	any_myeloid	IIC	Level_4	IPSS-M residual	
+PTEN	any_LoF	gene_lof	T_ALL	IIC	Level_4	T-ALL	

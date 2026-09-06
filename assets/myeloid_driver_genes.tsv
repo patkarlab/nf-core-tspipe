@@ -1,0 +1,121 @@
+Gene	Category	Disease_Defining	AML_ELN2022	IPSSM_Role	MIPSS70_HMR	CPSSMol	ALL_T	ALL_B	Mechanism	Default_Tier	Germline_Relevant	Notes
+AKT1	Signaling_PI3K_AKT		NotListed	None	No	No	No	No	GoF	III	No	Rare in myeloid; mostly solid tumors
+ALAS2	Hereditary_anemia		NotListed	None	No	No	No	No	LoF	III	Yes	X-linked sideroblastic anemia
+ANKRD26	Germline_predisposition_myeloid		NotListed	None	No	No	No	No	LoF	IIC	Yes	Thrombocytopenia 2 with AML predisposition
+ARID1A	Chromatin_modifier		NotListed	None	No	No	No	No	LoF	IID	No	SWI/SNF complex
+ASXL1	Chromatin_modifier	AML-MR	Adverse	Residual	Yes	Yes	No	No	LoF	IB	No	IPSS-M residual; MIPSS70 HMR; CPSS-Mol adverse; ELN MR
+ASXL2	Chromatin_modifier		NotListed	None	No	No	No	No	LoF	IID	No	CBF-AML co-mutation
+BCL11B	Transcription_factor		NotListed	None	No	No	Yes	No	Both	IID	No	T-ALL and mixed-phenotype leukemia
+BCOR	Chromatin_modifier	AML-MR	Adverse	Residual	No	No	No	No	LoF	IB	No	IPSS-M residual; X-linked; ELN MR
+BCORL1	Chromatin_modifier		NotListed	Residual	No	No	No	No	LoF	IIC	No	IPSS-M residual
+BPGM	Hereditary_erythrocytosis		NotListed	None	No	No	No	No	LoF	III	Yes	Bisphosphoglycerate mutase deficiency
+BRAF	Signaling_RTK_RAS		NotListed	None	No	No	No	No	GoF	IIC	No	V600E HCL; rare in AML
+BRINP3	Other		NotListed	None	No	No	No	No	Unknown	III	No	Verify panel inclusion rationale
+BTG1	Other		NotListed	None	No	No	No	Yes	LoF	IID	No	B-ALL deletions
+BTK	Signaling_BCR		NotListed	None	No	No	No	No	GoF	IID	No	CLL/lymphoma; ibrutinib resistance
+CALR	MPN_driver	MPN-ET/MF	NotListed	None	No	No	No	No	GoF	IB	No	Exon 9 type 1 (52bp del) / type 2 (5bp ins)
+CBL	Signaling_RTK_RAS	JMML	NotListed	Residual	No	No	No	No	Both	IIC	Yes	IPSS-M residual; JMML; germline Noonan-like
+CBLB	Signaling_RTK_RAS		NotListed	None	No	No	No	No	Both	IID	No	
+CCNC	Cell_cycle		NotListed	None	No	No	No	No	Unknown	III	No	
+CCND3	Cell_cycle		NotListed	None	No	No	No	No	GoF	IID	No	B-ALL / Burkitt
+CDKN1B	Cell_cycle		NotListed	None	No	No	No	No	LoF	IID	No	p27
+CDKN2A	Tumor_suppressor		NotListed	None	No	No	Yes	Yes	LoF	IID	Yes	ALL deletions; germline melanoma
+CDKN2B	Tumor_suppressor		NotListed	None	No	No	Yes	Yes	LoF	IID	No	Co-deleted with CDKN2A in ALL
+CEBPA	Transcription_factor	AML-CEBPA	Favorable	Residual	No	No	No	No	Both	IB	Yes	bZIP in-frame favorable; germline AML predisposition
+CHEK2	DDR		NotListed	None	No	No	No	No	LoF	IIC	Yes	Germline cancer predisposition; t-MN risk
+CSF1R	Signaling_RTK_RAS		NotListed	None	No	No	No	No	GoF	IIC	No	CSF1R-related; JMML
+CSF3R	Signaling_RTK_RAS	CNL	NotListed	None	No	No	No	No	GoF	IB	No	WHO 2022 CNL-defining (T618I); aCML
+CSMD1	Other		NotListed	None	No	No	No	No	Unknown	III	No	Verify panel inclusion rationale
+CSNK1A1	MDS_driver		NotListed	None	No	No	No	No	LoF	IIC	No	del(5q) MDS; lenalidomide
+CTCF	Chromatin_modifier		NotListed	None	No	No	No	No	LoF	IID	No	
+CTNNB1	Signaling_WNT		NotListed	None	No	No	No	No	GoF	IID	No	Rare in myeloid
+CUX1	Tumor_suppressor		NotListed	None	No	No	No	No	LoF	IID	No	7q minus MDS
+DDX3X	Other		NotListed	None	No	No	No	No	LoF	IID	No	X-linked; rare in myeloid
+DDX41	Spliceosome	AML-DDX41	NotListed	None	No	No	No	No	Both	IB	Yes	Germline (M1?) + somatic R525H; WHO/ICC 2022 entity
+DHX15	Spliceosome		NotListed	None	No	No	No	No	Unknown	IID	No	
+DNMT1	DNA_methylation		NotListed	None	No	No	No	No	LoF	IID	Yes	Adult-onset ataxia (germline); rare somatic
+DNMT3A	DNA_methylation		NotListed	Residual	No	No	No	No	LoF	IIC	No	IPSS-M residual; R882 hotspot; CHIP
+EED	Chromatin_modifier		NotListed	None	No	No	No	No	LoF	IID	No	PRC2
+EGLN1	Hereditary_erythrocytosis		NotListed	None	No	No	No	No	LoF	III	Yes	PHD2; familial erythrocytosis type 3
+ELANE	Germline_predisposition_myeloid		NotListed	None	No	No	No	No	GoF	IIC	Yes	Severe congenital neutropenia / cyclic neutropenia
+EPAS1	Hereditary_erythrocytosis		NotListed	None	No	No	No	No	GoF	III	Yes	HIF2A; familial erythrocytosis type 4
+EPOR	Hereditary_erythrocytosis		NotListed	None	No	No	No	No	GoF	III	Yes	Familial erythrocytosis type 1
+ETNK1	Other		NotListed	Residual	No	No	No	No	Unknown	IID	No	IPSS-M residual; aCML; eosinophilia
+ETV6	Transcription_factor		NotListed	Residual	No	No	No	Yes	LoF	IIC	Yes	IPSS-M residual; germline AML predisposition; B-ALL
+EZH2	Chromatin_modifier	AML-MR	Adverse	Residual	Yes	No	No	No	LoF	IB	No	IPSS-M residual; MIPSS70 HMR; ELN MR
+FLT3	Signaling_RTK	AML-FLT3	NotListed	Main	No	No	No	Yes	GoF	IB	No	IPSS-M main; ELN risk by NPM1 status; B-ALL minor
+GATA1	Transcription_factor		NotListed	None	No	No	No	No	Both	IID	Yes	X-linked; DS-AMKL
+GATA2	Transcription_factor		NotListed	Residual	No	No	No	No	LoF	IIC	Yes	IPSS-M residual; germline GATA2 deficiency (MonoMAC)
+GFI1	Transcription_factor		NotListed	None	No	No	No	No	LoF	IID	Yes	SCN type 2
+GNAS	Signaling_RTK_RAS		NotListed	None	No	No	No	No	GoF	IID	No	More solid
+GNB1	Signaling		NotListed	Residual	No	No	No	No	GoF	IID	No	IPSS-M residual; aCML; ven/aza resistance
+HNRNPK	Spliceosome		NotListed	None	No	No	No	No	LoF	IID	No	9q minus MDS
+HRAS	Signaling_RTK_RAS		NotListed	None	No	No	No	No	GoF	IID	No	Rare in myeloid
+IDH1	DNA_methylation		Intermediate	Residual	Yes	No	No	No	GoF	IA	No	IPSS-M residual; MIPSS70 HMR; ivosidenib/olutasidenib
+IDH2	DNA_methylation		Intermediate	Residual	Yes	No	No	No	GoF	IA	No	IPSS-M residual; MIPSS70 HMR; enasidenib
+IKZF1	Transcription_factor		NotListed	None	No	No	No	Yes	LoF	IID	Yes	B-ALL high-risk; germline immune dysregulation
+IL7R	Signaling		NotListed	None	No	No	Yes	No	GoF	IID	No	T-ALL
+IRF1	Transcription_factor		NotListed	None	No	No	No	No	LoF	III	No	
+JAK2	Signaling_JAK_STAT	MPN-PV/ET/MF	NotListed	None	No	No	No	Yes	GoF	IB	No	V617F + exon 12 MPN-defining; B-ALL Ph-like (exon 16)
+KDM6A	Chromatin_modifier		NotListed	None	No	No	No	No	LoF	IID	No	X-linked
+KDM6B	Chromatin_modifier		NotListed	None	No	No	No	No	LoF	IID	No	
+KIT	Signaling_RTK	SM	NotListed	None	No	No	No	No	GoF	IB	No	D816V mastocytosis; CBF-AML adverse modifier
+KMT2A	Chromatin_modifier	AML-KMT2A	Adverse	Main	No	No	Yes	Yes	Both	IB	No	IPSS-M main (PTD); rearrangements defining; revumenib
+KRAS	Signaling_RTK_RAS		NotListed	Residual	No	No	No	Yes	GoF	IIC	No	IPSS-M residual; ven/aza signature; B-ALL
+LIG4	DDR		NotListed	None	No	No	No	No	LoF	IID	Yes	Germline LIG4 syndrome (SCID + MDS)
+LUC7L2	Spliceosome		NotListed	None	No	No	No	No	LoF	IID	No	7q minus MDS
+MAP2K1	Signaling_RTK_RAS		NotListed	None	No	No	No	No	GoF	IID	No	MEK1; histiocytic neoplasms
+MN1	Transcription_factor		NotListed	None	No	No	No	No	GoF	IIC	No	Pediatric/AYA AML adverse; UBTF-MN1 fusion partner
+MPL	Signaling_JAK_STAT	MPN-ET/MF	NotListed	None	No	No	No	No	Both	IB	Yes	W515 MPN; germline CAMT
+MYB	Transcription_factor		NotListed	None	No	No	Yes	No	GoF	IID	No	T-ALL
+MYCN	Transcription_factor		NotListed	None	No	No	No	No	GoF	III	No	Neuroblastoma
+NAF1	Telomere		NotListed	None	No	No	No	No	LoF	IID	Yes	DC / short telomere syndrome
+NF1	Tumor_suppressor	JMML	NotListed	Residual	No	No	No	No	LoF	IIC	Yes	IPSS-M residual; NF1 syndrome; JMML
+NFE2	Transcription_factor		NotListed	None	No	No	No	No	LoF	IID	No	MPN
+NOTCH1	Signaling_NOTCH		NotListed	None	No	No	Yes	No	Both	IID	No	T-ALL >50%; CMML occasionally
+NOTCH3	Signaling_NOTCH		NotListed	None	No	No	No	No	GoF	III	No	CADASIL (germline)
+NPM1	Other_AML_driver	AML-NPM1	Favorable	Main	No	No	No	No	GoF	IA	No	IPSS-M main; revumenib R/R 2025; favorable when no FLT3-ITD
+NRAS	Signaling_RTK_RAS	JMML	NotListed	Residual	No	Yes	No	Yes	GoF	IIC	No	IPSS-M residual; CPSS-Mol adverse; ven/aza signature; JMML; B-ALL
+PARN	DDR_Telomere		NotListed	None	No	No	No	No	LoF	IID	Yes	DC / short telomere
+PHF6	Chromatin_modifier		NotListed	Residual	No	No	Yes	No	LoF	IIC	No	IPSS-M residual; T-ALL; X-linked
+PHIP	Other		NotListed	None	No	No	No	No	Unknown	III	No	
+PIGA	Other_X_linked	PNH	NotListed	None	No	No	No	No	LoF	IB	No	WHO PNH-defining; X-linked somatic in HSC
+PPM1D	DDR		NotListed	Residual	No	No	No	No	GoF	IIC	No	IPSS-M residual; t-MN CHIP; C-term truncations
+PRPF40B	Spliceosome		NotListed	None	No	No	No	No	LoF	IID	No	
+PRPF8	Spliceosome		NotListed	Residual	No	No	No	No	LoF	IID	No	IPSS-M residual; 7q minus
+PTEN	Tumor_suppressor		NotListed	None	No	No	Yes	No	LoF	IID	Yes	T-ALL; Cowden (germline)
+PTPN	Signaling_RTK_RAS	JMML	NotListed	Residual	No	No	No	No	GoF	IIC	Yes	BED label likely means PTPN11. IPSS-M residual; JMML; Noonan germline. VERIFY BED ANNOTATION
+RAD21	Cohesin		NotListed	None	No	No	No	No	LoF	IIC	Yes	Cornelia de Lange (germline); cohesin
+RAD51	DDR		NotListed	None	No	No	No	No	Unknown	IID	Yes	HR pathway
+RAD51C	DDR		NotListed	None	No	No	No	No	LoF	IID	Yes	FA-O
+RIT1	Signaling_RTK_RAS		NotListed	None	No	No	No	No	GoF	IID	Yes	Noonan; JMML-like
+RUNX1	Transcription_factor	AML-MR	Adverse	Main	No	Yes	Yes	No	LoF	IB	Yes	IPSS-M main; CPSS-Mol adverse; T-ALL; germline FPD/AML
+SAMD9	Germline_predisposition_myeloid		NotListed	None	No	No	No	No	GoF	IIC	Yes	MIRAGE; monosomy 7
+SAMD9L	Germline_predisposition_myeloid		NotListed	None	No	No	No	No	GoF	IIC	Yes	Ataxia-pancytopenia; monosomy 7
+SETBP1	Other	aCML	NotListed	Residual	No	Yes	No	No	GoF	IIC	No	IPSS-M residual; CPSS-Mol adverse; aCML; JMML; Schinzel-Giedion (germline)
+SETD1B	Chromatin_modifier		NotListed	None	No	No	No	No	LoF	IID	No	
+SETD2	Chromatin_modifier		NotListed	None	No	No	No	No	LoF	IID	No	
+SF1	Spliceosome		NotListed	None	No	No	No	No	LoF	IID	No	
+SF3A1	Spliceosome		NotListed	None	No	No	No	No	LoF	IID	No	
+SF3B1	Spliceosome	MDS-SF3B1	Adverse	Main	No	No	No	No	GoF	IB	No	IPSS-M main (alpha favorable); MDS-SF3B1 (WHO/ICC 2022); CMML
+SH2B3	Signaling_JAK_STAT		NotListed	None	No	No	No	No	LoF	IID	Yes	LNK; germline familial JAK/STAT activation
+SMC1A	Cohesin		NotListed	None	No	No	No	No	LoF	IID	Yes	X-linked Cornelia de Lange
+SMC3	Cohesin		NotListed	None	No	No	No	No	LoF	IID	No	
+SRSF2	Spliceosome	AML-MR; CMML	Adverse	Residual	Yes	No	No	No	GoF	IB	No	IPSS-M residual; MIPSS70 HMR; CMML-defining; ELN MR
+STAG2	Cohesin	AML-MR	Adverse	Residual	No	No	No	No	LoF	IB	No	IPSS-M residual; X-linked; ELN MR
+STAT3	Signaling_JAK_STAT		NotListed	None	No	No	No	No	GoF	IID	No	T-LGL
+STAT5B	Signaling_JAK_STAT		NotListed	None	No	No	No	No	GoF	IID	No	HES; LGL
+SUZ12	Chromatin_modifier		NotListed	None	No	No	No	No	LoF	IID	No	PRC2
+TET2	DNA_methylation	CMML	NotListed	None	No	No	No	No	LoF	IIC	No	CHIP; CMML-defining (with SRSF2/ASXL1)
+TP53	Tumor_suppressor	MDS-biTP53; AML-MR	Adverse	Main	Yes	No	Yes	Yes	Both	IB	Yes	IPSS-M main (multihit); MDS-biTP53; AML-MR; MIPSS70+; T-/B-ALL relapse; Li-Fraumeni
+U2AF1	Spliceosome	AML-MR	Adverse	Residual	Yes	No	No	No	GoF	IB	No	IPSS-M residual; MIPSS70 HMR (Q157); ELN MR
+U2AF2	Spliceosome		NotListed	None	No	No	No	No	LoF	IID	No	
+UBA1	Other_X_linked	VEXAS	NotListed	None	No	No	No	No	GoF	IB	No	M41 hotspot defines VEXAS; X-linked somatic
+UBE2T	DDR		NotListed	None	No	No	No	No	LoF	IID	Yes	FA-T
+UBTF	Other_AML_driver		NotListed	None	No	No	No	No	GoF	IIC	No	UBTF-TD pediatric/AYA AML subtype
+WT1	Transcription_factor		NotListed	Residual	No	No	Yes	No	Both	IIC	Yes	IPSS-M residual; T-ALL; Denys-Drash/WAGR
+XRCC2	DDR		NotListed	None	No	No	No	No	LoF	IID	Yes	HR pathway
+ZBTB7A	Transcription_factor		NotListed	None	No	No	No	No	LoF	IID	No	CBF-AML co-mutation
+ZFHX4	Other		NotListed	None	No	No	No	No	Unknown	III	No	Verify panel inclusion rationale
+ZNF91	Other		NotListed	None	No	No	No	No	Unknown	III	No	Verify panel inclusion rationale
+ZRSR2	Spliceosome	AML-MR	Adverse	None	No	No	No	No	LoF	IB	No	ELN MR; X-linked
