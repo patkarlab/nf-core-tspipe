@@ -34,11 +34,12 @@ workflow GATK_CNV_CALLING {
         exonwise_bed    // value path (panel exonwise BED)
         baf_snp_bed     // value path (snp_sites.baf.bed)
         baf_background  // value path (baf_background.tsv)
+        rc_pon_female   // MARKER SEXSTRAT_V1 value path (gatk_rc_pon_female.hdf5, or the male file)
 
     main:
         GATK_CNV_COLLECT_COUNTS( bam_ch, reference_ch, interval_list )
         GATK_CNV_COLLECT_ALLELIC( bam_ch, reference_ch, baf_snp_bed )
-        GATK_CNV_DENOISE( GATK_CNV_COLLECT_COUNTS.out.counts, rc_pon )
+        GATK_CNV_DENOISE( GATK_CNV_COLLECT_COUNTS.out.counts, rc_pon, rc_pon_female )   // SEXSTRAT_V1
 
         ch_model_in = GATK_CNV_DENOISE.out.denoised
             .join( GATK_CNV_COLLECT_ALLELIC.out.allelic, by: 0 )

@@ -15,9 +15,9 @@
  * PoN selection logic:
  *   meta.sex == 'male'   -> pon_male
  *   meta.sex == 'female' -> pon_female
- *   meta.sex == 'unknown' (or unset) -> pon_female (with a warning;
- *     chrX on a male sample run against a female PoN will show as
- *     systematic ~-1 log2 loss, which is reviewable but not silent)
+ *   meta.sex not male/female -> params.cnv_sex_fallback stratum (default
+ *     male; SEXSTRAT_V1) with a warning; chrX is not interpretable then.
+ *   The LOO summary and noisy-bin blacklist follow the same stratum.
  *
  * Both PoN files are staged (small cost); only one is referenced by
  * cnvkit.py batch. Outputs follow the production naming convention so
@@ -40,6 +40,8 @@ process CNVKIT {
         path  pon_female
         path  noisy_bins
         path  loo_summary
+        path  noisy_bins_female,  stageAs: 'female_stratum/*'   // MARKER SEXSTRAT_V1
+        path  loo_summary_female, stageAs: 'female_stratum/*'   // SEXSTRAT_V1
 
     output:
         // Downstream-consumed bin/segment/genemetrics outputs
@@ -65,12 +67,17 @@ process CNVKIT {
 
 
     script:
-        def sex     = meta.sex ?: 'unknown'
-        def pon_use = (sex == 'male') ? pon_male : pon_female
+        def sex       = meta.sex ?: 'unknown'
+        // SEXSTRAT_V1: PoN, LOO summary and noisy bins follow one stratum;
+        // params.cnv_sex_fallback (default male) when sex is not male/female.
+        def stratum = (meta.sex in ['male', 'female']) ? meta.sex : (params.cnv_sex_fallback ?: 'male')
+        def pon_use   = (stratum == 'female') ? pon_female : pon_male
+        def noisy_use = (stratum == 'female') ? noisy_bins_female : noisy_bins
+        def loo_use   = (stratum == 'female') ? loo_summary_female : loo_summary
         """
-        if [ "${sex}" = "unknown" ]; then
-            echo "[WARN] meta.sex=unknown for ${meta.id}; using female PoN as fallback." >&2
-            echo "[WARN]   If this sample is male, chrX will show systematic loss in the CNR." >&2
+        echo "[SEXSTRAT] ${meta.id}: sex=${sex} stratum=${stratum} pon=${pon_use} loo=${loo_use} blacklist=${noisy_use}"
+        if [ "${sex}" != "${stratum}" ]; then
+            echo "[WARN] meta.sex=${sex} for ${meta.id}; using the ${stratum} stratum (params.cnv_sex_fallback). chrX copy ratio is not interpretable." >&2
         fi
 
         # Matplotlib/fontconfig need a writable cache dir; the container's
@@ -85,7 +92,7 @@ process CNVKIT {
             -o . \\
             --pon ${pon_use} \\
             --sex ${sex} \\
-            --blacklist ${noisy_bins} \\
-            --loo-summary ${loo_summary} ${task.ext.args ?: ''}
+            --blacklist ${noisy_use} \\
+            --loo-summary ${loo_use} ${task.ext.args ?: ''}
         """
 }

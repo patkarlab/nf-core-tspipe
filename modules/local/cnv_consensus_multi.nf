@@ -23,6 +23,7 @@ process CNV_CONSENSUS_MULTI {
               path(baf_summary), path(baf_sites),
               path(purecn_genes), path(purecn_summary)
         path loo_summary
+        path loo_summary_female, stageAs: 'female_stratum/*'   // MARKER SEXSTRAT_V1
 
     output:
         tuple val(meta), path("${meta.id}.cnv_consensus4.genes.tsv"),    emit: genes
@@ -35,7 +36,11 @@ process CNV_CONSENSUS_MULTI {
         """
 
     script:
+        // SEXSTRAT_V1
+        def stratum = (meta.sex in ['male', 'female']) ? meta.sex : (params.cnv_sex_fallback ?: 'male')
+        def loo_use = (stratum == 'female') ? loo_summary_female : loo_summary
         """
+        echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
         cnv_consensus_multi.py \\
             --sample ${meta.id} \\
             --concordance ${concordance} \\
@@ -46,7 +51,7 @@ process CNV_CONSENSUS_MULTI {
             --denoised ${denoised} \\
             --baf-summary ${baf_summary} \\
             --baf-sites ${baf_sites} \\
-            --loo-summary ${loo_summary} \\
+            --loo-summary ${loo_use} \\
             --purecn-genes ${purecn_genes} \\
             --purecn-summary ${purecn_summary} \\
             --out-prefix ${meta.id}.cnv_consensus4

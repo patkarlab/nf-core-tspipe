@@ -23,6 +23,7 @@ process CNV_ANNOTATE {
         path  cytoband
         path  clingen
         path  bed
+        path  loo_summary_female, stageAs: 'female_stratum/*'   // MARKER SEXSTRAT_V1
 
     output:
         tuple val(meta), path("${meta.id}_cnv_annotated.tsv"), emit: tsv
@@ -34,11 +35,15 @@ process CNV_ANNOTATE {
 
 
     script:
+        // SEXSTRAT_V1
+        def stratum = (meta.sex in ['male', 'female']) ? meta.sex : (params.cnv_sex_fallback ?: 'male')
+        def loo_use = (stratum == 'female') ? loo_summary_female : loo_summary
         """
+        echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
         python3 ${projectDir}/bin/cnv_annotate.py \\
             --sample ${meta.id} \\
             --concordance ${concordance} \\
-            --loo-summary ${loo_summary} \\
+            --loo-summary ${loo_use} \\
             --cytoband ${cytoband} \\
             --clingen ${clingen} \\
             --bed ${bed} \\

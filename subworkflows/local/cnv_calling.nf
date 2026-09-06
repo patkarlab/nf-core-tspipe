@@ -46,6 +46,8 @@ workflow CNV_CALLING {
         cytoband_ch         // value path (cytoBand_hg38.txt)
         clingen_ch          // value path (ClinGen_gene_curation_list_GRCh38.tsv)
         scatter_regions_ch  // value path (cnv_scatter_regions.txt)
+        loo_summary_female_ch  // MARKER SEXSTRAT_V1 value path (cnvkit_loo_summary_female.tsv, or the male file)
+        noisy_bins_female_ch   // SEXSTRAT_V1 value path (cnvkit_noisy_bins_female.bed, or the male file)
 
     main:
 
@@ -58,6 +60,8 @@ workflow CNV_CALLING {
             pon_female_ch,
             noisy_bins_ch,
             loo_summary_ch,
+            noisy_bins_female_ch,   // SEXSTRAT_V1
+            loo_summary_female_ch,  // SEXSTRAT_V1
         )
 
         // ----- 2. Z-score caller (consumes CNVKit .cnr) ------------------
@@ -101,6 +105,7 @@ workflow CNV_CALLING {
             cytoband_ch,
             clingen_ch,
             bed_ch,
+            loo_summary_female_ch,  // SEXSTRAT_V1
         )
 
     emit:

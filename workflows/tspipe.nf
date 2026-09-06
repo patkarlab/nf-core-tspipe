@@ -99,6 +99,24 @@ workflow TSPIPE {
     ch_cnv_noise_profile = Channel.value(file(
         params.cnv_noise_profile ?: "${projectDir}/assets/${params.panel}/loo_bin_noise_profile.tsv",
         checkIfExists: true))
+    // MARKER SEXSTRAT_V1: female-stratum LOO artefacts. The male file is used when the panel
+    // has no _female asset (legacy panels), with one log.warn. Selection by
+    // meta.sex happens inside CNVKIT, CNV_ANNOTATE, CNV_CONSENSUS_MULTI and
+    // GATK_CNV_DENOISE (params.cnv_sex_fallback for unknown/indeterminate).
+    def sexstratFemale = { override, female_default, male_path ->
+        def f = override ?: female_default
+        if( file(f).exists() ) return file(f)
+        log.warn "[SEXSTRAT] ${file(f).name} not found for panel ${params.panel}; female stratum uses ${file(male_path).name}"
+        return file(male_path)
+    }
+    ch_cnv_loo_summary_female = Channel.value( sexstratFemale(
+        params.cnv_loo_summary_female,
+        "${projectDir}/assets/${params.panel}/cnvkit_loo_summary_female.tsv",
+        params.cnv_loo_summary ?: "${projectDir}/assets/${params.panel}/cnvkit_loo_summary.tsv" ) )
+    ch_cnv_noisy_bins_female  = Channel.value( sexstratFemale(
+        params.cnv_noisy_bins_female,
+        "${projectDir}/assets/${params.panel}/cnvkit_noisy_bins_female.bed",
+        params.cnv_noisy_bins ?: "${projectDir}/assets/${params.panel}/cnvkit_noisy_bins.bed" ) )
     // Panel-agnostic annotation references.
     ch_cytoband = Channel.value(file(
         params.cytoband ?: "${projectDir}/assets/references/cytoBand_hg38.txt",
@@ -186,6 +204,8 @@ workflow TSPIPE {
         ch_cytoband,
         ch_clingen,
         ch_scatter_regions,
+        ch_cnv_loo_summary_female,   // SEXSTRAT_V1
+        ch_cnv_noisy_bins_female,    // SEXSTRAT_V1
     )
 
     // ----- 4b. GATK CNV calling (TGC_V1; twist_myeloid) ---------------
@@ -197,6 +217,10 @@ workflow TSPIPE {
         if( params.containsKey('cnv_gatk_intervals') && params.cnv_gatk_intervals )
             gatk_ilist = params.cnv_gatk_intervals
         ch_gatk_rc_pon = Channel.value(file(params.cnv_gatk_pon, checkIfExists: true))
+        // MARKER SEXSTRAT_V1: female GATK read-count PoN; male file when the panel has none.
+        def gatk_pon_female = (params.containsKey('cnv_gatk_pon_female') && params.cnv_gatk_pon_female) ? params.cnv_gatk_pon_female : null
+        ch_gatk_rc_pon_female = Channel.value( sexstratFemale(gatk_pon_female,
+            "${projectDir}/assets/${params.panel}/gatk_rc_pon_female.hdf5", params.cnv_gatk_pon) )
         ch_gatk_ilist  = Channel.value(file(gatk_ilist,          checkIfExists: true))
         // BAF_V1: BAF SNP catalog + male-cohort background for the
         // allele-specific track (ModelSegments) and the 17p cnLOH detector.
@@ -216,6 +240,7 @@ workflow TSPIPE {
             ch_exonwise_bed,
             ch_baf_snp_bed,
             ch_baf_background,
+            ch_gatk_rc_pon_female,   // SEXSTRAT_V1
         )
 
         // PCN_V1: PureCN purity/ploidy/integer-CN + LOH (fifth caller).
@@ -241,7 +266,7 @@ workflow TSPIPE {
             .join( GATK_CNV_CALLING.out.baf_sites,       by: 0 )
             .join( PURECN.out.genes,                     by: 0 )
             .join( PURECN.out.summary,                   by: 0 )
-        CNV_CONSENSUS_MULTI( ch_consensus_in, ch_cnv_loo_summary )
+        CNV_CONSENSUS_MULTI( ch_consensus_in, ch_cnv_loo_summary, ch_cnv_loo_summary_female )   // SEXSTRAT_V1
     }
 
     // ----- 5. SV calling -----------------------------------------------
