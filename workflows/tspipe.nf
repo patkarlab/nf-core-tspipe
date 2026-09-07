@@ -103,12 +103,12 @@ workflow TSPIPE {
     ch_cnv_noisy_bins    = Channel.value(file(
         params.cnv_noisy_bins    ?: "${projectDir}/assets/${params.panel}/cnvkit_noisy_bins.bed",
         checkIfExists: true))
-    ch_cnv_noise_profile = Channel.value(file(
-        params.cnv_noise_profile ?: "${projectDir}/assets/${params.panel}/loo_bin_noise_profile.tsv",
-        checkIfExists: true))
+    // MARKER CNV_RETIRE_7B: loo_bin_noise_profile.tsv (ZSCORE_CNV), cytoBand/ClinGen
+    // (CNV_ANNOTATE) and cnv_scatter_regions.txt (CNV_PLOTS) are no longer pipeline
+    // inputs; params.cnv_noise_profile, params.cytoband, params.clingen are ignored.
     // MARKER SEXSTRAT_V1: female-stratum LOO artefacts. The male file is used when the panel
     // has no _female asset (legacy panels), with one log.warn. Selection by
-    // meta.sex happens inside CNVKIT, CNV_ANNOTATE, CNV_CONSENSUS_MULTI and
+    // meta.sex happens inside CNVKIT, CNV_CONSENSUS_MULTI and
     // GATK_CNV_DENOISE (params.cnv_sex_fallback for unknown/indeterminate).
     def sexstratFemale = { override, female_default, male_path ->
         def f = override ?: female_default
@@ -124,17 +124,6 @@ workflow TSPIPE {
         params.cnv_noisy_bins_female,
         "${projectDir}/assets/${params.panel}/cnvkit_noisy_bins_female.bed",
         params.cnv_noisy_bins ?: "${projectDir}/assets/${params.panel}/cnvkit_noisy_bins.bed" ) )
-    // Panel-agnostic annotation references.
-    ch_cytoband = Channel.value(file(
-        params.cytoband ?: "${projectDir}/assets/references/cytoBand_hg38.txt",
-        checkIfExists: true))
-    ch_clingen  = Channel.value(file(
-        params.clingen  ?: "${projectDir}/assets/references/ClinGen_gene_curation_list_GRCh38.tsv",
-        checkIfExists: true))
-    // Panel-specific chr-gene scatter regions (no runtime override; lives in panel assets).
-    ch_scatter_regions = Channel.value(file(
-        "${projectDir}/assets/${params.panel}/cnv_scatter_regions.txt",
-        checkIfExists: true))
 
     // ----- Parse the samplesheet ----------------------------------------
     ch_input = Channel.fromPath(params.input, checkIfExists: true)
@@ -197,8 +186,7 @@ workflow TSPIPE {
     )
     ch_flt3_consensus = FLT3_ITD.out.consensus_tsv
 
-    // ----- 4. CNV calling (CNVKit + Z-score + concordance) --------------
-    // nf-core CNV wiring v1 (apply_nfcore_cnv_wiring_part1)
+    // ----- 4. CNV calling: CNVkit arm K (MARKER CNV_RETIRE_7B; legacy chain retired) -----
     CNV_CALLING(
         ch_final_bam,
         ch_reference,
@@ -207,10 +195,6 @@ workflow TSPIPE {
         ch_cnv_pon_female,
         ch_cnv_loo_summary,
         ch_cnv_noisy_bins,
-        ch_cnv_noise_profile,
-        ch_cytoband,
-        ch_clingen,
-        ch_scatter_regions,
         ch_cnv_loo_summary_female,   // SEXSTRAT_V1
         ch_cnv_noisy_bins_female,    // SEXSTRAT_V1
     )
@@ -315,8 +299,7 @@ workflow TSPIPE {
         }
 
         // CMX_V1: five-caller consensus + Phase-4 JSON payload.
-        ch_consensus_in = CNV_CALLING.out.concordance
-            .join( CNV_CALLING.out.cnvkit_cnr,           by: 0 )
+        ch_consensus_in = CNV_CALLING.out.cnvkit_cnr                       // CNV_RETIRE_7B: no concordance input
             .join( CNV_CALLING.out.cnvkit_calls,         by: 0 )
             .join( GATK_CNV_CALLING.out.genes,           by: 0 )
             .join( GATK_CNV_CALLING.out.called,          by: 0 )
@@ -420,11 +403,6 @@ workflow TSPIPE {
         .join(PREPROCESSING.out.fastp_html)                                  // + fastp_html
         .join(IGV_REPORTS.out.html)                                           // + igv_report (D2)
         .join(PREPROCESSING.out.dashboard)                                   // + dashboard
-        .join(CNV_CALLING.out.clinical_report)                               // + cnv_clinical_tsv
-        .join(CNV_CALLING.out.annotated)                                     // + cnv_annotated_tsv
-        .join(CNV_CALLING.out.cnvkit_diagram_pdf)                            // + cnvkit_diagram
-        .join(CNV_CALLING.out.cnvkit_scatter_png)                            // + cnvkit_scatter
-        .join(CNV_CALLING.out.plots_dir)                                     // + cnvkit_plots_dir
         .join(CNV_CONSENSUS_MULTI.out.genes)                                     // + cnv_consensus_genes (MARKER ORG_CNV_V1; MARKER ORG_CNV_V1a)
         .join(CNV_CONSENSUS_MULTI.out.segments)                                     // + cnv_consensus_segments
         .join(CNV_CONSENSUS_MULTI.out.json)                                     // + cnv_consensus_json

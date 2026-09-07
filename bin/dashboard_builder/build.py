@@ -42,7 +42,6 @@ from parsers import hsmetrics as p_hsmetrics
 from parsers import variants as p_variants
 from parsers import flt3 as p_flt3
 from parsers import coverage as p_coverage
-from parsers import cnv as p_cnv
 from parsers import cnv_v2 as p_cnv_v2   # MARKER DASH_CNV_V1
 from parsers import igv as p_igv
 from parsers import genebe as p_genebe
@@ -289,19 +288,12 @@ def collect_sample_context(sample_dir, build_time, subdir="",
     except Exception as exc:
         logging.warning("[%s] coverage parse failed: %s", sample, exc)
 
-    # --- CNV ---
+    # --- CNV (MARKER CNV_RETIRE_7B: v2 parser only; legacy parsers/cnv.py retired) ---
     try:
-        ctx["cnv"] = p_cnv.parse(effective_dir, sample)
-        # DASH_CNV_V1: v2 outputs (clinical/cnv/) merged into the same context; never fatal
-        try:
-            ctx["cnv"].update(p_cnv_v2.parse(effective_dir, sample))
-        except Exception as exc:  # noqa: BLE001
-            logging.warning("[%s] cnv v2 parse failed: %s", sample, exc)
-    except Exception as exc:
-        logging.warning("[%s] cnv parse failed: %s", sample, exc)
-        ctx["cnv"] = {"clinical_table": None, "annotated_table": None,
-                      "scatter_png": None, "diagram_pdf": None,
-                      "per_chrom_pngs": [], "per_gene_pngs": []}
+        ctx["cnv"] = p_cnv_v2.parse(effective_dir, sample)
+    except Exception as exc:  # noqa: BLE001
+        logging.warning("[%s] cnv v2 parse failed: %s", sample, exc)
+        ctx["cnv"] = {}
 
     # --- IGV lookup + idempotent hash-router injection ---
     # The hash-router script lets the parent dashboard select a variant by

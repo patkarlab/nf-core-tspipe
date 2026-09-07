@@ -238,10 +238,12 @@ def read_gene_blacklist(path):
 
 def main():
     ap = argparse.ArgumentParser(description="Multi-arm CNV consensus (CMX_V2)")
-    for name in ["sample", "concordance", "cnr", "call-cns", "gatk-genes",
+    for name in ["sample", "cnr", "call-cns", "gatk-genes",
                  "gatk-called", "denoised", "baf-summary", "baf-sites",
                  "loo-summary", "out-prefix"]:
         ap.add_argument("--" + name, required=True)
+    ap.add_argument("--concordance", default=None,
+                    help="legacy two-caller concordance table; accepted and ignored (CNV_RETIRE_7B)")
     ap.add_argument("--purecn-genes", default=None,
                     help="PureCN normalised gene table (PCN_V1); optional")
     ap.add_argument("--purecn-summary", default=None,
@@ -258,7 +260,7 @@ def main():
     ap.add_argument("--purple-summary", default=None, help="PURPLE arm H summary (HMF_PURPLE_V1); optional")
     args = ap.parse_args()
 
-    for p in [args.concordance, args.cnr, args.call_cns, args.gatk_genes,
+    for p in [args.cnr, args.call_cns, args.gatk_genes,
               args.gatk_called, args.denoised, args.baf_summary,
               args.baf_sites, args.loo_summary]:
         if not os.path.isfile(p):
@@ -308,16 +310,8 @@ def main():
             "g_n_bins": r.get("n_bins", "NA"),
         })
 
-    # ---- legacy concordance passthrough (CMX_V2: Z-score is not an arm)
-    lg_header, lg_rows = read_tsv(args.concordance, comment="#")
-    gene_col = "gene" if "gene" in lg_header else (
-        "Gene" if "Gene" in lg_header else None)
+    # ---- legacy concordance passthrough retired (CNV_RETIRE_7B); --concordance is ignored
     legacy = {}
-    if gene_col is None:
-        warn("legacy concordance has no gene/Gene column; passthrough skipped")
-    else:
-        for r in lg_rows:
-            legacy[r[gene_col]] = r
 
     # ---- DECoN exon-level arm E (CMX_V2; optional until the DECON module exists)
     # Contract: TSV with columns gene, e_call (GAIN|LOSS|NEUTRAL), e_bf.

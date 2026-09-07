@@ -18,11 +18,7 @@ process ORGANIZE_OUTPUT {
               path(fastp_html),
               path(igv_report),
               path(dashboard),
-              path(cnv_clinical_tsv),
-              path(cnv_annotated_tsv),
-              path(cnvkit_diagram),
-              path(cnvkit_scatter),
-              path(cnvkit_plots_dir),
+              // MARKER CNV_RETIRE_7B: legacy CNV inputs (clinical/annotated tables, CNVkit plots) removed
               path(cnv_consensus_genes), path(cnv_consensus_segments), path(cnv_consensus_json),   // MARKER ORG_CNV_V1
               path(exon_plots_dir), path(chrom_pages_dir),
               path(decon_filtered), path(decon_genes),
@@ -64,11 +60,6 @@ process ORGANIZE_OUTPUT {
             --fastp-html          ${fastp_html} \\
             --igv-report          ${igv_report} \\
             --dashboard           ${dashboard} \\
-            --cnv-clinical-tsv    ${cnv_clinical_tsv} \\
-            --cnv-annotated-tsv   ${cnv_annotated_tsv} \\
-            --cnvkit-diagram-pdf  ${cnvkit_diagram} \\
-            --cnvkit-scatter-png  ${cnvkit_scatter} \\
-            --cnvkit-plots-dir    ${cnvkit_plots_dir} \\
             ${cnv_consensus_genes_arg} \\
             ${cnv_consensus_segments_arg} \\
             ${cnv_consensus_json_arg} \\

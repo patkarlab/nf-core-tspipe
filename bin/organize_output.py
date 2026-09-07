@@ -127,11 +127,7 @@ def main():
     parser.add_argument("--fastp-html", required=True)
     parser.add_argument("--igv-report", required=True,
                         help="IGV HTML report from create_report")
-    parser.add_argument("--cnv-clinical-tsv", required=True)
-    parser.add_argument("--cnv-annotated-tsv", required=True)
-    parser.add_argument("--cnvkit-diagram-pdf", required=True)
-    parser.add_argument("--cnvkit-scatter-png", required=True)
-    parser.add_argument("--cnvkit-plots-dir", required=True)
+    # MARKER CNV_RETIRE_7B: legacy CNV arguments (clinical/annotated tables, CNVkit plots) removed
     parser.add_argument("--cnv-consensus-genes", default=None, help="CMX consensus per-gene table (optional; ORG_CNV_V1)")
     parser.add_argument("--cnv-consensus-segments", default=None, help="CMX consensus segment intersection (optional; ORG_CNV_V1)")
     parser.add_argument("--cnv-consensus-json", default=None, help="CMX consensus JSON (tracks for figures) (optional; ORG_CNV_V1)")
@@ -204,28 +200,7 @@ def main():
     hardlink(args.dashboard,     out / (s + "_dashboard.html"),
              "Per-sample QC dashboard")
 
-    # --- CNV ---
-    logger.info("--- CNV ---")
-    cnv_dst = out / "cnv_consensus"
-    hardlink(args.cnv_clinical_tsv,
-             cnv_dst / (s + "_cnv_clinical.tsv"),
-             "CNV consensus clinical TSV")
-    hardlink(args.cnv_annotated_tsv,
-             cnv_dst / (s + "_cnv_annotated.tsv"),
-             "CNV per-gene annotated table (cytoband, ClinGen HI/TS, gene role, heme significance, CDKN2A/2B + 9p/9q rescue)")
-
-    plot_dst = out / "cnvkit_plots"
-    hardlink(args.cnvkit_diagram_pdf,
-             plot_dst / (s + ".final-diagram.pdf"),
-             "CNVkit diagram")
-    hardlink(args.cnvkit_scatter_png,
-             plot_dst / (s + ".final-scatter.png"),
-             "CNVkit scatter")
-    # Subdir plots: combined/, overview/, per_chromosome/, per_gene/
-    for sub in ("combined", "overview", "per_chromosome", "per_gene"):
-        subsrc = Path(args.cnvkit_plots_dir) / sub
-        if subsrc.exists():
-            hardlink_dir(subsrc, plot_dst / sub, "CNVkit " + sub + " plots")
+    # --- CNV legacy deliverables (cnv_consensus/, cnvkit_plots/) retired: CNV_RETIRE_7B ---
 
     # --- CNV v2 (MARKER ORG_CNV_V1): consensus, exon plots, chromosome pages, DECoN, PURPLE, sex check ---
     logger.info("--- CNV v2 ---")

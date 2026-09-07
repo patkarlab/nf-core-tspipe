@@ -18,7 +18,7 @@ process CNV_CONSENSUS_MULTI {
     label 'process_low'
 
     input:
-        tuple val(meta), path(concordance), path(cnr), path(call_cns),
+        tuple val(meta), path(cnr), path(call_cns),   // MARKER CNV_RETIRE_7B: concordance input removed
               path(gatk_genes), path(gatk_called), path(denoised),
               path(baf_summary), path(baf_sites),
               path(purecn_genes), path(purecn_summary),
@@ -47,11 +47,10 @@ process CNV_CONSENSUS_MULTI {
         def purple_arg = (purple_genes && purple_summary) ? "--purple-genes ${purple_genes} --purple-summary ${purple_summary}" : ''   // HMF_PURPLE_V1
         """
         echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
-        # consensus rule version: CMX_V2_4 (bash comment; busts the task cache)
+        # consensus rule version: CMX_V2_4; inputs CNV_RETIRE_7B (bash comment; busts the task cache)
         cnv_consensus_multi.py \\
             --sample ${meta.id} \\
             --sex ${meta.sex ?: 'unknown'} \\
-            --concordance ${concordance} \\
             --cnr ${cnr} \\
             --call-cns ${call_cns} \\
             --gatk-genes ${gatk_genes} \\
