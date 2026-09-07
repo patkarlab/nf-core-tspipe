@@ -42,9 +42,19 @@ params.pon_assets        = "${projectDir}/assets/twist_myeloid"
 // OPEN DECISION (handoff item 2): cohort for the BAF background table.
 // 'male' = conforming males only; 'all' = all 48 with per-site depth filter.
 // Changing this re-runs only BPT_AGGREGATE_BAF under -resume.
-params.pon_baf_cohort    = 'male'
+params.pon_baf_cohort    = 'all'            // BAF_CATALOG_V1: genome-wide background over all rows (per-site depth filter); was 'male'
 params.pon_baf_min_depth = 20
 params.pon_baf_min_het   = 3               // samples in 0.2-0.8 AF band for a site to be flagged informative
+// MARKER BAF_CATALOG_V1: genome-wide BAF site catalog discovered from the normals
+// (het in >= pon_het_min_samples include_in_pon rows at >= pon_het_min_depth;
+// chrX from females only; PARALOG_LIMITED exons excluded), appended to the
+// 17p probe windows. Changing these re-runs discovery merge, allelic counts
+// and the BAF aggregation under -resume.
+params.pon_het_min_samples = 3
+params.pon_het_min_depth   = 50
+params.pon_het_af_lo       = 0.20
+params.pon_het_af_hi       = 0.80
+params.pon_het_mapq        = 20
 
 // GATK AnnotateIntervals GC track fed to CreateReadCountPanelOfNormals.
 // Flagged for module review; annotation itself always runs (cheap), this
@@ -74,6 +84,8 @@ include { BPT_GATK_ANNOTATE_INTERVALS } from '../modules/local/bpt_gatk_annotate
 include { BPT_GATK_COLLECT_READ_COUNTS } from '../modules/local/bpt_gatk_collect_read_counts'
 include { BPT_GATK_COLLECT_ALLELIC_COUNTS } from '../modules/local/bpt_gatk_collect_allelic_counts'
 include { BPT_AGGREGATE_BAF           } from '../modules/local/bpt_aggregate_baf'
+include { BPT_DISCOVER_HETS         } from '../modules/local/bpt_discover_hets'      // BAF_CATALOG_V1
+include { BPT_MERGE_HET_SITES       } from '../modules/local/bpt_merge_het_sites'
 include { BPT_CONFORMITY_SAMPLE       } from '../modules/local/bpt_conformity_sample'
 include { BPT_CONFORMITY_REPORT       } from '../modules/local/bpt_conformity_report'
 include { BPT_TOOL_VERSIONS           } from '../modules/local/bpt_tool_versions'
@@ -119,7 +131,7 @@ workflow BUILD_PON_TWIST {
 
     // Reference files are value channels (queue channels are one-shot).
     ch_bed      = Channel.value(file("${params.pon_assets}/panel.combined.filtered.bed", checkIfExists: true))
-    ch_snp_bed  = Channel.value(file("${params.pon_assets}/snp_sites.baf.bed",           checkIfExists: true))
+    ch_snp_bed_base = Channel.value(file("${params.pon_assets}/snp_sites.baf.bed", checkIfExists: true))   // BAF_CATALOG_V1: 17p probe windows; ch_snp_bed is built below
     ch_exonwise = Channel.value(file("${params.pon_assets}/targets.exonwise.bed",        checkIfExists: true))
 
     // ---- samplesheet ----------------------------------------------------
@@ -136,6 +148,20 @@ workflow BUILD_PON_TWIST {
             ]
             tuple( meta, file(row.bam), file(row.bai) )
         }
+
+
+    // BAF_CATALOG_V1: het discovery on every row, catalog merge, then the
+    // existing allelic counting and aggregation run over the merged catalog.
+    def paralog_tsv = "${params.pon_assets}/paralog_limited_exons.tsv"
+    ch_paralog_exons = file(paralog_tsv).exists() ? Channel.value(file(paralog_tsv)) : Channel.value([])
+    BPT_DISCOVER_HETS( ch_samples, ch_bed, ch_fasta, ch_fai )
+    BPT_MERGE_HET_SITES(
+        BPT_DISCOVER_HETS.out.hets.map { meta, tsv -> tsv }.collect(),
+        ch_sheet,
+        ch_snp_bed_base,
+        ch_paralog_exons
+    )
+    ch_snp_bed = BPT_MERGE_HET_SITES.out.bed.first()
 
     // ---- global prep (stratum-independent) ------------------------------
     BPT_CNVKIT_PREP( ch_bed )
