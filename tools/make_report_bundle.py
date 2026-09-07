@@ -40,7 +40,7 @@ Inputs (per sample <S>)
     <outdir>/<S>/clinical/<S>_dashboard.html
     <outdir>/<S>/clinical/<S>_fastp.html
     <outdir>/<S>/clinical/<S>_igv_report.html
-    <outdir>/<S>/clinical/cnvkit_plots/           (full subtree)
+    <outdir>/<S>/clinical/cnv/                    (full subtree; CNV_RETIRE_7B)
     <outdir>/assets/                              (shared, copied per bundle)
 
 Output (per sample)
@@ -54,7 +54,7 @@ Zip contents
     <S>/<S>_fastp.html          (byte-copy)
     <S>/<S>_igv_report.html     (byte-copy)
     <S>/assets/...              (full subtree, copied in)
-    <S>/cnvkit_plots/...        (full subtree, copied in)
+    <S>/cnv/...                 (full subtree, copied in)
 
 Path rewrites applied to <S>_report.html
 ----------------------------------------
@@ -266,11 +266,13 @@ def bundle_one_sample(
             f"{', '.join(missing)}"
         )
 
-    cnvkit_plots = clinical / "cnvkit_plots"
-    if not cnvkit_plots.is_dir():
+    # CNV_RETIRE_7B: clinical/cnv/ (consensus, exon plots, chromosome pages, DECoN,
+    # PURPLE, sex check, reconCNV) is the CNV deliverable; cnvkit_plots/ is gone.
+    cnv_v2 = clinical / "cnv"
+    if not cnv_v2.is_dir():
         raise RuntimeError(
-            f"sample {sample}: cnvkit_plots/ directory missing: "
-            f"{cnvkit_plots}"
+            f"sample {sample}: cnv/ directory missing: "
+            f"{cnv_v2}"
         )
 
     assets = outdir / "assets"
@@ -307,12 +309,9 @@ def bundle_one_sample(
         ):
             shutil.copy2(src, staging / src.name)
 
-        # Copy cnvkit_plots and assets as whole subtrees
-        shutil.copytree(cnvkit_plots, staging / "cnvkit_plots")
+        # Copy the CNV tree and assets as whole subtrees
         # MARKER DASH_CNV_V1a: v2 CNV tree (consensus, exon plots, chromosome pages, DECoN, PURPLE, sex check)
-        cnv_v2 = clinical / "cnv"
-        if cnv_v2.is_dir():
-            shutil.copytree(cnv_v2, staging / "cnv")
+        shutil.copytree(cnv_v2, staging / "cnv")
         shutil.copytree(assets, staging / "assets")
 
         # Rewrite and write the entry-point HTML

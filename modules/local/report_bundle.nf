@@ -133,7 +133,7 @@ process REPORT_BUNDLE {
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             python: \$(python3 --version 2>&1 | awk '{print \$2}')
-            make_report_bundle: '0.2'
+            make_report_bundle: '0.3'   // CNV_RETIRE_7B
         END_VERSIONS
         """
 
