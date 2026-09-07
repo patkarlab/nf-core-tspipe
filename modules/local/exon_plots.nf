@@ -1,5 +1,5 @@
 /*
- * modules/local/exon_plots.nf  (EXON_PLOTS_V1)
+ * modules/local/exon_plots.nf  (EXON_PLOTS_V1; MARKER EXON_PLOTS_V1a)
  *
  * Per-sample exon-level copy-ratio figures from the CMX consensus JSON
  * (CNVkit bins with depth and weight): one PNG per chromosome that carries
@@ -39,6 +39,7 @@ process EXON_PLOTS {
         export XDG_CACHE_HOME=\$PWD/.cache
         mkdir -p \$MPLCONFIGDIR \$XDG_CACHE_HOME
 
+        # exon renderer version: EXONPLOT_V1.3 rows at gene boundaries (bash comment; busts the task cache)
         plot_exon_ratio_batch.py \\
             --sample ${meta.id} \\
             --json ${consensus_json} \\
