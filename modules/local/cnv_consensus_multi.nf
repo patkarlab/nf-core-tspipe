@@ -47,6 +47,7 @@ process CNV_CONSENSUS_MULTI {
         def purple_arg = (purple_genes && purple_summary) ? "--purple-genes ${purple_genes} --purple-summary ${purple_summary}" : ''   // HMF_PURPLE_V1
         """
         echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
+        # consensus rule version: CMX_V2_4 (bash comment; busts the task cache)
         cnv_consensus_multi.py \\
             --sample ${meta.id} \\
             --sex ${meta.sex ?: 'unknown'} \\

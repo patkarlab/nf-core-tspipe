@@ -30,8 +30,9 @@ Tier rule (per gene; fp_ok = LOO fp_any_rate < --loo-fp-max, unknown = not ok):
             but fp is not ok
     TIER_3  single depth arm, or K and G without fp_ok
   Without a depth call:
-    TIER_3  independent arm(s) only, all agreeing (consensus = direction)
-    CNLOH   B and/or P cnLOH support: TIER_1 when both agree, else TIER_2
+    TIER_2  >= 2 independent arms agreeing, no depth arm (CMX_V2_4)
+    TIER_3  a single independent arm (consensus = direction)
+    CNLOH   TIER_1 with >= 2 allelic arms (B/P/H); TIER_2 from B alone; TIER_3 from P or H alone (CMX_V2_4)
   NEUTRAL otherwise (tier NA).
 
 consensus_call: GAIN | LOSS | CNLOH | DISCORDANT | NEUTRAL.
@@ -388,7 +389,8 @@ def main():
     if args.purple_genes and os.path.isfile(args.purple_genes):
         for r in read_tsv(args.purple_genes)[1]:
             purple_h[r["gene"]] = r
-        h_trusted = str(purple_h_sum.get("trusted", "")).strip().upper() == "TRUE"
+        h_trusted = str(purple_h_sum.get("trusted", "")).strip().upper() == "TRUE" \
+            and "WARN_LOW_PURITY" not in str(purple_h_sum.get("status", ""))   # MARKER CMX_V2_4
         if not h_trusted:
             warn("PURPLE status={0}; H calls retained as advisory, H support omitted".format(purple_h_sum.get("status")))
         else:
@@ -452,9 +454,12 @@ def main():
                 tier = "TIER_3"
         elif cnloh_arms and not indep_dirs:
             consensus = "CNLOH"
-            tier = "TIER_1" if len(cnloh_arms) >= 2 else "TIER_2"
+            # CMX_V2_4: single-arm cnLOH is TIER_2 only from B (direct BAF); P/H alone TIER_3
+            tier = "TIER_1" if len(cnloh_arms) >= 2 else ("TIER_2" if cnloh_arms == ["B"] else "TIER_3")
         elif indep_dirs and len(indep_dirs) == 1 and not cnloh_arms:
-            consensus, tier = next(iter(indep_dirs)), "TIER_3"
+            consensus = next(iter(indep_dirs))
+            # CMX_V2_4: >= 2 independent arms agreeing without depth -> TIER_2
+            tier = "TIER_2" if sum(1 for v in indep.values() if v == consensus) >= 2 else "TIER_3"
         elif indep_dirs or cnloh_arms:
             consensus, tier = "DISCORDANT", "REVIEW"
         else:
