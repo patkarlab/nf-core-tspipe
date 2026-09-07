@@ -288,6 +288,73 @@
           </div>
         </div>
 
+        {# ---- v2: consensus, PURPLE, DECoN, chromosome pages, exon plots (MARKER DASH_CNV_V1) ---- #}
+        {% if ctx.cnv.purple or ctx.cnv.sex_check %}
+          <div class="alert alert-light border small mb-3">
+            {% if ctx.cnv.purple %}
+              <strong>PURPLE</strong>: status {{ ctx.cnv.purple.status }}, purity {{ ctx.cnv.purple.purity }},
+              ploidy {{ ctx.cnv.purple.ploidy }}, sex {{ ctx.cnv.purple.gender }}
+              {% if ctx.cnv.purple.trusted != 'TRUE' %}<span class="badge bg-warning text-dark">advisory</span>{% endif %}
+            {% endif %}
+            {% if ctx.cnv.sex_check %}
+              &nbsp;|&nbsp; <strong>Sex check</strong>: {{ ctx.cnv.sex_check.get('resolved_sex', ctx.cnv.sex_check.get('inferred_sex', '')) }}
+              (X/A {{ ctx.cnv.sex_check.get('x_a_ratio', '') }}, {{ ctx.cnv.sex_check.get('status', '') }})
+            {% endif %}
+            {% if ctx.cnv.consensus_tiers %}
+              &nbsp;|&nbsp; <strong>Consensus</strong>:
+              {% for k, v in ctx.cnv.consensus_tiers.items() %}<span class="badge bg-secondary">{{ k }} {{ v }}</span> {% endfor %}
+            {% endif %}
+            {% if ctx.cnv.blacklisted %}
+              &nbsp;|&nbsp; blacklisted: {{ ctx.cnv.blacklisted | join(', ') }}
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if ctx.cnv.consensus_table and ctx.cnv.consensus_table.rows %}
+          <h5 class="mt-2">Consensus CNV calls (K CNVkit, G GATK, B BAF, P PureCN, E DECoN, H PURPLE)</h5>
+          <p class="text-muted small mb-2">
+            Non-neutral genes from <code>cnv_consensus_multi.py</code>. TIER_1: depth direction plus an
+            independent arm; TIER_2: two depth arms or two independent arms; TIER_3: single arm;
+            REVIEW: arms disagree. Blacklisted genes are excluded.
+          </p>
+          {{ macros.render_datatable('cnv-consensus-table', ctx.cnv.consensus_table.columns, ctx.cnv.consensus_table.rows) }}
+        {% elif ctx.cnv.consensus_tiers is defined %}
+          <div class="tspipe-empty">No non-neutral consensus CNV calls.</div>
+        {% endif %}
+
+        {% if ctx.cnv.decon_table and ctx.cnv.decon_table.rows %}
+          <h5 class="mt-4">DECoN exon-level calls</h5>
+          <p class="text-muted small mb-2">Reportable calls and multi-exon calls at BF &ge; 5 (sub-threshold ones carry decision BELOW_BF).</p>
+          {{ macros.render_datatable('cnv-decon-table', ctx.cnv.decon_table.columns, ctx.cnv.decon_table.rows) }}
+        {% endif %}
+
+        {% if ctx.cnv.chrom_pages %}
+          <h5 class="mt-4">Chromosome pages ({{ ctx.cnv.chrom_pages|length }})</h5>
+          <p class="text-muted small mb-2">
+            Target space, genomic order: depth per exon/backbone/SNP window (green neutral, red loss, blue gain),
+            BAF from the panel's het catalog (grey balanced, green deviated), PURPLE copy number, and one exon
+            panel per gene with DECoN brackets.
+          </p>
+          <div class="row g-3">
+            {% for item in ctx.cnv.chrom_pages %}
+              {{ macros.render_cnv_plot_card('chrom_page::' ~ item.chrom, item.chrom ~ ' (' ~ item.n_targets ~ ' targets, ' ~ item.n_baf_sites ~ ' BAF sites)', item.path, 'col-12') }}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if ctx.cnv.exon_plots %}
+          <h5 class="mt-4">Exon-level figures ({{ ctx.cnv.exon_plots|length }})</h5>
+          <p class="text-muted small mb-2">Chromosomes with a consensus call, a DECoN call at BF &ge; 5, or a focal-CNV gene.</p>
+          <div class="row g-3">
+            {% for item in ctx.cnv.exon_plots %}
+              {{ macros.render_cnv_plot_card('exon_plot::' ~ item.chrom, item.chrom ~ ': ' ~ item.reasons, item.path, 'col-12') }}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <hr class="mt-4">
+        <h5 class="mt-3 text-muted">Legacy CNV views</h5>
+
         {# ---- Clinical CNV calls table ---- #}
         <h5 class="mt-2">Clinical CNV calls</h5>
         {% if ctx.cnv.clinical_table and ctx.cnv.clinical_table.rows %}
