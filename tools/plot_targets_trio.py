@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-tools/plot_targets_trio.py  (TARGETS_TRIO_V2.3; interleaved default; depth colour bar; per-gene exon panels below)
+tools/plot_targets_trio.py  (TARGETS_TRIO_V2.4; exon tiles merged per exon; TITAN-style colours)
 
 Target-space trio for one sample (depth, BAF, PURPLE) with three layouts:
   --style interleaved  targets in genomic order (exons, SNP windows, backbone tiles);
@@ -41,6 +41,16 @@ CENTROMERE = {"chr1": 123.4, "chr2": 93.9, "chr3": 90.9, "chr4": 50.0, "chr5": 4
               "chr15": 19.0, "chr16": 36.8, "chr17": 25.1, "chr18": 18.5, "chr19": 26.2, "chr20": 28.1, "chr21": 12.0,
               "chr22": 15.0, "chrX": 60.6, "chrY": 10.4}
 GENE_COLOURS = ["#dbe9f6", "#e8f4e0", "#fbe9d9", "#efe3f5", "#f6f0d5", "#ddf1f1"]
+C_NEUT, C_LOSS, C_GAIN = "#2e8b57", "#c0392b", "#1f5fbf"   # TITAN-style: neutral green, loss red, gain blue
+C_HET, C_DEV = "0.55", "#2e8b57"                              # BAF: near 0.5 grey, deviated green
+
+
+def depth_colour(v):
+    return C_LOSS if v < -0.5 else (C_GAIN if v > 0.5 else C_NEUT)
+
+
+def baf_colour(af, band=0.15):
+    return C_HET if abs(af - 0.5) < band else C_DEV
 
 
 def norm_chrom(c):
@@ -63,6 +73,11 @@ def target_gene(name):
     return name.split("_exon_")[0]
 
 
+def exon_number(name):
+    m = re.search(r"_exon_(\d+)", name)
+    return int(m.group(1)) if m else None
+
+
 # ---------------------------------------------------------------- inputs
 def read_targets(paths):
     by = {}
@@ -82,14 +97,31 @@ def read_targets(paths):
                 lst = by.setdefault(c, [])
                 starts = [r[0] for r in lst]
                 i = bisect.bisect_left(starts, s)
-                if (i < len(lst) and lst[i][0] < e) or (i > 0 and lst[i - 1][1] > s):
-                    continue
+                if path != paths[0] and ((i < len(lst) and lst[i][0] < e) or (i > 0 and lst[i - 1][1] > s)):
+                    continue   # SNP windows already covered by a panel target
                 nm = p[3] if len(p) > 3 else ""
                 if path != paths[0]:
                     nm = "SNPWIN:" + nm
                 lst.insert(i, (s, e, nm)); added += 1
         print("[ok] targets from %s: %d added" % (os.path.basename(path), added))
-    return [(c, s, e, n) for c in sorted(by, key=lambda x: CHROM_ORDER[x]) for s, e, n in by[c]]
+    rows = [(c, s, e, n) for c in sorted(by, key=lambda x: CHROM_ORDER[x]) for s, e, n in by[c]]
+    # probe tiles carrying the same GENE_exon_N name are one exon: merge them (per chromosome)
+    merged, seen = [], {}
+    for c, s, e, n in rows:
+        key = (c, n) if (target_kind(n) == "exon" and exon_number(n) is not None) else None
+        if key is not None and key in seen:
+            i = seen[key]
+            mc, ms, me, mn = merged[i]
+            merged[i] = (mc, min(ms, s), max(me, e), mn)
+        else:
+            if key is not None:
+                seen[key] = len(merged)
+            merged.append((c, s, e, n))
+    n_tiles = len(rows) - len(merged)
+    if n_tiles:
+        print("[ok] merged %d probe tiles into exons (%d targets)" % (n_tiles, len(merged)))
+    merged.sort(key=lambda r: (CHROM_ORDER[r[0]], r[1]))
+    return merged
 
 
 def read_bins(json_path):
@@ -171,11 +203,6 @@ def read_decon(path, min_bf):
     return calls
 
 
-def exon_number(name):
-    m = re.search(r"_exon_(\d+)", name)
-    return int(m.group(1)) if m else None
-
-
 def draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon):
     """one mini-panel per gene: exon-order log2 per exon, guides, DECoN brackets, PURPLE CN in the title."""
     L = args.log2_lim
@@ -205,11 +232,8 @@ def draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon):
             ax.axhline(y, color="red", lw=0.7, ls="--", zorder=1)
         for y in (1.0, -1.0):
             ax.axhline(y, color="red", lw=0.5, ls=":", zorder=1)
-        ax.scatter(xs, ys, s=[12 + 26 * max(0, min(1, w)) ** 2 for w in ws], color="0.25", linewidths=0, zorder=3)
-        if lo:
-            ax.scatter(lo, [-L] * len(lo), marker="v", s=26, color="firebrick", linewidths=0, zorder=4)
-        if hi:
-            ax.scatter(hi, [L] * len(hi), marker="^", s=26, color="firebrick", linewidths=0, zorder=4)
+        xs += lo + hi; ys += [-L] * len(lo) + [L] * len(hi); ws += [1.0] * (len(lo) + len(hi))
+        ax.scatter(xs, ys, s=[14 + 26 * max(0, min(1, w)) ** 2 for w in ws], c=[depth_colour(v) for v in ys], linewidths=0, zorder=3)
         # DECoN brackets: calls overlapping this gene's exons
         gs, ge = min(t[1] for t in ex), max(t[2] for t in ex)
         k = 0
@@ -324,23 +348,12 @@ def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, colorbar=True):
         for b in bin_by.get(c, []):
             if b[1] < e and b[2] > s:
                 xm = (x0 + x1) / 2.0
-                if b[4] < -L:
-                    clip_lo.append(xm)
-                elif b[4] > L:
-                    clip_hi.append(xm)
-                else:
-                    dx.append(xm); dy.append(b[4]); dw.append(b[5])
+                dx.append(xm); dy.append(max(-L, min(L, b[4]))); dw.append(b[5])
                 found = True
                 break
         if not found and (c, s, e) in win_depth:
             v = win_depth[(c, s, e)]
-            xm = (x0 + x1) / 2.0
-            if v < -L:
-                clip_lo.append(xm)
-            elif v > L:
-                clip_hi.append(xm)
-            else:
-                sx.append(xm); sy.append(v)
+            sx.append((x0 + x1) / 2.0); sy.append(max(-L, min(L, v)))
     bx, by_, bd = [], [], []
     for (c, s, e, name), (x0, x1) in zip(sel, xs):
         if c not in site_pos:
@@ -367,33 +380,24 @@ def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, colorbar=True):
                     a.axvspan(g0 - args.gap / 2.0, g1 + args.gap / 2.0, color=col, zorder=0)
                 axes[0].text((g0 + g1) / 2.0, L + 0.02, key[2], ha="center", va="bottom", fontsize=9, fontweight="bold", clip_on=False)
     a0, a1, a2 = axes[0], axes[1], axes[2]
-    a0.scatter(dx, dy, s=[16 + 34 * max(0, min(1, w)) ** 2 for w in dw], color="0.25", alpha=0.85, linewidths=0, zorder=3)
+    a0.scatter(dx, dy, s=[18 + 34 * max(0, min(1, w)) ** 2 for w in dw], c=[depth_colour(v) for v in dy], alpha=0.9, linewidths=0, zorder=3)
     if sx:
-        a0.scatter(sx, sy, s=14, color="darkorange", alpha=0.85, linewidths=0, zorder=3)
-    if clip_lo:
-        a0.scatter(clip_lo, [-L] * len(clip_lo), marker="v", s=34, color="firebrick", linewidths=0, zorder=4)
-    if clip_hi:
-        a0.scatter(clip_hi, [L] * len(clip_hi), marker="^", s=34, color="firebrick", linewidths=0, zorder=4)
+        a0.scatter(sx, sy, s=12, c=[depth_colour(v) for v in sy], alpha=0.55, linewidths=0, zorder=2)
     a0.axhline(0, color="black", lw=0.8)
     for y in (0.5, -0.5):
         a0.axhline(y, color="red", lw=0.8, ls="--", zorder=1)
     for y in (1.0, -1.0):
         a0.axhline(y, color="red", lw=0.6, ls=":", zorder=1)
     a0.set_ylim(-L - 0.1, L + 0.1)
-    a0.set_ylabel("log2 depth ratio\n(%d CNVkit bins; %d SNP windows in orange)" % (len(dx) + len(clip_lo) + len(clip_hi), len(sx)))
+    a0.set_ylabel("log2 depth ratio\ngreen neutral, red loss, blue gain\n(%d bins, %d SNP windows faint)" % (len(dx), len(sx)))
     if bx:
-        vmax = max(400, max(bd))
-        sc = a1.scatter(bx, by_, s=26, c=bd, cmap="YlOrRd", vmin=0, vmax=vmax, edgecolors="0.35", linewidths=0.4, zorder=3)
-        if colorbar:
-            cax = a1.inset_axes([1.006, 0.08, 0.008, 0.84])
-            cb = a1.figure.colorbar(sc, cax=cax)
-            cb.set_label("read depth at site", fontsize=7); cb.ax.tick_params(labelsize=6)
+        a1.scatter(bx, by_, s=24, c=[baf_colour(v) for v in by_], edgecolors="none", linewidths=0, alpha=0.9, zorder=3)
     a1.axhline(0.5, color="black", lw=0.8)
     if args.mirror_baf:
         a1.set_ylim(0.45, 1.02); a1.axhline(0.67, color="0.6", lw=0.6, ls=":"); a1.axhline(0.75, color="0.6", lw=0.6, ls=":")
         a1.set_ylabel("mirrored BAF\n(%d sites; 0.67 = 1:2, 0.75 = 1:3)" % len(bx))
     else:
-        a1.set_ylim(0, 1); a1.set_ylabel("BAF (%d sites)\ncolour = depth" % len(bx))
+        a1.set_ylim(0, 1); a1.set_ylabel("BAF\ngrey balanced, green deviated\n(%d sites)" % len(bx))
     for x0, x1, cn, mn in px:
         a2.plot([x0, x1], [cn, cn], color="royalblue", lw=3, solid_capstyle="butt", zorder=3)
         if mn is not None:
@@ -549,7 +553,7 @@ def main():
                 near = [t for t in targets if t[0] == c and target_kind(t[3]) != "exon" and t[2] >= lo - args.flank and t[1] <= hi + args.flank]
                 col_sel = sorted(ex + near, key=lambda t: t[1])
                 xs, width = layout(col_sel, args.gap, args.group_gap, args.snp_width, args.exon_width)
-                n = draw_panels([axes[i][j] for i in range(4)], col_sel, xs, ctx, args, colorbar=(j == cols - 1))
+                n = draw_panels([axes[i][j] for i in range(4)], col_sel, xs, ctx, args)
                 tot = tuple(a + b for a, b in zip(tot, n))
                 axes[0][j].set_title("%s  (%s:%.2f-%.2f Mb, +-%.1f Mb)" % (g, c, lo / 1e6, hi / 1e6, args.flank / 1e6), fontsize=9, pad=18)
                 if j:
