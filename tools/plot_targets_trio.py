@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-tools/plot_targets_trio.py  (TARGETS_TRIO_V2.2; default style interleaved; depth colour bar)
+tools/plot_targets_trio.py  (TARGETS_TRIO_V2.3; interleaved default; depth colour bar; per-gene exon panels below)
 
 Target-space trio for one sample (depth, BAF, PURPLE) with three layouts:
   --style interleaved  targets in genomic order (exons, SNP windows, backbone tiles);
@@ -152,6 +152,87 @@ def read_background(path):
             except (KeyError, ValueError):
                 continue
     return med
+
+
+def read_decon(path, min_bf):
+    calls = []
+    if not path or not os.path.isfile(path):
+        return calls
+    with open(path) as fh:
+        for r in csv.DictReader(fh, delimiter="\t"):
+            try:
+                bf = float(r["BF"])
+            except (KeyError, ValueError):
+                continue
+            if bf < min_bf:
+                continue
+            calls.append((norm_chrom(r["Chromosome"]), int(float(r["Start"])), int(float(r["End"])), r["CNV.type"], bf,
+                          float(r.get("Reads.ratio", "nan") or "nan"), r.get("decision", "")))
+    return calls
+
+
+def exon_number(name):
+    m = re.search(r"_exon_(\d+)", name)
+    return int(m.group(1)) if m else None
+
+
+def draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon):
+    """one mini-panel per gene: exon-order log2 per exon, guides, DECoN brackets, PURPLE CN in the title."""
+    L = args.log2_lim
+    for ax, g in zip(gaxes, genes):
+        ex = sorted(sel_by_gene[g], key=lambda t: t[1])
+        c = ex[0][0]
+        xs, ys, ws, lo, hi, labels = [], [], [], [], [], []
+        for i, (cc, s, e, name) in enumerate(ex):
+            labels.append(str(exon_number(name) or i + 1))
+            v = None
+            for b in ctx["bin_by"].get(cc, []):
+                if b[1] < e and b[2] > s:
+                    v, w = b[4], b[5]
+                    break
+            if v is None:
+                continue
+            if v < -L:
+                lo.append(i)
+            elif v > L:
+                hi.append(i)
+            else:
+                xs.append(i); ys.append(v); ws.append(w)
+        for x in range(len(ex)):
+            ax.axvline(x, color="0.9", lw=0.5, zorder=0)
+        ax.axhline(0, color="black", lw=0.7)
+        for y in (0.5, -0.5):
+            ax.axhline(y, color="red", lw=0.7, ls="--", zorder=1)
+        for y in (1.0, -1.0):
+            ax.axhline(y, color="red", lw=0.5, ls=":", zorder=1)
+        ax.scatter(xs, ys, s=[12 + 26 * max(0, min(1, w)) ** 2 for w in ws], color="0.25", linewidths=0, zorder=3)
+        if lo:
+            ax.scatter(lo, [-L] * len(lo), marker="v", s=26, color="firebrick", linewidths=0, zorder=4)
+        if hi:
+            ax.scatter(hi, [L] * len(hi), marker="^", s=26, color="firebrick", linewidths=0, zorder=4)
+        # DECoN brackets: calls overlapping this gene's exons
+        gs, ge = min(t[1] for t in ex), max(t[2] for t in ex)
+        k = 0
+        for dc, ds, de, typ, bf, ratio, dec in decon:
+            if dc != c or de < gs or ds > ge:
+                continue
+            idx = [i for i, t in enumerate(ex) if t[2] >= ds and t[1] <= de]
+            if not idx:
+                continue
+            ytop = L - 0.12 - 0.3 * (k % 2); k += 1
+            col = "firebrick" if typ.lower().startswith("del") else "darkorange"
+            ax.plot([min(idx) - 0.4, min(idx) - 0.4, max(idx) + 0.4, max(idx) + 0.4], [ytop - 0.12, ytop, ytop, ytop - 0.12], color=col, lw=1.2, zorder=5)
+            ax.text((min(idx) + max(idx)) / 2.0, ytop + 0.03, "%s BF %.0f r%.2f%s" % (typ[:3], bf, ratio, (" " + dec) if dec and dec != "PASS" else ""),
+                    ha="center", va="bottom", fontsize=5.5, color=col, zorder=5)
+        sg = find_seg(c, (gs + ge) // 2)
+        cn_txt = ("  PURPLE %.1f/%.1f" % (sg[2], sg[3])) if sg and sg[3] is not None else ""
+        ax.set_title("%s (%d exons)%s" % (g, len(ex), cn_txt), fontsize=8, pad=3)
+        ax.set_xlim(-0.6, len(ex) - 0.4); ax.set_ylim(-L - 0.1, L + 0.1)
+        step = max(1, len(ex) // 12)
+        ax.set_xticks(list(range(0, len(ex), step))); ax.set_xticklabels(labels[::step], fontsize=6)
+        ax.tick_params(axis="y", labelsize=6)
+    for ax in gaxes[len(genes):]:
+        ax.axis("off")
 
 
 def read_segments(path):
@@ -374,6 +455,9 @@ def main():
     ap.add_argument("--group-gap", type=int, default=800)
     ap.add_argument("--snp-width", type=int, default=40)
     ap.add_argument("--exon-width", type=int, default=160)
+    ap.add_argument("--no-gene-panels", action="store_true", help="omit the per-gene exon panels below the chromosome view")
+    ap.add_argument("--gene-cols", type=int, default=5, help="columns of per-gene panels")
+    ap.add_argument("--decon-min-bf", type=float, default=5.0, help="DECoN calls drawn in the gene panels at or above this BF")
     args = ap.parse_args()
 
     sd = args.sample_dir
@@ -428,6 +512,9 @@ def main():
         with open(pp) as fh:
             pur = list(csv.DictReader(fh, delimiter="\t"))[0]
     ctx = dict(bin_by=bin_by, site_by=site_by, site_pos=site_pos, find_seg=find_seg, win_depth=win_depth)
+    dd = os.path.join(sd, "cnv_decon")
+    dfs = [f for f in (os.listdir(dd) if os.path.isdir(dd) else []) if f.endswith(".decon_filtered.tsv")]
+    decon = read_decon(os.path.join(dd, dfs[0]), args.decon_min_bf) if dfs else []
     head = "%s  |  PURPLE purity %s ploidy %s %s" % (args.sample, pur.get("purity", "NA"), pur.get("ploidy", "NA"), pur.get("gender", "NA"))
 
     for label, sel in select_targets(targets, args):
@@ -473,9 +560,24 @@ def main():
         else:
             xs, width = layout(sel, args.gap, args.group_gap, args.snp_width, args.exon_width)
             fig_w = max(14, min(36, 0.06 * len(sel)))
-            fig, axes = plt.subplots(4, 1, figsize=(fig_w, 10), sharex=True, gridspec_kw={"height_ratios": [1.1, 1.0, 1.1, 0.55], "hspace": 0.1})
+            sel_by_gene = {}
+            for t in sel:
+                if target_kind(t[3]) == "exon":
+                    sel_by_gene.setdefault(target_gene(t[3]), []).append(t)
+            genes = sorted(sel_by_gene, key=lambda g: (CHROM_ORDER[sel_by_gene[g][0][0]], min(t[1] for t in sel_by_gene[g])))
+            g_rows = 0 if (args.no_gene_panels or not genes) else (len(genes) + args.gene_cols - 1) // args.gene_cols
+            fig = plt.figure(figsize=(fig_w, 10 + 2.3 * g_rows))
+            outer = fig.add_gridspec(2 if g_rows else 1, 1, height_ratios=[10, 2.3 * g_rows] if g_rows else [1], hspace=0.16)
+            inner = outer[0].subgridspec(4, 1, height_ratios=[1.1, 1.0, 1.1, 0.55], hspace=0.1)
+            axes = [fig.add_subplot(inner[0])]
+            axes += [fig.add_subplot(inner[i], sharex=axes[0]) for i in range(1, 4)]
             n = draw_panels(axes, sel, xs, ctx, args)
-            fig.suptitle("%s  |  %s: %d targets on %s  |  genomic order" % (head, label, len(sel), ",".join(chroms)), fontsize=11)
+            if g_rows:
+                gg = outer[1].subgridspec(g_rows, args.gene_cols, hspace=0.75, wspace=0.18)
+                gaxes = [fig.add_subplot(gg[i // args.gene_cols, i % args.gene_cols]) for i in range(g_rows * args.gene_cols)]
+                draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon)
+            fig.suptitle("%s  |  %s: %d targets on %s  |  genomic order%s" % (head, label, len(sel), ",".join(chroms),
+                         ("; %d gene panels (exon order, DECoN calls at BF >= %.0f)" % (len(genes), args.decon_min_bf)) if g_rows else ""), fontsize=11)
         out = "%s.%s.%s%s.png" % (args.out, label, args.style, ".mirror" if args.mirror_baf else "")
         fig.savefig(out, dpi=130, bbox_inches="tight"); plt.close(fig)
         print("[ok] %s [%s]: %d targets, %d depth bins, %d BAF sites, %d PURPLE-covered -> %s" % (label, args.style, len(sel), n[0], n[1], n[2], out))
