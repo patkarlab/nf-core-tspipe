@@ -45,6 +45,7 @@ process DECON {
         printf 'sample\\tqc_pass\\n${meta.id}\\tSTUB\\n' > ${meta.id}.decon_qc.tsv
         """
 
+    // DECON_V1b: --del-multi-bf (multi-exon deletions at params.decon_del_multi_bf); MARKER DECON_V1b_FIX
     script:
         def stratum  = (meta.sex in ['male', 'female']) ? meta.sex : (params.cnv_sex_fallback ?: 'male')
         def pool_use = (stratum == 'female') ? pool_female : pool_male
@@ -63,7 +64,7 @@ process DECON {
         python3 ${projectDir}/bin/filter_decon_calls.py \\
             --calls ${meta.id}.decon_all.txt --exons ${paralog_exons} \\
             --bf ${params.decon_bf} --del-multi-bf ${params.decon_del_multi_bf} \\
-            --out ${meta.id}.decon_filtered.tsv   // MARKER DECON_V1b
+            --out ${meta.id}.decon_filtered.tsv
 
         python3 ${projectDir}/bin/decon_gene_table.py \\
             --sample ${meta.id} --filtered ${meta.id}.decon_filtered.tsv \\
