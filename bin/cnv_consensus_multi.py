@@ -253,6 +253,8 @@ def main():
                     help="sample sex (male|female|unknown) for the expected chrX/chrY copy number (CMX_V2_1)")
     ap.add_argument("--gene-blacklist", default=None,
                     help="TSV of genes never called (consensus BLACKLISTED); optional (CNV_BLACKLIST_V1)")
+    ap.add_argument("--purple-genes", default=None, help="PURPLE arm H gene table (HMF_PURPLE_V1); optional")
+    ap.add_argument("--purple-summary", default=None, help="PURPLE arm H summary (HMF_PURPLE_V1); optional")
     args = ap.parse_args()
 
     for p in [args.concordance, args.cnr, args.call_cns, args.gatk_genes,
@@ -375,6 +377,24 @@ def main():
         warn("PureCN status={0}; P support omitted".format(
             purecn_sum.get("status")))
 
+    # ---- MARKER HMF_PURPLE_V1: PURPLE (hmftools) arm H; optional; FAIL_ status -> advisory
+    purple_h = {}
+    purple_h_sum = {"status": "ABSENT"}
+    h_trusted = False
+    if args.purple_summary and os.path.isfile(args.purple_summary):
+        hs_rows = read_tsv(args.purple_summary)[1]
+        if hs_rows:
+            purple_h_sum = hs_rows[0]
+    if args.purple_genes and os.path.isfile(args.purple_genes):
+        for r in read_tsv(args.purple_genes)[1]:
+            purple_h[r["gene"]] = r
+        h_trusted = str(purple_h_sum.get("trusted", "")).strip().upper() == "TRUE"
+        if not h_trusted:
+            warn("PURPLE status={0}; H calls retained as advisory, H support omitted".format(purple_h_sum.get("status")))
+        else:
+            print("[ok] PURPLE arm H: status={0} purity={1} ploidy={2}".format(
+                purple_h_sum.get("status"), purple_h_sum.get("purity"), purple_h_sum.get("ploidy")))
+
     # ---- per-gene consensus (CMX_V2: depth K/G; independent B/P/E; tier rule)
     n_consensus = 0
     tier_counts = {}
@@ -389,6 +409,10 @@ def main():
         dr = decon.get(g["gene"], {})
         e_call = (norm_call(dr.get("e_call")) or "NA") if dr else "NA"
         e_bf = dr.get("e_bf", "NA") if dr else "NA"
+        hr = purple_h.get(g["gene"], {})
+        h_call = hr.get("h_call", "NA")
+        h_loh = str(hr.get("h_loh", "")).strip().upper() == "TRUE"
+        h_cnloh = h_trusted and h_loh and h_call == "NEUTRAL"
         in_baf_region = g["chrom"] == baf_chrom and overlap(
             g["start"], g["end"], baf_lo, baf_hi) > 0
         b_call = "NA"
@@ -401,8 +425,9 @@ def main():
                  "G": g["g_call"] if g["g_call"] in ("GAIN", "LOSS") else None}
         indep = {"B": b_call if b_call in ("GAIN", "LOSS") else None,
                  "P": p_call if (p_trusted and p_call in ("GAIN", "LOSS")) else None,
-                 "E": e_call if e_call in ("GAIN", "LOSS") else None}
-        cnloh_arms = [a for a, v in (("B", b_call == "CNLOH"), ("P", p_cnloh)) if v]
+                 "E": e_call if e_call in ("GAIN", "LOSS") else None,
+                 "H": h_call if (h_trusted and h_call in ("GAIN", "LOSS")) else None}
+        cnloh_arms = [a for a, v in (("B", b_call == "CNLOH"), ("P", p_cnloh), ("H", h_cnloh)) if v]
 
         depth_dirs = set(v for v in depth.values() if v)
         indep_dirs = set(v for v in indep.values() if v)
@@ -447,6 +472,9 @@ def main():
             "p_call": p_call, "p_C": pr.get("p_C", "NA"),
             "p_loh": pr.get("p_loh", "NA"),
             "e_call": e_call, "e_bf": e_bf,
+            "h_call": h_call, "h_cn_min": hr.get("h_cn_min", "NA"),
+            "h_cn_max": hr.get("h_cn_max", "NA"), "h_macn_min": hr.get("h_macn_min", "NA"),
+            "h_loh": "TRUE" if h_loh else ("FALSE" if hr else "NA"),
             "support": len(arms),
             "flags": flags or "-", "consensus_call": consensus,
             "tier": tier,
@@ -479,7 +507,8 @@ def main():
     gene_cols = [
         "gene", "chrom", "start", "end", "k_call", "k_cn", "k_log2",
         "g_call", "g_seg_log2", "g_n_bins", "b_call",
-        "p_call", "p_C", "p_loh", "e_call", "e_bf", "support",
+        "p_call", "p_C", "p_loh", "e_call", "e_bf",
+        "h_call", "h_cn_min", "h_cn_max", "h_macn_min", "h_loh", "support",
         "flags", "consensus_call", "tier", "loo_fp_any", "allelic_state",
     ]
     with open(args.out_prefix + ".genes.tsv", "w") as out:
@@ -512,8 +541,9 @@ def main():
                   r["sample_het"] == "true"] for r in site_rows]
 
     payload = {
-        "schema": "twist_cnv_consensus4/v3",
+        "schema": "twist_cnv_consensus4/v4",
         "purecn": purecn_sum,
+        "purple": purple_h_sum,
         "sample": args.sample,
         "panel": "twist_myeloid",
         "baf17p": baf,

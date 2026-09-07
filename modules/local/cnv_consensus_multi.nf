@@ -22,7 +22,8 @@ process CNV_CONSENSUS_MULTI {
               path(gatk_genes), path(gatk_called), path(denoised),
               path(baf_summary), path(baf_sites),
               path(purecn_genes), path(purecn_summary),
-              path(decon_genes)   // MARKER DECON_V1 (empty list when DECoN is off)
+              path(decon_genes),   // MARKER DECON_V1 (empty list when DECoN is off)
+              path(purple_genes), path(purple_summary)   // MARKER HMF_PURPLE_V1 (empty lists when hmftools is off)
         path loo_summary
         path loo_summary_female, stageAs: 'female_stratum/*'   // MARKER SEXSTRAT_V1
         path gene_blacklist   // MARKER CNV_BLACKLIST_V1 (empty list when the panel has none)
@@ -43,6 +44,7 @@ process CNV_CONSENSUS_MULTI {
         def loo_use = (stratum == 'female') ? loo_summary_female : loo_summary
         def decon_arg = decon_genes ? "--decon-genes ${decon_genes}" : ''   // DECON_V1
         def blacklist_arg = gene_blacklist ? "--gene-blacklist ${gene_blacklist}" : ''   // CNV_BLACKLIST_V1
+        def purple_arg = (purple_genes && purple_summary) ? "--purple-genes ${purple_genes} --purple-summary ${purple_summary}" : ''   // HMF_PURPLE_V1
         """
         echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
         cnv_consensus_multi.py \\
@@ -61,6 +63,7 @@ process CNV_CONSENSUS_MULTI {
             --purecn-summary ${purecn_summary} \\
             ${decon_arg} \\
             ${blacklist_arg} \\
+            ${purple_arg} \\
             --out-prefix ${meta.id}.cnv_consensus4
         """
 }

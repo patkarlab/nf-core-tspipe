@@ -32,6 +32,9 @@ include { GATK_CNV_CALLING    } from '../subworkflows/local/gatk_cnv_calling'   
 include { CNV_CONSENSUS_MULTI } from '../modules/local/cnv_consensus_multi'   // CMX_V1
 include { DECON               } from '../modules/local/decon'                 // MARKER DECON_V1a
 include { EXON_PLOTS          } from '../modules/local/exon_plots'            // MARKER EXON_PLOTS_V1
+include { HMF_AMBER           } from '../modules/local/hmf_amber'             // MARKER HMF_PURPLE_V1
+include { HMF_COBALT          } from '../modules/local/hmf_cobalt'
+include { HMF_PURPLE          } from '../modules/local/hmf_purple'
 include { PURECN_COVERAGE     } from '../modules/local/purecn_coverage'   // PCN_V1
 include { PURECN              } from '../modules/local/purecn'   // PCN_V1
 include { ANNOTATION          } from '../subworkflows/local/annotation'
@@ -282,6 +285,31 @@ workflow TSPIPE {
             ch_decon_filtered = ch_final_bam.map { m, _b, _i -> [ m, [] ] }   // EXON_PLOTS_V1
         }
 
+        // HMF_PURPLE_V1: hmftools AMBER -> COBALT -> PURPLE (tumour-only, targeted) as
+        // consensus arm H. Gated on the panel's COBALT normalisation asset existing.
+        def hmf_norm_path = params.containsKey('hmf_target_norm') ? params.hmf_target_norm : "${projectDir}/assets/${params.panel}/hmftools/target_regions.cobalt_normalisation.twist_myeloid.38.tsv"
+        def hmf_enabled = params.containsKey('hmf_resources') && params.hmf_resources && file(hmf_norm_path).exists()
+        if( params.containsKey('hmf_resources') && params.hmf_resources && !hmf_enabled )
+            log.warn "[HMF] normalisation asset not found: ${hmf_norm_path}; arm H disabled for this run"
+        if( hmf_enabled ) {
+            ch_hmf_loci      = Channel.value(file(params.hmf_loci,        checkIfExists: true))
+            ch_hmf_gc        = Channel.value(file(params.hmf_gc_profile,  checkIfExists: true))
+            ch_hmf_ensembl   = Channel.value(file(params.hmf_ensembl_dir, checkIfExists: true))
+            ch_hmf_hotspots  = Channel.value(file(params.hmf_hotspots,    checkIfExists: true))
+            ch_hmf_target    = Channel.value(file(params.hmf_target_bed,  checkIfExists: true))
+            ch_hmf_norm      = Channel.value(file(hmf_norm_path,          checkIfExists: true))
+            ch_hmf_drivers   = Channel.value(file(params.hmf_driver_panel, checkIfExists: true))
+            HMF_AMBER( ch_final_bam, ch_reference, ch_hmf_loci, ch_hmf_target )
+            HMF_COBALT( ch_final_bam, ch_reference, ch_hmf_gc, ch_hmf_norm )
+            HMF_PURPLE( HMF_AMBER.out.dir.join( HMF_COBALT.out.dir, by: 0 ), ch_reference, ch_hmf_gc, ch_hmf_ensembl,
+                        ch_hmf_drivers, ch_hmf_hotspots, ch_hmf_target, ch_hmf_norm )
+            ch_purple_genes   = HMF_PURPLE.out.genes
+            ch_purple_summary = HMF_PURPLE.out.summary
+        } else {
+            ch_purple_genes   = ch_final_bam.map { m, _b, _i -> [ m, [] ] }
+            ch_purple_summary = ch_final_bam.map { m, _b, _i -> [ m, [] ] }
+        }
+
         // CMX_V1: five-caller consensus + Phase-4 JSON payload.
         ch_consensus_in = CNV_CALLING.out.concordance
             .join( CNV_CALLING.out.cnvkit_cnr,           by: 0 )
@@ -294,6 +322,8 @@ workflow TSPIPE {
             .join( PURECN.out.genes,                     by: 0 )
             .join( PURECN.out.summary,                   by: 0 )
             .join( ch_decon_genes,                        by: 0 )   // DECON_V1
+            .join( ch_purple_genes,                       by: 0 )   // HMF_PURPLE_V1
+            .join( ch_purple_summary,                     by: 0 )
         // MARKER CNV_BLACKLIST_V1: optional panel gene blacklist (consensus BLACKLISTED; no plot trigger)
         def gene_blacklist_path = "${projectDir}/assets/${params.panel}/cnv_gene_blacklist.tsv"
         ch_cnv_gene_blacklist = file(gene_blacklist_path).exists() ? Channel.value(file(gene_blacklist_path)) : Channel.value([])
