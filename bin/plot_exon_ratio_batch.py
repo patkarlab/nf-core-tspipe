@@ -63,6 +63,8 @@ def main():
     ap.add_argument("--decon", default=None, help="DECoN filtered table (optional)")
     ap.add_argument("--focal-bed", default=None, help="focal-CNV target BED (optional)")
     ap.add_argument("--min-bf", type=float, default=5.0, help="DECoN BF at or above which a chromosome is drawn")
+    ap.add_argument("--gene-blacklist", default=None,
+                    help="TSV of blacklisted genes: never a plot trigger (CNV_BLACKLIST_V1)")
     ap.add_argument("--outdir", required=True)
     ap.add_argument("--ymax", type=float, default=3.0)
     args = ap.parse_args()
@@ -72,15 +74,23 @@ def main():
     genes_by_chrom = read_consensus_genes(args.genes_tsv)
     decon = read_decon_calls(args.decon) if args.decon and os.path.isfile(args.decon) else []
     focal = read_focal_chroms(args.focal_bed)
+    # MARKER CNV_BLACKLIST_V1
+    blacklist = set()
+    if args.gene_blacklist and os.path.isfile(args.gene_blacklist):
+        with open(args.gene_blacklist) as fh:
+            rows = [l.rstrip("\n").split("\t") for l in fh if l.strip() and not l.startswith("#")]
+        if rows:
+            idx = rows[0].index("gene") if "gene" in rows[0] else 0
+            blacklist = set(r[idx] for r in (rows[1:] if "gene" in rows[0] else rows) if len(r) > idx)
 
     reasons = {}
     for chrom, rows in genes_by_chrom.items():
-        nn = [g for _, g, call, _ in rows if call not in ("NEUTRAL", "NA", "")]
+        nn = [g for _, g, call, _ in rows if call not in ("NEUTRAL", "NA", "", "BLACKLISTED") and g not in blacklist]
         if nn:
             reasons.setdefault(chrom, []).append("consensus:" + ",".join(nn))
     dec_by_chrom = {}
     for c in decon:
-        if c["bf"] >= args.min_bf:
+        if c["bf"] >= args.min_bf and c["gene"] not in blacklist:
             dec_by_chrom.setdefault(c["chrom"], []).append("%s(%s,BF%.1f)" % (c["gene"], c["type"][:3], c["bf"]))
     for chrom, items in dec_by_chrom.items():
         reasons.setdefault(chrom, []).append("decon:" + ",".join(sorted(set(items))))

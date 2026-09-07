@@ -25,6 +25,7 @@ process CNV_CONSENSUS_MULTI {
               path(decon_genes)   // MARKER DECON_V1 (empty list when DECoN is off)
         path loo_summary
         path loo_summary_female, stageAs: 'female_stratum/*'   // MARKER SEXSTRAT_V1
+        path gene_blacklist   // MARKER CNV_BLACKLIST_V1 (empty list when the panel has none)
 
     output:
         tuple val(meta), path("${meta.id}.cnv_consensus4.genes.tsv"),    emit: genes
@@ -41,6 +42,7 @@ process CNV_CONSENSUS_MULTI {
         def stratum = (meta.sex in ['male', 'female']) ? meta.sex : (params.cnv_sex_fallback ?: 'male')
         def loo_use = (stratum == 'female') ? loo_summary_female : loo_summary
         def decon_arg = decon_genes ? "--decon-genes ${decon_genes}" : ''   // DECON_V1
+        def blacklist_arg = gene_blacklist ? "--gene-blacklist ${gene_blacklist}" : ''   // CNV_BLACKLIST_V1
         """
         echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
         cnv_consensus_multi.py \\
@@ -58,6 +60,7 @@ process CNV_CONSENSUS_MULTI {
             --purecn-genes ${purecn_genes} \\
             --purecn-summary ${purecn_summary} \\
             ${decon_arg} \\
+            ${blacklist_arg} \\
             --out-prefix ${meta.id}.cnv_consensus4
         """
 }

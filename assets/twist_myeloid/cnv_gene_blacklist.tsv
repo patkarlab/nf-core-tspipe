@@ -1,0 +1,3 @@
+gene	reason	evidence	added
+SUZ12	paralog SUZ12P1: read assignment varies between individuals, fixed-exon signal	identical 2-exon duplication (DECoN idx 4-5, ratio 1.48-1.57) in 3/8 validation cases; SUZ12 LOO calls in 5/23 male normals in both directions	2026-09-07
+ELANE	GC-rich 19p13.3 exon set: CNVkit and GATK disagree by 0.2 log2 on the same bins	CNVkit-only GAIN at +0.21/+0.23 in 2/8 cases with GATK +0.02; highest LOO bin scatter (stdev 0.072); MAPQ-dead history on pre-alt-aware alignments	2026-09-07

@@ -294,14 +294,17 @@ workflow TSPIPE {
             .join( PURECN.out.genes,                     by: 0 )
             .join( PURECN.out.summary,                   by: 0 )
             .join( ch_decon_genes,                        by: 0 )   // DECON_V1
-        CNV_CONSENSUS_MULTI( ch_consensus_in, ch_cnv_loo_summary, ch_cnv_loo_summary_female )   // SEXSTRAT_V1
+        // MARKER CNV_BLACKLIST_V1: optional panel gene blacklist (consensus BLACKLISTED; no plot trigger)
+        def gene_blacklist_path = "${projectDir}/assets/${params.panel}/cnv_gene_blacklist.tsv"
+        ch_cnv_gene_blacklist = file(gene_blacklist_path).exists() ? Channel.value(file(gene_blacklist_path)) : Channel.value([])
+        CNV_CONSENSUS_MULTI( ch_consensus_in, ch_cnv_loo_summary, ch_cnv_loo_summary_female, ch_cnv_gene_blacklist )   // SEXSTRAT_V1 CNV_BLACKLIST_V1
         // EXON_PLOTS_V1: per-chromosome exon figures from the consensus bins (+ DECoN brackets)
         def focal_bed = "${projectDir}/assets/${params.panel}/targets.focal_cnv.bed"
         ch_focal_bed = file(focal_bed).exists() ? Channel.value(file(focal_bed)) : Channel.value([])
         ch_exon_plots_in = CNV_CONSENSUS_MULTI.out.json
             .join( CNV_CONSENSUS_MULTI.out.genes, by: 0 )
             .join( ch_decon_filtered,             by: 0 )
-        EXON_PLOTS( ch_exon_plots_in, ch_focal_bed )
+        EXON_PLOTS( ch_exon_plots_in, ch_focal_bed, ch_cnv_gene_blacklist )   // CNV_BLACKLIST_V1
     }
 
     // ----- 5. SV calling -----------------------------------------------

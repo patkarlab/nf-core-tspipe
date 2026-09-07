@@ -17,6 +17,7 @@ process EXON_PLOTS {
     input:
         tuple val(meta), path(consensus_json), path(consensus_genes), path(decon_filtered)
         path focal_bed
+        path gene_blacklist   // MARKER CNV_BLACKLIST_V1
 
     output:
         tuple val(meta), path("exon_plots/${meta.id}.exon_plots.tsv"), emit: index
@@ -32,6 +33,7 @@ process EXON_PLOTS {
     script:
         def decon_arg = decon_filtered ? "--decon ${decon_filtered}" : ''
         def focal_arg = focal_bed      ? "--focal-bed ${focal_bed}"  : ''
+        def blacklist_arg = gene_blacklist ? "--gene-blacklist ${gene_blacklist}" : ''   // CNV_BLACKLIST_V1
         """
         export MPLCONFIGDIR=\$PWD/.mpl
         export XDG_CACHE_HOME=\$PWD/.cache
@@ -41,7 +43,7 @@ process EXON_PLOTS {
             --sample ${meta.id} \\
             --json ${consensus_json} \\
             --genes-tsv ${consensus_genes} \\
-            ${decon_arg} ${focal_arg} \\
+            ${decon_arg} ${focal_arg} ${blacklist_arg} \\
             --min-bf ${params.exon_plot_min_bf} \\
             --outdir exon_plots
         """

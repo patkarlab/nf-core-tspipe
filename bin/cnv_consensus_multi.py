@@ -212,6 +212,29 @@ def safe_float(value):
         return None
 
 
+def read_gene_blacklist(path):
+    """CNV_BLACKLIST_V1: gene symbols from a TSV with a 'gene' column (or first column); empty if no file."""
+    genes = set()
+    if not path or not os.path.isfile(path):
+        return genes
+    with open(path) as fh:
+        header = None
+        for line in fh:
+            if not line.strip() or line.startswith("#"):
+                continue
+            parts = line.rstrip("\n").split("\t")
+            if header is None:
+                header = parts
+                if "gene" in header:
+                    continue
+                genes.add(parts[0].strip())
+                continue
+            idx = header.index("gene") if "gene" in header else 0
+            if len(parts) > idx and parts[idx].strip():
+                genes.add(parts[idx].strip())
+    return genes
+
+
 def main():
     ap = argparse.ArgumentParser(description="Multi-arm CNV consensus (CMX_V2)")
     for name in ["sample", "concordance", "cnr", "call-cns", "gatk-genes",
@@ -228,6 +251,8 @@ def main():
                     help="LOO fp_any_rate ceiling for TIER_1/TIER_2 (fraction; default 0.10)")
     ap.add_argument("--sex", default="unknown",
                     help="sample sex (male|female|unknown) for the expected chrX/chrY copy number (CMX_V2_1)")
+    ap.add_argument("--gene-blacklist", default=None,
+                    help="TSV of genes never called (consensus BLACKLISTED); optional (CNV_BLACKLIST_V1)")
     args = ap.parse_args()
 
     for p in [args.concordance, args.cnr, args.call_cns, args.gatk_genes,
@@ -305,6 +330,11 @@ def main():
                 print("[ok] DECoN gene table: {0} rows".format(len(decon)))
             else:
                 warn("--decon-genes lacks gene/e_call columns; E support omitted")
+
+    # ---- MARKER CNV_BLACKLIST_V1: panel gene blacklist
+    blacklist = read_gene_blacklist(args.gene_blacklist)
+    if blacklist:
+        print("[ok] gene blacklist: {0} gene(s)".format(len(blacklist)))
 
     # ---- LOO per-gene fp rate
     loo_fp = {}
@@ -404,6 +434,9 @@ def main():
             consensus, tier = "DISCORDANT", "REVIEW"
         else:
             consensus, tier = "NEUTRAL", "NA"
+        if g["gene"] in blacklist:   # CNV_BLACKLIST_V1: arms kept for audit, no call
+            consensus, tier = "BLACKLISTED", "NA"
+            arms, flags = {}, ""
         if tier in ("TIER_1", "TIER_2"):
             n_consensus += 1
         tier_counts[tier] = tier_counts.get(tier, 0) + 1
