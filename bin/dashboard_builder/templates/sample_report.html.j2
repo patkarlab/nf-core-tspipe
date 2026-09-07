@@ -349,9 +349,21 @@
             BAF from the panel's het catalog (grey balanced, green deviated), PURPLE copy number, and one exon
             panel per gene with DECoN brackets.
           </p>
-          <div class="row g-3">
+          {# MARKER DASH_CNV_V1b: one sub-tab per chromosome #}
+          <ul class="nav nav-pills flex-wrap mb-2" id="cnv-chrom-tabs" role="tablist">
             {% for item in ctx.cnv.chrom_pages %}
-              {{ macros.render_cnv_plot_card('chrom_page::' ~ item.chrom, item.chrom ~ ' (' ~ item.n_targets ~ ' targets, ' ~ item.n_baf_sites ~ ' BAF sites)', item.path, 'col-12') }}
+              <li class="nav-item" role="presentation">
+                <button class="nav-link py-0 px-2 small{% if loop.first %} active{% endif %}" data-bs-toggle="pill" data-bs-target="#cnv-chrom-{{ item.chrom }}" type="button" role="tab">{{ item.chrom | replace('chr', '') }}</button>
+              </li>
+            {% endfor %}
+          </ul>
+          <div class="tab-content" id="cnv-chrom-panes">
+            {% for item in ctx.cnv.chrom_pages %}
+              <div class="tab-pane fade{% if loop.first %} show active{% endif %}" id="cnv-chrom-{{ item.chrom }}" role="tabpanel">
+                <div class="row g-3">
+                  {{ macros.render_cnv_plot_card('chrom_page::' ~ item.chrom, item.chrom ~ ' (' ~ item.n_targets ~ ' targets, ' ~ item.n_baf_sites ~ ' BAF sites)', item.path, 'col-12') }}
+                </div>
+              </div>
             {% endfor %}
           </div>
         {% endif %}
