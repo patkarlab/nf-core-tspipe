@@ -36,6 +36,8 @@ include { HMF_AMBER           } from '../modules/local/hmf_amber'             //
 include { HMF_COBALT          } from '../modules/local/hmf_cobalt'
 include { HMF_PURPLE          } from '../modules/local/hmf_purple'
 include { CHROM_PAGES         } from '../modules/local/chrom_pages'           // MARKER CHROM_PAGES_V1
+include { STYLED_SCATTER      } from '../modules/local/styled_scatter'        // MARKER VIZ_V1
+include { RECONCNV            } from '../modules/local/reconcnv'
 include { PURECN_COVERAGE     } from '../modules/local/purecn_coverage'   // PCN_V1
 include { PURECN              } from '../modules/local/purecn'   // PCN_V1
 include { ANNOTATION          } from '../subworkflows/local/annotation'
@@ -350,6 +352,19 @@ workflow TSPIPE {
             .join( ch_decon_filtered,            by: 0 )
             .join( ch_purple_dir,                by: 0 )
         CHROM_PAGES( ch_chrom_pages_in, ch_cp_panel_bed, ch_cp_snp_base, ch_cp_baf_bg )
+        // VIZ_V1: styled CNVkit scatters (BAF panel from the raw Mutect2 VCF) and reconCNV
+        ch_viz_vcf = VARIANT_CALLING.out.mutect2_vcf.map { it -> [ it[0], it[1] ] }
+        ch_styled_in = CNV_CALLING.out.cnvkit_cnr
+            .join( CNV_CALLING.out.cnvkit_calls,       by: 0 )
+            .join( ch_viz_vcf,                         by: 0 )
+            .join( CNV_CALLING.out.cnvkit_genemetrics, by: 0 )
+        STYLED_SCATTER( ch_styled_in )
+        def reconcnv_tpl = params.containsKey('reconcnv_template') ? params.reconcnv_template : "${projectDir}/assets/reconcnv/reconcnv_config_twist_myeloid.json"
+        ch_reconcnv_tpl = Channel.value(file(reconcnv_tpl, checkIfExists: true))
+        ch_recon_in = CNV_CALLING.out.cnvkit_cnr
+            .join( CNV_CALLING.out.cnvkit_calls, by: 0 )
+            .join( ch_viz_vcf,                   by: 0 )
+        RECONCNV( ch_recon_in, ch_reference, ch_reconcnv_tpl )
     }
 
     // ----- 5. SV calling -----------------------------------------------
@@ -427,6 +442,8 @@ workflow TSPIPE {
         .join(ch_purple_genes)                                               // + purple_genes
         .join(ch_purple_dir)                                                 // + purple_dir
         .join(PREPROCESSING.out.sex_check)                                   // + sex_check
+        .join(STYLED_SCATTER.out.dir)                                        // + styled_scatter_dir (VIZ_V1)
+        .join(RECONCNV.out.dir)                                              // + reconcnv_dir
 
     ORGANIZE_OUTPUT(ch_organize)
 

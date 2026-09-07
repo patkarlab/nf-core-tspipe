@@ -143,6 +143,8 @@ def main():
     parser.add_argument("--purple-genes", default=None, help="PURPLE arm H gene table (optional; ORG_CNV_V1)")
     parser.add_argument("--purple-dir", default=None, help="PURPLE output directory (optional; ORG_CNV_V1)")
     parser.add_argument("--sex-check", default=None, help="SEX_CHECK table (optional; ORG_CNV_V1)")
+    parser.add_argument("--styled-scatter-dir", default=None, help="STYLED_SCATTER directory (optional; VIZ_V1)")
+    parser.add_argument("--reconcnv-dir", default=None, help="RECONCNV directory (optional; VIZ_V1)")
     # Optional inputs (may be sentinels)
     parser.add_argument("--u2af1-report", required=True,
                         help="Optional; sentinel allowed")
@@ -248,7 +250,9 @@ def main():
     for src, sub, desc in (
             (args.exon_plots_dir,  "exon_plots",  "exon figures"),
             (args.chrom_pages_dir, "chrom_pages", "chromosome pages"),
-            (args.purple_dir,      "purple",      "PURPLE outputs")):
+            (args.purple_dir,      "purple",      "PURPLE outputs"),
+            (args.styled_scatter_dir, "styled_scatter", "styled CNVkit scatters"),
+            (args.reconcnv_dir,    "reconcnv",    "reconCNV")):   # MARKER VIZ_V1
         if src and Path(src).is_dir():
             hardlink_dir(Path(src), cnv2 / sub, "CNV v2 " + desc)
         else:

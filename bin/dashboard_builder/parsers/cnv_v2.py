@@ -23,6 +23,7 @@ Standard library only; every element is optional and absent when its file is.
 """
 
 import csv
+import re
 from pathlib import Path
 
 TIER_ORDER = {"TIER_1": 0, "TIER_2": 1, "REVIEW": 2, "TIER_3": 3}
@@ -144,4 +145,20 @@ def parse(sample_dir, sample):
                 plots.append({"chrom": r.get("chrom", ""), "reasons": r.get("reasons", ""), "path": _rel(f, sample_dir)})
         plots.sort(key=lambda p: _chrom_key(p["chrom"]))
         out["exon_plots"] = plots
+    # ---- styled scatters and reconCNV (MARKER VIZ_V1) ----
+    ss = v2 / "styled_scatter"
+    if ss.is_dir():
+        def _pngs(sub):
+            d = ss / sub
+            return sorted([_rel(p, sample_dir) for p in d.glob("*.png")]) if d.is_dir() else []
+        per_chrom = []
+        for p in _pngs("per_chromosome"):
+            m = re.search(r"chr([0-9XY]+)", Path(p).name)
+            per_chrom.append({"chrom": ("chr" + m.group(1)) if m else Path(p).stem, "path": p})
+        per_chrom.sort(key=lambda x: _chrom_key(x["chrom"]))
+        per_gene = [{"gene": Path(p).stem.split("_gene_")[-1].split(".")[0], "path": p} for p in _pngs("per_gene")]
+        out["styled_scatter"] = {"overview": _pngs("overview"), "per_chromosome": per_chrom, "per_gene": per_gene}
+    rc = v2 / "reconcnv" / ("%s.reconcnv.html" % sample)
+    if rc.exists():
+        out["reconcnv"] = _rel(rc, sample_dir)
     return out

@@ -27,7 +27,8 @@ process ORGANIZE_OUTPUT {
               path(exon_plots_dir), path(chrom_pages_dir),
               path(decon_filtered), path(decon_genes),
               path(purple_summary), path(purple_genes), path(purple_dir),
-              path(sex_check)
+              path(sex_check),
+              path(styled_scatter_dir), path(reconcnv_dir)   // MARKER VIZ_V1
 
     output:
         tuple val(meta), path("clinical/"), emit: clinical
@@ -46,6 +47,8 @@ process ORGANIZE_OUTPUT {
         def purple_genes_arg = purple_genes ? "--purple-genes ${purple_genes}" : ''
         def purple_dir_arg = purple_dir ? "--purple-dir ${purple_dir}" : ''
         def sex_check_arg = sex_check ? "--sex-check ${sex_check}" : ''
+        def styled_scatter_dir_arg = styled_scatter_dir ? "--styled-scatter-dir ${styled_scatter_dir}" : ''
+        def reconcnv_dir_arg = reconcnv_dir ? "--reconcnv-dir ${reconcnv_dir}" : ''
         """
         organize_output.py \\
             --sample              ${meta.id} \\
@@ -77,7 +80,9 @@ process ORGANIZE_OUTPUT {
             ${purple_summary_arg} \\
             ${purple_genes_arg} \\
             ${purple_dir_arg} \\
-            ${sex_check_arg}
+            ${sex_check_arg} \\
+            ${styled_scatter_dir_arg} \\
+            ${reconcnv_dir_arg}
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

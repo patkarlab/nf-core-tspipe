@@ -328,6 +328,39 @@
           {{ macros.render_datatable('cnv-decon-table', ctx.cnv.decon_table.columns, ctx.cnv.decon_table.rows) }}
         {% endif %}
 
+        {# ---- genome-wide styled scatter + reconCNV (MARKER VIZ_V1) ---- #}
+        {% if ctx.cnv.styled_scatter and ctx.cnv.styled_scatter.overview %}
+          <h5 class="mt-4">Genome-wide (styled CNVkit scatter with BAF)</h5>
+          <div class="row g-3">
+            {% for p in ctx.cnv.styled_scatter.overview %}
+              {{ macros.render_cnv_plot_card('styled_overview::' ~ loop.index, 'Genome-wide scatter ' ~ loop.index, p, 'col-12') }}
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% if ctx.cnv.reconcnv %}
+          <h5 class="mt-4">reconCNV (interactive)</h5>
+          <p class="text-muted small mb-2">Bokeh view of the CNVkit ratio, segments and het SNPs. <a href="{{ ctx.cnv.reconcnv }}" target="_blank">Open in a new tab</a>.</p>
+          <div class="ratio" style="--bs-aspect-ratio: 60%;"><iframe src="{{ ctx.cnv.reconcnv }}" loading="lazy" style="border:1px solid #dee2e6;"></iframe></div>
+        {% endif %}
+        {% if ctx.cnv.styled_scatter and ctx.cnv.styled_scatter.per_chromosome %}
+          <details class="mt-4"><summary class="h6">Per-chromosome styled scatters ({{ ctx.cnv.styled_scatter.per_chromosome|length }})</summary>
+            <div class="row g-3 mt-1">
+              {% for item in ctx.cnv.styled_scatter.per_chromosome %}
+                {{ macros.render_cnv_plot_card('styled_chrom::' ~ item.chrom, item.chrom ~ ' (styled scatter)', item.path, 'col-md-6 col-xl-4') }}
+              {% endfor %}
+            </div>
+          </details>
+        {% endif %}
+        {% if ctx.cnv.styled_scatter and ctx.cnv.styled_scatter.per_gene %}
+          <details class="mt-3"><summary class="h6">Per-gene styled scatters ({{ ctx.cnv.styled_scatter.per_gene|length }})</summary>
+            <div class="row g-3 mt-1">
+              {% for item in ctx.cnv.styled_scatter.per_gene %}
+                {{ macros.render_cnv_plot_card('styled_gene::' ~ item.gene, item.gene, item.path, 'col-md-6 col-xl-3') }}
+              {% endfor %}
+            </div>
+          </details>
+        {% endif %}
+
         {% if ctx.cnv.chrom_pages %}
           <h5 class="mt-4">Chromosome pages ({{ ctx.cnv.chrom_pages|length }})</h5>
           <p class="text-muted small mb-2">
