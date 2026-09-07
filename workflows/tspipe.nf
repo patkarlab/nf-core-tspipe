@@ -416,9 +416,9 @@ workflow TSPIPE {
         .join(CNV_CALLING.out.cnvkit_diagram_pdf)                            // + cnvkit_diagram
         .join(CNV_CALLING.out.cnvkit_scatter_png)                            // + cnvkit_scatter
         .join(CNV_CALLING.out.plots_dir)                                     // + cnvkit_plots_dir
-        .join(CNV_CONSENSUS_MULTI.out.g)                                     // + cnv_consensus_genes (MARKER ORG_CNV_V1)
-        .join(CNV_CONSENSUS_MULTI.out.s)                                     // + cnv_consensus_segments
-        .join(CNV_CONSENSUS_MULTI.out.j)                                     // + cnv_consensus_json
+        .join(CNV_CONSENSUS_MULTI.out.genes)                                     // + cnv_consensus_genes (MARKER ORG_CNV_V1; MARKER ORG_CNV_V1a)
+        .join(CNV_CONSENSUS_MULTI.out.segments)                                     // + cnv_consensus_segments
+        .join(CNV_CONSENSUS_MULTI.out.json)                                     // + cnv_consensus_json
         .join(EXON_PLOTS.out.dir)                                            // + exon_plots_dir
         .join(CHROM_PAGES.out.dir)                                           // + chrom_pages_dir
         .join(ch_decon_filtered)                                             // + decon_filtered (placeholder when off)
