@@ -70,7 +70,22 @@ workflow PREPROCESSING {
         PARSE_EXON_COVERAGE(MOSDEPTH.out.regions_thresholds, exonwise_bed_ch)
         // MARKER SEX_CHECK_V1: sex from the mosdepth regions (X/A ratio); one row per sample.
         // resolved_sex = sheet value if male/female, else the inference.
-        SEX_CHECK(MOSDEPTH.out.regions_thresholds)
+        // MARKER SEX_CHECK_V2: chrX heterozygosity at the panel het catalog is the deciding
+        // vote (CollectAllelicCounts inside SEX_CHECK on the final BAM); X/A confirms or
+        // raises X_DEPTH_CONFLICT. Panels without assets/<panel>/het_catalog.tsv stage []
+        // and keep the depth-only inference.
+        def sex_het_catalog_path = (params.containsKey('sex_check_het_catalog') && params.sex_check_het_catalog)
+            ? params.sex_check_het_catalog
+            : "${projectDir}/assets/${params.panel}/het_catalog.tsv"
+        def sex_het_catalog_file = file(sex_het_catalog_path)
+        if( !sex_het_catalog_file.exists() )
+            log.warn "[SEX_CHECK] no het catalog at ${sex_het_catalog_path}; sex inference is depth-only"
+        ch_sex_het_catalog = Channel.value( sex_het_catalog_file.exists() ? sex_het_catalog_file : [] )
+        SEX_CHECK(
+            MOSDEPTH.out.regions_thresholds.join(ABRA2.out.bam, by: 0),
+            reference_ch,
+            ch_sex_het_catalog
+        )
         // MARKER SEX_CHECK_V1a: the map closure is replayed per consumer of ch_sex_by_id; log once.
         def sex_check_logged = java.util.concurrent.ConcurrentHashMap.newKeySet()
         ch_sex_by_id = SEX_CHECK.out.tsv
@@ -80,7 +95,10 @@ workflow PREPROCESSING {
                     if( row.status == 'MISMATCH' )
                         log.warn "[SEX_CHECK] ${meta.id}: samplesheet sex=${row.sheet_sex} but data infers ${row.inferred_sex} (X/A=${row.x_auto_ratio}); keeping the samplesheet value"
                     else if( row.sheet_sex == 'unknown' )
-                        log.info "[SEX_CHECK] ${meta.id}: samplesheet sex unknown; using inferred ${row.resolved_sex} (X/A=${row.x_auto_ratio}, status=${row.status})"
+                        log.info "[SEX_CHECK] ${meta.id}: samplesheet sex unknown; using inferred ${row.resolved_sex} (method=${row.method}, X het=${row.x_het_frac}, X/A=${row.x_auto_ratio}, status=${row.status})"
+                    // MARKER SEX_CHECK_V2: the two votes disagree; heterozygosity decided
+                    if( (row.flags ?: '').contains('X_DEPTH_CONFLICT') )
+                        log.warn "[SEX_CHECK] ${meta.id}: chrX heterozygosity says ${row.het_inferred_sex}, depth says ${row.depth_inferred_sex} (X het=${row.x_het_frac}, X/A=${row.x_auto_ratio}); using ${row.inferred_sex}; a chrX copy-number change in the tumour is likely"
                 }
                 [ meta.id, row.resolved_sex ]
             }

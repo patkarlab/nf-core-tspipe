@@ -1,17 +1,33 @@
 #!/usr/bin/env python3
 """
-sex_check.py -- infer sample sex from mosdepth per-region depth.
+sex_check.py (SEX_CHECK_V2) -- infer sample sex from two votes.
 
-Input is the mosdepth regions.bed.gz produced by MOSDEPTH (--by panel BED,
---mapq 20, --flag 772). Every region's mean depth is normalised to the
-autosomal median of its own region class (exon target or CNV backbone
-tile), then the chrX and chrY medians of those normalised depths give the
-X/A and Y/A ratios. Expected: X/A ~0.5 male, ~1.0 female; Y/A ~0.5 male,
-~0 female. Pseudoautosomal regions are excluded on both chromosomes.
+Vote 1, heterozygosity (decides when available): allelic counts at the
+panel het catalog sites (het_catalog.tsv). A male has no heterozygous
+sites on chrX outside the PAR; a female has about the autosomal het
+fraction. Calibrated on tspipe_run8 (2026-09-07, 76 chrX sites, depth
+>= 30): males 0.000-0.013, females 0.38-0.43, autosomal 0.40-0.44.
+Immune to chrX copy number in the tumour: a male +X keeps zero het sites.
+The vote is trusted only when the autosomal het fraction is itself normal
+(>= --auto-het-min); otherwise AUTOSOMAL_HET_LOW is flagged and the depth
+vote decides.
 
-Output is a one-row TSV. resolved_sex is what the workflow may write into
-meta.sex: the samplesheet value when it is male/female, otherwise the
-inference. A MISMATCH between sheet and inference never overrides the sheet.
+Vote 2, depth (confirms; decides when vote 1 is unavailable): mosdepth
+per-region depth, median chrX over median autosomal, each region
+normalised within its own class (exon target vs backbone tile), PAR
+excluded. X/A ~0.5 male, ~1.0 female. A somatic chrX gain or loss moves
+this ratio: 26CGH1250 (male, +X at 65 percent purity) reads X/A 0.898.
+
+When both votes are present and disagree, the het vote decides and
+X_DEPTH_CONFLICT is flagged.
+
+resolved_sex is what the workflow may write into meta.sex: the
+samplesheet value when it is male/female, otherwise the inference.
+A MISMATCH between sheet and inference never overrides the sheet.
+
+Output is a one-row TSV: the sixteen SEX_CHECK_V1 columns unchanged,
+then method, het_inferred_sex, depth_inferred_sex, x_het_frac,
+auto_het_frac, n_x_het_sites, n_auto_het_sites.
 
 Python 3.6 compatible (GATK 4.5 container). Standard library only.
 """
@@ -28,6 +44,15 @@ PAR_HG38 = {
     "chrY": [(10001, 2781479), (56887903, 57217415)],
 }
 BACKBONE_RE = re.compile(r"^(bb\.|CNVbb|CNV_?backbone)", re.IGNORECASE)
+
+COLUMNS = [
+    "sample", "sheet_sex", "inferred_sex", "resolved_sex", "status",
+    "x_auto_ratio", "y_auto_ratio", "y_status", "n_auto", "n_x", "n_y",
+    "auto_median_exon", "auto_median_backbone", "n_par_excluded",
+    "n_noncanonical_skipped", "flags",
+    "method", "het_inferred_sex", "depth_inferred_sex",
+    "x_het_frac", "auto_het_frac", "n_x_het_sites", "n_auto_het_sites",
+]
 
 
 def median(values):
@@ -47,6 +72,14 @@ def in_par(chrom, start, end):
             return True
     return False
 
+
+def fmt(v):
+    return "NA" if v is None else "%.3f" % v
+
+
+# ---------------------------------------------------------------------------
+# Vote 2: depth (SEX_CHECK_V1 method, unchanged)
+# ---------------------------------------------------------------------------
 
 def read_regions(path):
     """Yield (chrom, start, end, name, depth) from mosdepth regions.bed.gz.
@@ -81,7 +114,8 @@ def classify_region(name):
     return "backbone" if BACKBONE_RE.match(name or "") else "exon"
 
 
-def run(args):
+def depth_vote(args):
+    """Return a dict with the depth-vote fields and its own flags."""
     per_class = {"exon": {"auto": [], "chrX": [], "chrY": []},
                  "backbone": {"auto": [], "chrX": [], "chrY": []}}
     n_par_excluded = 0
@@ -100,8 +134,6 @@ def run(args):
             continue
         per_class[classify_region(name)][key].append(depth)
 
-    # Per-class autosomal medians; a class is usable only if it has enough
-    # autosomal regions at adequate depth.
     class_auto_median = {}
     for cls, d in per_class.items():
         m = median(d["auto"])
@@ -118,7 +150,6 @@ def run(args):
     x_ratio = median(norm_x)
     y_ratio = median(norm_y)
     n_x, n_y = len(norm_x), len(norm_y)
-
     flags = []
 
     if not class_auto_median:
@@ -144,9 +175,131 @@ def run(args):
     else:
         y_status = "AMBIGUOUS"
 
-    if inferred == "male" and y_status == "ABSENT":
+    return {
+        "inferred": inferred, "flags": flags,
+        "x_ratio": x_ratio, "y_ratio": y_ratio, "y_status": y_status,
+        "n_auto": n_auto, "n_x": n_x, "n_y": n_y,
+        "auto_median_exon": class_auto_median.get("exon"),
+        "auto_median_backbone": class_auto_median.get("backbone"),
+        "n_par_excluded": n_par_excluded, "n_noncanonical": n_noncanonical,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Vote 1: heterozygosity at the het catalog sites
+# ---------------------------------------------------------------------------
+
+def read_het_catalog(path):
+    """Set of (chrom, pos) from het_catalog.tsv (header: chrom pos ...)."""
+    sites = set()
+    with open(path) as fh:
+        header = None
+        for line in fh:
+            if not line.strip() or line.startswith("#"):
+                continue
+            p = line.rstrip("\n").split("\t")
+            if header is None:
+                header = p
+                if p[0] == "chrom":
+                    continue
+            try:
+                sites.add((p[0], int(p[1])))
+            except (ValueError, IndexError):
+                continue
+    return sites
+
+
+def read_allelic_counts(path):
+    """Yield (chrom, pos, ref_count, alt_count) from GATK CollectAllelicCounts."""
+    with open(path) as fh:
+        for line in fh:
+            if not line.strip() or line.startswith("@") or line.startswith("CONTIG"):
+                continue
+            p = line.rstrip("\n").split("\t")
+            if len(p) < 4:
+                continue
+            try:
+                yield p[0], int(p[1]), int(p[2]), int(p[3])
+            except ValueError:
+                continue
+
+
+def het_vote(args):
+    """Return a dict with the het-vote fields and its own flags."""
+    flags = []
+    out = {"inferred": "NA", "x_het": None, "auto_het": None,
+           "n_x_sites": 0, "n_auto_sites": 0, "flags": flags}
+    if not (args.allelic_counts and args.het_catalog):
+        flags.append("HET_VOTE_UNAVAILABLE")
+        return out
+
+    catalog = read_het_catalog(args.het_catalog)
+    nx = hx = na = ha = 0
+    for chrom, pos, ref_c, alt_c in read_allelic_counts(args.allelic_counts):
+        if (chrom, pos) not in catalog:
+            continue
+        if chrom == "chrX":
+            if in_par(chrom, pos - 1, pos):
+                continue
+        elif chrom not in AUTOSOMES:
+            continue
+        dp = ref_c + alt_c
+        if dp < args.het_min_depth:
+            continue
+        f = alt_c / float(dp)
+        het = 1 if (args.het_af_lo < f < args.het_af_hi) else 0
+        if chrom == "chrX":
+            nx += 1
+            hx += het
+        else:
+            na += 1
+            ha += het
+
+    x_het = hx / float(nx) if nx else None
+    auto_het = ha / float(na) if na else None
+    out.update({"x_het": x_het, "auto_het": auto_het,
+                "n_x_sites": nx, "n_auto_sites": na})
+
+    if nx < args.min_het_sites:
+        out["inferred"] = "indeterminate"
+        flags.append("TOO_FEW_HET_SITES")
+    elif auto_het is None or auto_het < args.auto_het_min:
+        out["inferred"] = "indeterminate"
+        flags.append("AUTOSOMAL_HET_LOW")
+    elif x_het <= args.x_het_male_max:
+        out["inferred"] = "male"
+    elif x_het >= args.x_het_female_min:
+        out["inferred"] = "female"
+    else:
+        out["inferred"] = "indeterminate"
+        flags.append("CHRX_HET_AMBIGUOUS")
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Combine
+# ---------------------------------------------------------------------------
+
+def run(args):
+    d = depth_vote(args)
+    h = het_vote(args)
+    flags = list(h["flags"]) + list(d["flags"])
+
+    if h["inferred"] in ("male", "female"):
+        inferred = h["inferred"]
+        method = "heterozygosity"
+        if d["inferred"] in ("male", "female") and d["inferred"] != inferred:
+            flags.append("X_DEPTH_CONFLICT")
+    elif d["inferred"] in ("male", "female"):
+        inferred = d["inferred"]
+        method = "depth"
+    else:
+        inferred = "indeterminate"
+        method = "none"
+
+    if inferred == "male" and d["y_status"] == "ABSENT":
         flags.append("Y_DEPLETED")
-    if inferred == "female" and y_status == "PRESENT":
+    if inferred == "female" and d["y_status"] == "PRESENT":
         flags.append("Y_UNEXPECTED")
 
     sheet = (args.sheet_sex or "unknown").strip().lower()
@@ -169,42 +322,65 @@ def run(args):
     else:
         resolved = "unknown"
 
-    def fmt(v):
-        return "NA" if v is None else "%.3f" % v
+    row = {
+        "sample": args.sample,
+        "sheet_sex": sheet,
+        "inferred_sex": inferred,
+        "resolved_sex": resolved,
+        "status": status,
+        "x_auto_ratio": fmt(d["x_ratio"]),
+        "y_auto_ratio": fmt(d["y_ratio"]),
+        "y_status": d["y_status"],
+        "n_auto": str(d["n_auto"]),
+        "n_x": str(d["n_x"]),
+        "n_y": str(d["n_y"]),
+        "auto_median_exon": fmt(d["auto_median_exon"]),
+        "auto_median_backbone": fmt(d["auto_median_backbone"]),
+        "n_par_excluded": str(d["n_par_excluded"]),
+        "n_noncanonical_skipped": str(d["n_noncanonical"]),
+        "flags": ";".join(flags) if flags else ".",
+        "method": method,
+        "het_inferred_sex": h["inferred"],
+        "depth_inferred_sex": d["inferred"],
+        "x_het_frac": fmt(h["x_het"]),
+        "auto_het_frac": fmt(h["auto_het"]),
+        "n_x_het_sites": str(h["n_x_sites"]),
+        "n_auto_het_sites": str(h["n_auto_sites"]),
+    }
+    write_row(args, row)
 
-    row = [
-        ("sample", args.sample),
-        ("sheet_sex", sheet),
-        ("inferred_sex", inferred),
-        ("resolved_sex", resolved),
-        ("status", status),
-        ("x_auto_ratio", fmt(x_ratio)),
-        ("y_auto_ratio", fmt(y_ratio)),
-        ("y_status", y_status),
-        ("n_auto", str(n_auto)),
-        ("n_x", str(n_x)),
-        ("n_y", str(n_y)),
-        ("auto_median_exon", fmt(class_auto_median.get("exon"))),
-        ("auto_median_backbone", fmt(class_auto_median.get("backbone"))),
-        ("n_par_excluded", str(n_par_excluded)),
-        ("n_noncanonical_skipped", str(n_noncanonical)),
-        ("flags", ";".join(flags) if flags else "."),
-    ]
+    sys.stderr.write("[sex_check] %s sheet=%s inferred=%s (method=%s; het=%s X_het=%s auto_het=%s nX=%d; "
+                     "depth=%s X/A=%s Y/A=%s %s) resolved=%s status=%s flags=%s\n"
+                     % (args.sample, sheet, inferred, method, h["inferred"], row["x_het_frac"],
+                        row["auto_het_frac"], h["n_x_sites"], d["inferred"], row["x_auto_ratio"],
+                        row["y_auto_ratio"], d["y_status"], resolved, status, row["flags"]))
+    return 0
+
+
+def write_row(args, row):
     with open(args.out, "w") as out:
-        out.write("\t".join(k for k, _ in row) + "\n")
-        out.write("\t".join(v for _, v in row) + "\n")
-
+        out.write("\t".join(COLUMNS) + "\n")
+        out.write("\t".join(row[c] for c in COLUMNS) + "\n")
     if args.json:
         with open(args.json, "w") as jf:
-            json.dump(dict(row), jf, indent=2)
+            json.dump(row, jf, indent=2)
             jf.write("\n")
 
-    sys.stderr.write("[sex_check] %s sheet=%s inferred=%s resolved=%s status=%s "
-                     "X/A=%s Y/A=%s (%s) nX=%d nY=%d flags=%s\n"
-                     % (args.sample, sheet, inferred, resolved, status,
-                        fmt(x_ratio), fmt(y_ratio), y_status, n_x, n_y,
-                        ";".join(flags) or "."))
-    return 0
+
+def error_row(args, exc):
+    sheet = (args.sheet_sex or "unknown").strip().lower()
+    if sheet not in ("male", "female"):
+        sheet = "unknown"
+    row = dict((c, "NA") for c in COLUMNS)
+    row.update({
+        "sample": args.sample, "sheet_sex": sheet, "inferred_sex": "indeterminate",
+        "resolved_sex": sheet, "status": "INDETERMINATE",
+        "n_auto": "0", "n_x": "0", "n_y": "0", "n_par_excluded": "0",
+        "n_noncanonical_skipped": "0", "method": "none",
+        "n_x_het_sites": "0", "n_auto_het_sites": "0",
+        "flags": "ERROR:%s" % str(exc).replace("\t", " ").replace("\n", " "),
+    })
+    write_row(args, row)
 
 
 def main():
@@ -215,6 +391,23 @@ def main():
     ap.add_argument("--sheet-sex", default="unknown", help="samplesheet value: male|female|unknown")
     ap.add_argument("--out", required=True, help="output TSV (one row)")
     ap.add_argument("--json", default=None, help="optional JSON copy of the row")
+    # vote 1: heterozygosity
+    ap.add_argument("--allelic-counts", default=None,
+                    help="GATK CollectAllelicCounts TSV at the het catalog sites (enables vote 1)")
+    ap.add_argument("--het-catalog", default=None, help="het_catalog.tsv (chrom, pos, ...)")
+    ap.add_argument("--het-min-depth", type=int, default=30,
+                    help="minimum ref+alt depth for a catalog site to count (default 30)")
+    ap.add_argument("--het-af-lo", type=float, default=0.15, help="het if AF > this (default 0.15)")
+    ap.add_argument("--het-af-hi", type=float, default=0.85, help="het if AF < this (default 0.85)")
+    ap.add_argument("--min-het-sites", type=int, default=20,
+                    help="minimum chrX catalog sites at depth for the het vote (default 20)")
+    ap.add_argument("--x-het-male-max", type=float, default=0.10,
+                    help="chrX het fraction at or below this is male (default 0.10)")
+    ap.add_argument("--x-het-female-min", type=float, default=0.25,
+                    help="chrX het fraction at or above this is female (default 0.25)")
+    ap.add_argument("--auto-het-min", type=float, default=0.25,
+                    help="autosomal het fraction below this invalidates the het vote (default 0.25)")
+    # vote 2: depth
     ap.add_argument("--min-depth", type=float, default=20.0,
                     help="minimum class autosomal median depth to use that class (default 20)")
     ap.add_argument("--min-auto-regions", type=int, default=50)
@@ -227,20 +420,8 @@ def main():
     args = ap.parse_args()
     try:
         rc = run(args)
-    except Exception as exc:  # never fail the sample: emit an 'unknown' row
-        sheet = (args.sheet_sex or "unknown").strip().lower()
-        if sheet not in ("male", "female"):
-            sheet = "unknown"
-        cols = ["sample", "sheet_sex", "inferred_sex", "resolved_sex", "status",
-                "x_auto_ratio", "y_auto_ratio", "y_status", "n_auto", "n_x", "n_y",
-                "auto_median_exon", "auto_median_backbone", "n_par_excluded",
-                "n_noncanonical_skipped", "flags"]
-        vals = [args.sample, sheet, "indeterminate", sheet, "INDETERMINATE",
-                "NA", "NA", "NA", "0", "0", "0", "NA", "NA", "0", "0",
-                "ERROR:%s" % str(exc).replace("\t", " ").replace("\n", " ")]
-        with open(args.out, "w") as out:
-            out.write("\t".join(cols) + "\n")
-            out.write("\t".join(vals) + "\n")
+    except Exception as exc:  # never fail the sample: emit an indeterminate row
+        error_row(args, exc)
         sys.stderr.write("[sex_check] ERROR %s: %s (wrote indeterminate row)\n" % (args.sample, exc))
         rc = 0
     sys.exit(rc)
