@@ -1,5 +1,5 @@
 /*
- * modules/local/hmf_cobalt.nf  (HMF_PURPLE_V1)
+ * modules/local/hmf_cobalt.nf  (HMF_PURPLE_V1; MARKER HMF_PURPLE_V1a: -target_region_norm_file)
  *
  * COBALT tumour-only in panel mode: read-depth ratios per 1 kb window,
  * GC-normalised, corrected with the panel's target-regions normalisation
@@ -34,7 +34,7 @@ process HMF_COBALT {
             -tumor ${meta.id} -tumor_bam ${bam} \\
             -ref_genome ${fasta} -ref_genome_version 38 \\
             -gc_profile ${gc_profile} \\
-            -target_region ${target_norm} -pcf_gamma ${params.hmf_pcf_gamma} \\
+            -target_region_norm_file ${target_norm} -pcf_gamma ${params.hmf_pcf_gamma} \\
             -output_dir cobalt -threads ${task.cpus} > ${meta.id}.cobalt.log 2>&1
         """
 }

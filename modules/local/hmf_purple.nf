@@ -1,5 +1,5 @@
 /*
- * modules/local/hmf_purple.nf  (HMF_PURPLE_V1)
+ * modules/local/hmf_purple.nf  (HMF_PURPLE_V1; MARKER HMF_PURPLE_V1a: PURPLE 4.4 option names)
  *
  * PURPLE tumour-only, targeted: purity/ploidy fit from AMBER BAF and COBALT
  * ratios, absolute and allele-specific copy number per segment and gene,
@@ -41,12 +41,12 @@ process HMF_PURPLE {
         set +e
         java -Xmx${xmx}g -jar \$(ls ${params.hmf_env}/share/hmftools-purple-*/purple.jar) \\
             -tumor ${meta.id} \\
-            -amber ${amber_dir} -cobalt ${cobalt_dir} \\
+            -amber_dir ${amber_dir} -cobalt_dir ${cobalt_dir} \\
             -ref_genome ${fasta} -ref_genome_version 38 \\
             -gc_profile ${gc_profile} \\
             -ensembl_data_dir ${ensembl_dir} \\
             -driver_gene_panel ${driver_panel} -somatic_hotspots ${hotspots} \\
-            -target_regions_bed ${target_bed} -target_regions_ratios ${target_norm} \\
+            -target_regions_bed ${target_bed} \\
             -no_charts -threads ${task.cpus} -output_dir purple > ${meta.id}.purple.log 2>&1
         rc=\$?
         set -e
