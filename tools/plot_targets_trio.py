@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-tools/plot_targets_trio.py  (TARGETS_TRIO_V2.1; default style grouped)
+tools/plot_targets_trio.py  (TARGETS_TRIO_V2.2; default style interleaved; depth colour bar)
 
 Target-space trio for one sample (depth, BAF, PURPLE) with three layouts:
   --style interleaved  targets in genomic order (exons, SNP windows, backbone tiles);
@@ -232,7 +232,7 @@ def groups_of(sel, xs):
 
 
 # ---------------------------------------------------------------- drawing
-def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, band_labels_on=None):
+def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, colorbar=True):
     bin_by, site_by, site_pos, find_seg = ctx["bin_by"], ctx["site_by"], ctx["site_pos"], ctx["find_seg"]
     L = args.log2_lim
     dx, dy, dw, clip_lo, clip_hi = [], [], [], [], []
@@ -301,7 +301,12 @@ def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, band_labels_on=N
     a0.set_ylim(-L - 0.1, L + 0.1)
     a0.set_ylabel("log2 depth ratio\n(%d CNVkit bins; %d SNP windows in orange)" % (len(dx) + len(clip_lo) + len(clip_hi), len(sx)))
     if bx:
-        sc = a1.scatter(bx, by_, s=26, c=bd, cmap="YlOrRd", vmin=0, vmax=max(400, max(bd)), edgecolors="0.35", linewidths=0.4, zorder=3)
+        vmax = max(400, max(bd))
+        sc = a1.scatter(bx, by_, s=26, c=bd, cmap="YlOrRd", vmin=0, vmax=vmax, edgecolors="0.35", linewidths=0.4, zorder=3)
+        if colorbar:
+            cax = a1.inset_axes([1.006, 0.08, 0.008, 0.84])
+            cb = a1.figure.colorbar(sc, cax=cax)
+            cb.set_label("read depth at site", fontsize=7); cb.ax.tick_params(labelsize=6)
     a1.axhline(0.5, color="black", lw=0.8)
     if args.mirror_baf:
         a1.set_ylim(0.45, 1.02); a1.axhline(0.67, color="0.6", lw=0.6, ls=":"); a1.axhline(0.75, color="0.6", lw=0.6, ls=":")
@@ -315,7 +320,7 @@ def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, band_labels_on=N
     a2.axhline(2, color="0.6", lw=0.8, ls="--"); a2.axhline(1, color="0.8", lw=0.6, ls=":")
     a2.set_ylim(-0.2, args.max_cn + 0.3); a2.set_ylabel("PURPLE CN\n(blue total, red minor)")
     # target track
-    t = axes[3]; t.set_ylim(0, 1.25); t.set_yticks([])
+    t = axes[3]; t.set_ylim(0, 1.4); t.set_yticks([])
     for (c, s, e, name), (x0, x1) in zip(sel, xs):
         kind = target_kind(name)
         if kind == "backbone":
@@ -325,16 +330,19 @@ def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, band_labels_on=N
         else:
             t.add_patch(plt.Rectangle((x0, 0.55), x1 - x0, 0.3, color="navy", linewidth=0))
     big = 10
+    total_w = max(x1 for _, x1 in xs) if xs else 1
+    k = 0
     for key, g0, g1, n, gs, ge in groups:
+        wide = (g1 - g0) >= 0.07 * total_w
         if key[1] == "snp":
-            lab = "SNP windows (n=%d)" % n if n >= big else ""
+            lab = ("SNP (n=%d)" % n) if (n >= big and wide) else ""
         elif key[1] == "backbone":
-            lab = "backbone (n=%d)" % n if n >= big else ""
+            lab = ("backbone (n=%d)" % n) if (n >= big and wide) else ""
         else:
             lab = key[2]
         if lab:
-            t.text((g0 + g1) / 2.0, 0.9, lab, ha="center", va="bottom", fontsize=7.5)
-        if key[1] == "exon" or n >= big:
+            t.text((g0 + g1) / 2.0, 0.9 + 0.16 * (k % 2), lab, ha="center", va="bottom", fontsize=7.5); k += 1
+        if key[1] == "exon" or (n >= big and wide):
             t.text((g0 + g1) / 2.0, 0.02, "%.2f-%.2f Mb" % (gs / 1e6, ge / 1e6), ha="center", va="bottom", fontsize=5.5, color="0.35")
     t.set_ylabel("targets", fontsize=8)
     width = max(x1 for _, x1 in xs) if xs else 1
@@ -353,7 +361,7 @@ def main():
     ap.add_argument("--min-depth", type=int, default=50)
     ap.add_argument("--max-cn", type=float, default=6.0)
     ap.add_argument("--log2-lim", type=float, default=1.5)
-    ap.add_argument("--style", choices=["interleaved", "grouped", "genes"], default="grouped")
+    ap.add_argument("--style", choices=["interleaved", "grouped", "genes"], default="interleaved")
     ap.add_argument("--background", default=None, help="baf_background.tsv: cohort median depth per catalog position -> depth points on SNP windows")
     ap.add_argument("--mirror-baf", action="store_true")
     ap.add_argument("--arm", action="append", default=[])
@@ -454,7 +462,7 @@ def main():
                 near = [t for t in targets if t[0] == c and target_kind(t[3]) != "exon" and t[2] >= lo - args.flank and t[1] <= hi + args.flank]
                 col_sel = sorted(ex + near, key=lambda t: t[1])
                 xs, width = layout(col_sel, args.gap, args.group_gap, args.snp_width, args.exon_width)
-                n = draw_panels([axes[i][j] for i in range(4)], col_sel, xs, ctx, args)
+                n = draw_panels([axes[i][j] for i in range(4)], col_sel, xs, ctx, args, colorbar=(j == cols - 1))
                 tot = tuple(a + b for a, b in zip(tot, n))
                 axes[0][j].set_title("%s  (%s:%.2f-%.2f Mb, +-%.1f Mb)" % (g, c, lo / 1e6, hi / 1e6, args.flank / 1e6), fontsize=9, pad=18)
                 if j:
