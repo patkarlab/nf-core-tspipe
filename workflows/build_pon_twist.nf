@@ -131,7 +131,7 @@ workflow BUILD_PON_TWIST {
 
     // Reference files are value channels (queue channels are one-shot).
     ch_bed      = Channel.value(file("${params.pon_assets}/panel.combined.filtered.bed", checkIfExists: true))
-    ch_snp_bed_base = Channel.value(file("${params.pon_assets}/snp_sites.baf.bed", checkIfExists: true))   // BAF_CATALOG_V1: 17p probe windows; ch_snp_bed is built below
+    ch_snp_bed_base = Channel.value(file("${params.pon_assets}/snp_sites.baf.base.bed", checkIfExists: true))   // BAF_CATALOG_V1: 17p probe windows (base); ch_snp_bed is built below; MARKER BAF_CATALOG_V1a
     ch_exonwise = Channel.value(file("${params.pon_assets}/targets.exonwise.bed",        checkIfExists: true))
 
     // ---- samplesheet ----------------------------------------------------

@@ -14,7 +14,7 @@ process BPT_MERGE_HET_SITES {
     input:
         path hets_files
         path sheet
-        path base_bed
+        path base_bed, stageAs: 'base_catalog.bed'   // MARKER BAF_CATALOG_V1a: never the output's name
         path paralog_exons
 
     output:
