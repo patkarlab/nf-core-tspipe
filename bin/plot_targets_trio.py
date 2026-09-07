@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-tools/plot_targets_trio.py  (TARGETS_TRIO_V2.6; gene panels sized by exon count, all exons labelled; gene bands span the gene)
+bin/plot_targets_trio.py  (TARGETS_TRIO_V2.7; explicit inputs for the CHROM_PAGES module; py3.6/matplotlib 3.2 safe)
 
 Target-space trio for one sample (depth, BAF, PURPLE) with three layouts:
   --style interleaved  targets in genomic order (exons, SNP windows, backbone tiles);
@@ -452,7 +452,11 @@ def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, colorbar=True):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--sample", required=True)
-    ap.add_argument("--sample-dir", required=True)
+    ap.add_argument("--sample-dir", default=None, help="<outdir>/<sample>; inputs are discovered inside it unless given explicitly")
+    ap.add_argument("--consensus-json", default=None)
+    ap.add_argument("--decon", default=None, help="DECoN filtered table")
+    ap.add_argument("--purple-dir", default=None, help="PURPLE output directory")
+    ap.add_argument("--index", default=None, help="write an index TSV of the pages produced")
     ap.add_argument("--targets", action="append", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--allelic", default=None)
@@ -478,15 +482,18 @@ def main():
     ap.add_argument("--decon-min-bf", type=float, default=5.0, help="DECoN calls drawn in the gene panels at or above this BF")
     args = ap.parse_args()
 
-    sd = args.sample_dir
+    sd = args.sample_dir or ""
     targets = read_targets(args.targets)
-    js = [f for f in os.listdir(os.path.join(sd, "cnv_consensus_multi")) if f.endswith(".cnv_consensus4.json")]
-    bins = read_bins(os.path.join(sd, "cnv_consensus_multi", js[0])) if js else []
+    cj = args.consensus_json
+    if not cj and sd and os.path.isdir(os.path.join(sd, "cnv_consensus_multi")):
+        js = [f for f in os.listdir(os.path.join(sd, "cnv_consensus_multi")) if f.endswith(".cnv_consensus4.json")]
+        cj = os.path.join(sd, "cnv_consensus_multi", js[0]) if js else None
+    bins = read_bins(cj) if cj and os.path.isfile(cj) else []
     bin_by = {}
     for b in bins:
         bin_by.setdefault(b[0], []).append(b)
     allelic = args.allelic
-    if not allelic:
+    if not allelic and sd:
         gd = os.path.join(sd, "cnv_gatk")
         cands = [f for f in (os.listdir(gd) if os.path.isdir(gd) else []) if "allelicCounts" in f]
         allelic = os.path.join(gd, cands[0]) if cands else None
@@ -522,17 +529,22 @@ def main():
     for c in site_by:
         site_by[c].sort()
     site_pos = dict((c, [x[0] for x in v]) for c, v in site_by.items())
-    ps = os.path.join(sd, "cnv_hmftools", "purple", "%s.purple.cnv.somatic.tsv" % args.sample)
-    find_seg = read_segments(ps) if os.path.isfile(ps) else (lambda c, p: None)
+    pdir = args.purple_dir or (os.path.join(sd, "cnv_hmftools", "purple") if sd else "")
+    ps = os.path.join(pdir, "%s.purple.cnv.somatic.tsv" % args.sample) if pdir else ""
+    find_seg = read_segments(ps) if ps and os.path.isfile(ps) else (lambda c, p: None)
     pur = {}
-    pp = os.path.join(sd, "cnv_hmftools", "purple", "%s.purple.purity.tsv" % args.sample)
-    if os.path.isfile(pp):
+    pp = os.path.join(pdir, "%s.purple.purity.tsv" % args.sample) if pdir else ""
+    if pp and os.path.isfile(pp):
         with open(pp) as fh:
             pur = list(csv.DictReader(fh, delimiter="\t"))[0]
     ctx = dict(bin_by=bin_by, site_by=site_by, site_pos=site_pos, find_seg=find_seg, win_depth=win_depth)
-    dd = os.path.join(sd, "cnv_decon")
-    dfs = [f for f in (os.listdir(dd) if os.path.isdir(dd) else []) if f.endswith(".decon_filtered.tsv")]
-    decon = read_decon(os.path.join(dd, dfs[0]), args.decon_min_bf) if dfs else []
+    dpath = args.decon
+    if not dpath and sd:
+        dd = os.path.join(sd, "cnv_decon")
+        dfs = [f for f in (os.listdir(dd) if os.path.isdir(dd) else []) if f.endswith(".decon_filtered.tsv")]
+        dpath = os.path.join(dd, dfs[0]) if dfs else None
+    decon = read_decon(dpath, args.decon_min_bf) if dpath and os.path.isfile(dpath) else []
+    index_rows = []
     head = "%s  |  PURPLE purity %s ploidy %s %s" % (args.sample, pur.get("purity", "NA"), pur.get("ploidy", "NA"), pur.get("gender", "NA"))
 
     for label, sel in select_targets(targets, args):
@@ -614,7 +626,13 @@ def main():
                          ("; %d gene panels (exon order, DECoN calls at BF >= %.0f)" % (len(genes), args.decon_min_bf)) if g_rows else ""), fontsize=11)
         out = "%s.%s.%s%s.png" % (args.out, label, args.style, ".mirror" if args.mirror_baf else "")
         fig.savefig(out, dpi=130, bbox_inches="tight"); plt.close(fig)
+        index_rows.append((label, ",".join(chroms), len(sel), n[0], n[1], n[2], os.path.basename(out)))
         print("[ok] %s [%s]: %d targets, %d depth bins, %d BAF sites, %d PURPLE-covered -> %s" % (label, args.style, len(sel), n[0], n[1], n[2], out))
+    if args.index:
+        with open(args.index, "w") as fh:
+            fh.write("sample\tlabel\tchroms\tn_targets\tn_depth_bins\tn_baf_sites\tn_purple_targets\tfile\n")
+            for r in index_rows:
+                fh.write("%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\n" % ((args.sample,) + r))
     return 0
 
 

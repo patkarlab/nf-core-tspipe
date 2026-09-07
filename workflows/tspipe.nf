@@ -35,6 +35,7 @@ include { EXON_PLOTS          } from '../modules/local/exon_plots'            //
 include { HMF_AMBER           } from '../modules/local/hmf_amber'             // MARKER HMF_PURPLE_V1
 include { HMF_COBALT          } from '../modules/local/hmf_cobalt'
 include { HMF_PURPLE          } from '../modules/local/hmf_purple'
+include { CHROM_PAGES         } from '../modules/local/chrom_pages'           // MARKER CHROM_PAGES_V1
 include { PURECN_COVERAGE     } from '../modules/local/purecn_coverage'   // PCN_V1
 include { PURECN              } from '../modules/local/purecn'   // PCN_V1
 include { ANNOTATION          } from '../subworkflows/local/annotation'
@@ -305,9 +306,11 @@ workflow TSPIPE {
                         ch_hmf_drivers, ch_hmf_hotspots, ch_hmf_target, ch_hmf_norm )
             ch_purple_genes   = HMF_PURPLE.out.genes
             ch_purple_summary = HMF_PURPLE.out.summary
+            ch_purple_dir     = HMF_PURPLE.out.dir   // CHROM_PAGES_V1
         } else {
             ch_purple_genes   = ch_final_bam.map { m, _b, _i -> [ m, [] ] }
             ch_purple_summary = ch_final_bam.map { m, _b, _i -> [ m, [] ] }
+            ch_purple_dir     = ch_final_bam.map { m, _b, _i -> [ m, [] ] }   // CHROM_PAGES_V1
         }
 
         // CMX_V1: five-caller consensus + Phase-4 JSON payload.
@@ -335,6 +338,18 @@ workflow TSPIPE {
             .join( CNV_CONSENSUS_MULTI.out.genes, by: 0 )
             .join( ch_decon_filtered,             by: 0 )
         EXON_PLOTS( ch_exon_plots_in, ch_focal_bed, ch_cnv_gene_blacklist )   // CNV_BLACKLIST_V1
+        // CHROM_PAGES_V1: per-chromosome CNV pages in target space (depth, BAF, PURPLE, gene exon panels)
+        def cp_panel_bed = "${projectDir}/assets/${params.panel}/panel.combined.filtered.bed"
+        def cp_snp_base  = "${projectDir}/assets/${params.panel}/snp_sites.baf.base.bed"
+        def cp_baf_bg    = "${projectDir}/assets/${params.panel}/baf_background.tsv"
+        ch_cp_panel_bed = Channel.value(file(cp_panel_bed, checkIfExists: true))
+        ch_cp_snp_base  = file(cp_snp_base).exists() ? Channel.value(file(cp_snp_base)) : Channel.value([])
+        ch_cp_baf_bg    = file(cp_baf_bg).exists()   ? Channel.value(file(cp_baf_bg))   : Channel.value([])
+        ch_chrom_pages_in = CNV_CONSENSUS_MULTI.out.json
+            .join( GATK_CNV_CALLING.out.allelic, by: 0 )
+            .join( ch_decon_filtered,            by: 0 )
+            .join( ch_purple_dir,                by: 0 )
+        CHROM_PAGES( ch_chrom_pages_in, ch_cp_panel_bed, ch_cp_snp_base, ch_cp_baf_bg )
     }
 
     // ----- 5. SV calling -----------------------------------------------
