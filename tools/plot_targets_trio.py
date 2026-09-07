@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-tools/plot_targets_trio.py  (TARGETS_TRIO_V2.4; exon tiles merged per exon; TITAN-style colours)
+tools/plot_targets_trio.py  (TARGETS_TRIO_V2.6; gene panels sized by exon count, all exons labelled; gene bands span the gene)
 
 Target-space trio for one sample (depth, BAF, PURPLE) with three layouts:
   --style interleaved  targets in genomic order (exons, SNP windows, backbone tiles);
@@ -249,11 +249,11 @@ def draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon):
             ax.text((min(idx) + max(idx)) / 2.0, ytop + 0.03, "%s BF %.0f r%.2f%s" % (typ[:3], bf, ratio, (" " + dec) if dec and dec != "PASS" else ""),
                     ha="center", va="bottom", fontsize=5.5, color=col, zorder=5)
         sg = find_seg(c, (gs + ge) // 2)
-        cn_txt = ("  PURPLE %.1f/%.1f" % (sg[2], sg[3])) if sg and sg[3] is not None else ""
-        ax.set_title("%s (%d exons)%s" % (g, len(ex), cn_txt), fontsize=8, pad=3)
+        cn_txt = ("\nPURPLE %.1f / %.1f" % (sg[2], sg[3])) if sg and sg[3] is not None else ""
+        ax.set_title("%s (%d ex)%s" % (g, len(ex), cn_txt), fontsize=7, pad=3)
         ax.set_xlim(-0.6, len(ex) - 0.4); ax.set_ylim(-L - 0.1, L + 0.1)
-        step = max(1, len(ex) // 12)
-        ax.set_xticks(list(range(0, len(ex), step))); ax.set_xticklabels(labels[::step], fontsize=6)
+        ax.set_xticks(list(range(len(ex))))
+        ax.set_xticklabels(labels, fontsize=6 if len(ex) <= 25 else 5, rotation=0 if len(ex) <= 30 else 90)
         ax.tick_params(axis="y", labelsize=6)
     for ax in gaxes[len(genes):]:
         ax.axis("off")
@@ -307,6 +307,11 @@ def select_targets(targets, args):
                 sel += [t for t in targets if t[0] == c and target_kind(t[3]) != "exon" and t[2] >= lo - args.flank and t[1] <= hi + args.flank]
             sel = sorted(set(sel), key=lambda t: (CHROM_ORDER[t[0]], t[1]))
         sels.append(("genes_" + "_".join(want), sel))
+    if args.every_chrom:
+        for c in CHROMS:
+            sub = [t for t in targets if t[0] == c]
+            if sub:
+                sels.append((c, sub))
     if args.all:
         sels.append(("all_targets", list(targets)))
     return sels
@@ -371,14 +376,22 @@ def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, colorbar=True):
             px.append((x0, x1, min(args.max_cn, sg[2]), None if sg[3] is None else min(args.max_cn, sg[3])))
 
     groups = groups_of(sel, xs)
-    gene_i = 0
     if show_gene_bands:
-        for key, g0, g1, n, gs, ge in groups:
-            if key[1] == "exon":
-                col = GENE_COLOURS[gene_i % len(GENE_COLOURS)]; gene_i += 1
-                for a in axes[:3]:
-                    a.axvspan(g0 - args.gap / 2.0, g1 + args.gap / 2.0, color=col, zorder=0)
-                axes[0].text((g0 + g1) / 2.0, L + 0.02, key[2], ha="center", va="bottom", fontsize=9, fontweight="bold", clip_on=False)
+        span = {}
+        for (c, s, e, name), (x0, x1) in zip(sel, xs):
+            if target_kind(name) == "exon":
+                g = target_gene(name)
+                cur = span.get(g, [x0, x1]); span[g] = [min(cur[0], x0), max(cur[1], x1)]
+        total_w = max(x1 for _, x1 in xs) if xs else 1
+        last_label_x = -1e18
+        for gi, (g, (g0, g1)) in enumerate(sorted(span.items(), key=lambda kv: kv[1][0])):
+            col = GENE_COLOURS[gi % len(GENE_COLOURS)]
+            for a in axes[:3]:
+                a.axvspan(g0 - args.gap / 2.0, g1 + args.gap / 2.0, color=col, zorder=0)
+            xm = (g0 + g1) / 2.0
+            lift = 0.03 if (xm - last_label_x) > 0.06 * total_w else 0.55
+            axes[0].text(xm, L + lift, g, ha="center", va="bottom", fontsize=8.5, fontweight="bold", clip_on=False)
+            last_label_x = xm
     a0, a1, a2 = axes[0], axes[1], axes[2]
     a0.scatter(dx, dy, s=[18 + 34 * max(0, min(1, w)) ** 2 for w in dw], c=[depth_colour(v) for v in dy], alpha=0.9, linewidths=0, zorder=3)
     if sx:
@@ -455,6 +468,7 @@ def main():
     ap.add_argument("--genes", default="")
     ap.add_argument("--flank", type=int, default=1000000, help="for --genes and --style genes: SNP/backbone within this of a gene")
     ap.add_argument("--all", action="store_true")
+    ap.add_argument("--every-chrom", action="store_true", help="one page per chromosome that has targets (the dashboard set)")
     ap.add_argument("--gap", type=int, default=60)
     ap.add_argument("--group-gap", type=int, default=800)
     ap.add_argument("--snp-width", type=int, default=40)
@@ -569,17 +583,33 @@ def main():
                 if target_kind(t[3]) == "exon":
                     sel_by_gene.setdefault(target_gene(t[3]), []).append(t)
             genes = sorted(sel_by_gene, key=lambda g: (CHROM_ORDER[sel_by_gene[g][0][0]], min(t[1] for t in sel_by_gene[g])))
-            g_rows = 0 if (args.no_gene_panels or not genes) else (len(genes) + args.gene_cols - 1) // args.gene_cols
-            fig = plt.figure(figsize=(fig_w, 10 + 2.3 * g_rows))
-            outer = fig.add_gridspec(2 if g_rows else 1, 1, height_ratios=[10, 2.3 * g_rows] if g_rows else [1], hspace=0.16)
+            # pack gene panels into rows: width = exon count (min 4), row budget in exon units scales with figure width
+            budget = max(40, int(fig_w * 4.2))
+            rows, cur, used = [], [], 0
+            for g in ([] if args.no_gene_panels else genes):
+                w = max(7, len(sel_by_gene[g]))
+                if cur and used + w > budget:
+                    rows.append(cur); cur, used = [], 0
+                cur.append(g); used += w
+            if cur:
+                rows.append(cur)
+            g_rows = len(rows)
+            fig = plt.figure(figsize=(fig_w, 10 + 2.4 * g_rows))
+            outer = fig.add_gridspec(2 if g_rows else 1, 1, height_ratios=[10, 2.4 * g_rows] if g_rows else [1], hspace=0.16)
             inner = outer[0].subgridspec(4, 1, height_ratios=[1.1, 1.0, 1.1, 0.55], hspace=0.1)
             axes = [fig.add_subplot(inner[0])]
             axes += [fig.add_subplot(inner[i], sharex=axes[0]) for i in range(1, 4)]
             n = draw_panels(axes, sel, xs, ctx, args)
             if g_rows:
-                gg = outer[1].subgridspec(g_rows, args.gene_cols, hspace=0.75, wspace=0.18)
-                gaxes = [fig.add_subplot(gg[i // args.gene_cols, i % args.gene_cols]) for i in range(g_rows * args.gene_cols)]
-                draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon)
+                rows_gs = outer[1].subgridspec(g_rows, 1, hspace=0.9)
+                gaxes, glist = [], []
+                for r_i, row in enumerate(rows):
+                    widths = [max(7, len(sel_by_gene[g])) for g in row]
+                    widths.append(max(0.001, budget - sum(widths)))   # trailing filler keeps panel widths comparable across rows
+                    rg = rows_gs[r_i].subgridspec(1, len(row) + 1, width_ratios=widths, wspace=0.35)
+                    for j, g in enumerate(row):
+                        gaxes.append(fig.add_subplot(rg[0, j])); glist.append(g)
+                draw_gene_panels(gaxes, glist, sel_by_gene, ctx, args, find_seg, decon)
             fig.suptitle("%s  |  %s: %d targets on %s  |  genomic order%s" % (head, label, len(sel), ",".join(chroms),
                          ("; %d gene panels (exon order, DECoN calls at BF >= %.0f)" % (len(genes), args.decon_min_bf)) if g_rows else ""), fontsize=11)
         out = "%s.%s.%s%s.png" % (args.out, label, args.style, ".mirror" if args.mirror_baf else "")
