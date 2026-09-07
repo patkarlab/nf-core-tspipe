@@ -105,7 +105,7 @@ workflow TSPIPE {
         checkIfExists: true))
     // MARKER CNV_RETIRE_7B: loo_bin_noise_profile.tsv (ZSCORE_CNV), cytoBand/ClinGen
     // (CNV_ANNOTATE) and cnv_scatter_regions.txt (CNV_PLOTS) are no longer pipeline
-    // inputs; params.cnv_noise_profile, params.cytoband, params.clingen are ignored.
+    // inputs; params.cytoband and params.clingen feed CMX_ANNOT_V1 (assets/references fallback); params.cnv_noise_profile is ignored.
     // MARKER SEXSTRAT_V1: female-stratum LOO artefacts. The male file is used when the panel
     // has no _female asset (legacy panels), with one log.warn. Selection by
     // meta.sex happens inside CNVKIT, CNV_CONSENSUS_MULTI and
@@ -314,7 +314,15 @@ workflow TSPIPE {
         // MARKER CNV_BLACKLIST_V1: optional panel gene blacklist (consensus BLACKLISTED; no plot trigger)
         def gene_blacklist_path = "${projectDir}/assets/${params.panel}/cnv_gene_blacklist.tsv"
         ch_cnv_gene_blacklist = file(gene_blacklist_path).exists() ? Channel.value(file(gene_blacklist_path)) : Channel.value([])
-        CNV_CONSENSUS_MULTI( ch_consensus_in, ch_cnv_loo_summary, ch_cnv_loo_summary_female, ch_cnv_gene_blacklist )   // SEXSTRAT_V1 CNV_BLACKLIST_V1
+        // CMX_ANNOT_V1: annotation assets -- params override, assets fallback, empty list when absent
+        def cytoband_path     = params.cytoband ?: "${projectDir}/assets/references/cytoBand_hg38.txt"
+        def clingen_path      = params.clingen  ?: "${projectDir}/assets/references/ClinGen_gene_curation_list_GRCh38.tsv"
+        def driver_panel_path = params.hmf_driver_panel ?: "${projectDir}/assets/${params.panel}/hmftools/DriverGenePanel.${params.panel}.38.tsv"
+        ch_cnv_cytoband     = file(cytoband_path).exists()     ? Channel.value(file(cytoband_path))     : Channel.value([])
+        ch_cnv_clingen      = file(clingen_path).exists()      ? Channel.value(file(clingen_path))      : Channel.value([])
+        ch_cnv_driver_panel = file(driver_panel_path).exists() ? Channel.value(file(driver_panel_path)) : Channel.value([])
+        CNV_CONSENSUS_MULTI( ch_consensus_in, ch_cnv_loo_summary, ch_cnv_loo_summary_female, ch_cnv_gene_blacklist,
+                             ch_cnv_cytoband, ch_cnv_clingen, ch_cnv_driver_panel )   // SEXSTRAT_V1 CNV_BLACKLIST_V1 CMX_ANNOT_V1
         // EXON_PLOTS_V1: per-chromosome exon figures from the consensus bins (+ DECoN brackets)
         def focal_bed = "${projectDir}/assets/${params.panel}/targets.focal_cnv.bed"
         ch_focal_bed = file(focal_bed).exists() ? Channel.value(file(focal_bed)) : Channel.value([])

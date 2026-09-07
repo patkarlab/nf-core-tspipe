@@ -1,5 +1,5 @@
 /*
- * modules/local/cnv_consensus_multi.nf  (CMX_V2 arms K/G/B/P/E; PureCN PCN_V1; DECoN DECON_V1; MARKER CMX_V2_1: --sex)
+ * modules/local/cnv_consensus_multi.nf  (CMX_V2 arms K/G/B/P/E; PureCN PCN_V1; DECoN DECON_V1; MARKER CMX_V2_1: --sex; MARKER CMX_ANNOT_V1: cytoband/ClinGen/driver-panel annotation)
  *
  * Four-caller CNV consensus for the twist_myeloid panel: CNVkit
  * (segments -> gene calls derived from call.cns), Z-score (gene table
@@ -27,6 +27,9 @@ process CNV_CONSENSUS_MULTI {
         path loo_summary
         path loo_summary_female, stageAs: 'female_stratum/*'   // MARKER SEXSTRAT_V1
         path gene_blacklist   // MARKER CNV_BLACKLIST_V1 (empty list when the panel has none)
+        path cytoband         // MARKER CMX_ANNOT_V1 (empty list when absent)
+        path clingen          // MARKER CMX_ANNOT_V1 (empty list when absent)
+        path driver_panel     // MARKER CMX_ANNOT_V1 (empty list when absent)
 
     output:
         tuple val(meta), path("${meta.id}.cnv_consensus4.genes.tsv"),    emit: genes
@@ -45,9 +48,14 @@ process CNV_CONSENSUS_MULTI {
         def decon_arg = decon_genes ? "--decon-genes ${decon_genes}" : ''   // DECON_V1
         def blacklist_arg = gene_blacklist ? "--gene-blacklist ${gene_blacklist}" : ''   // CNV_BLACKLIST_V1
         def purple_arg = (purple_genes && purple_summary) ? "--purple-genes ${purple_genes} --purple-summary ${purple_summary}" : ''   // HMF_PURPLE_V1
+        def annot_arg = [
+            cytoband     ? "--cytoband ${cytoband}"         : '',
+            clingen      ? "--clingen ${clingen}"           : '',
+            driver_panel ? "--driver-panel ${driver_panel}" : '',
+        ].findAll().join(' ')   // CMX_ANNOT_V1
         """
         echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
-        # consensus rule version: CMX_V2_4; inputs CNV_RETIRE_7B (bash comment; busts the task cache)
+        # consensus rule version: CMX_V2_4; inputs CNV_RETIRE_7B; annotation CMX_ANNOT_V1 (bash comment; busts the task cache)
         cnv_consensus_multi.py \\
             --sample ${meta.id} \\
             --sex ${meta.sex ?: 'unknown'} \\
@@ -64,6 +72,7 @@ process CNV_CONSENSUS_MULTI {
             ${decon_arg} \\
             ${blacklist_arg} \\
             ${purple_arg} \\
+            ${annot_arg} \\
             --out-prefix ${meta.id}.cnv_consensus4
         """
 }

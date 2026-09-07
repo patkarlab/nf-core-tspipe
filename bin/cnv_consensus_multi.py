@@ -2,6 +2,8 @@
 """Multi-arm CNV consensus + Phase-4 JSON payload (CMX_V2).
 
 MARKER CMX_V2_1 (expected chrX/chrY copy number by --sex)
+MARKER CMX_ANNOT_V1 (cytoband, ClinGen HI/TS and hmftools driver-panel role
+columns appended to genes.tsv; --cytoband/--clingen/--driver-panel optional)
 MARKER CMX_V2: Z-score is no longer an arm; the legacy concordance table still rides
 through into the JSON (legacy: {...}) for reference only.
 
@@ -213,6 +215,111 @@ def safe_float(value):
         return None
 
 
+def strip_chr(chrom):
+    """CMX_ANNOT_V1: 'chr17' -> '17'; other names unchanged."""
+    c = str(chrom).strip()
+    return c[3:] if c.lower().startswith("chr") else c
+
+
+def read_cytobands(path):
+    """CMX_ANNOT_V1: UCSC cytoBand.txt -> {chrom_no_prefix: [(start, end, band)]}."""
+    bands = {}
+    if not path:
+        return bands
+    with open(path) as fh:
+        for line in fh:
+            f = line.rstrip("\n").split("\t")
+            if len(f) < 4 or f[0].startswith("#"):
+                continue
+            bands.setdefault(strip_chr(f[0]), []).append((int(f[1]), int(f[2]), f[3]))
+    for v in bands.values():
+        v.sort()
+    return bands
+
+
+def read_clingen(path):
+    """CMX_ANNOT_V1: ClinGen gene curation list -> {gene: (hi_score, ts_score)}.
+
+    The file carries several leading '#' comment lines; the header line
+    itself starts with '#Gene Symbol'.
+    """
+    out = {}
+    if not path:
+        return out
+    hdr = None
+    with open(path) as fh:
+        for line in fh:
+            line = line.rstrip("\r\n")
+            if hdr is None:
+                if line.startswith("#Gene Symbol") or line.startswith("Gene Symbol"):
+                    hdr = line.lstrip("#").split("\t")
+                continue
+            if not line or line.startswith("#"):
+                continue
+            r = dict(zip(hdr, line.split("\t")))
+            g = r.get("Gene Symbol", "").strip()
+            if g:
+                out[g] = (r.get("Haploinsufficiency Score", "").strip() or "NA",
+                          r.get("Triplosensitivity Score", "").strip() or "NA")
+    return out
+
+
+def read_driver_panel(path):
+    """CMX_ANNOT_V1: hmftools DriverGenePanel TSV -> {gene: {column: value}}."""
+    out = {}
+    if not path:
+        return out
+    hdr = None
+    with open(path) as fh:
+        for line in fh:
+            line = line.rstrip("\r\n")
+            if not line:
+                continue
+            f = line.split("\t")
+            if hdr is None:
+                hdr = f
+                continue
+            r = dict(zip(hdr, f))
+            g = r.get("gene", "").strip()
+            if g:
+                out[g] = r
+    return out
+
+
+def gene_cytoband(bands, chrom, start, end):
+    """CMX_ANNOT_V1: band(s) overlapping [start, end); first-last when several."""
+    c = strip_chr(chrom)
+    hits = [b for (s, e, b) in bands.get(c, []) if s < end and e > start]
+    if not hits:
+        return "NA"
+    if len(hits) == 1:
+        return c + hits[0]
+    return "%s%s-%s" % (c, hits[0], hits[-1])
+
+
+def annotate_gene(g, bands, clingen, drivers):
+    """CMX_ANNOT_V1: annotation columns for one consensus gene row."""
+    hi, ts = clingen.get(g["gene"], ("NA", "NA"))
+    d = drivers.get(g["gene"], {})
+
+    def tf(key):
+        v = str(d.get(key, "")).strip().upper()
+        return v if v in ("TRUE", "FALSE") else "NA"
+
+    role = (d.get("likelihoodType") or "").strip() if d else ""
+    amp = tf("reportAmplification")
+    ratio = (d.get("amplificationRatio") or "").strip() if (d and amp == "TRUE") else ""
+    return {
+        "cytoband": gene_cytoband(bands, g["chrom"], int(g["start"]), int(g["end"])),
+        "clingen_hi": hi,
+        "clingen_ts": ts,
+        "driver_role": role or "NA",
+        "driver_report_del": tf("reportDeletion"),
+        "driver_report_amp": amp,
+        "driver_amp_ratio": ratio or "NA",
+    }
+
+
 def read_gene_blacklist(path):
     """CNV_BLACKLIST_V1: gene symbols from a TSV with a 'gene' column (or first column); empty if no file."""
     genes = set()
@@ -258,6 +365,9 @@ def main():
                     help="TSV of genes never called (consensus BLACKLISTED); optional (CNV_BLACKLIST_V1)")
     ap.add_argument("--purple-genes", default=None, help="PURPLE arm H gene table (HMF_PURPLE_V1); optional")
     ap.add_argument("--purple-summary", default=None, help="PURPLE arm H summary (HMF_PURPLE_V1); optional")
+    ap.add_argument("--cytoband", default=None, help="UCSC cytoBand.txt (CMX_ANNOT_V1); optional")
+    ap.add_argument("--clingen", default=None, help="ClinGen gene curation list, GRCh38 (CMX_ANNOT_V1); optional")
+    ap.add_argument("--driver-panel", default=None, help="hmftools DriverGenePanel TSV (CMX_ANNOT_V1); optional")
     args = ap.parse_args()
 
     for p in [args.cnr, args.call_cns, args.gatk_genes,
@@ -330,6 +440,9 @@ def main():
 
     # ---- MARKER CNV_BLACKLIST_V1: panel gene blacklist
     blacklist = read_gene_blacklist(args.gene_blacklist)
+    cytobands = read_cytobands(args.cytoband)   # CMX_ANNOT_V1
+    clingen = read_clingen(args.clingen)   # CMX_ANNOT_V1
+    drivers = read_driver_panel(args.driver_panel)   # CMX_ANNOT_V1
     if blacklist:
         print("[ok] gene blacklist: {0} gene(s)".format(len(blacklist)))
 
@@ -481,6 +594,7 @@ def main():
             "allelic_state": allelic,
             "legacy": lg,
         })
+        g.update(annotate_gene(g, cytobands, clingen, drivers))   # CMX_ANNOT_V1
 
     # ---- segment intersection
     intersect = []
@@ -509,6 +623,8 @@ def main():
         "p_call", "p_C", "p_loh", "e_call", "e_bf",
         "h_call", "h_cn_min", "h_cn_max", "h_macn_min", "h_loh", "support",
         "flags", "consensus_call", "tier", "loo_fp_any", "allelic_state",
+        "cytoband", "clingen_hi", "clingen_ts",   # CMX_ANNOT_V1
+        "driver_role", "driver_report_del", "driver_report_amp", "driver_amp_ratio",
     ]
     with open(args.out_prefix + ".genes.tsv", "w") as out:
         out.write("\t".join(gene_cols) + "\n")
