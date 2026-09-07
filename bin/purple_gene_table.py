@@ -19,6 +19,7 @@ FAILED so the DAG and the consensus join survive. Python 3.6, stdlib only.
 
 import argparse
 import csv
+import os
 import sys
 
 
@@ -26,6 +27,17 @@ def read_one_row(path):
     with open(path) as fh:
         rows = list(csv.DictReader(fh, delimiter="\t"))
     return rows[0] if rows else {}
+
+
+def read_key_value(path):
+    """MARKER HMF_PURPLE_V1c: <id>.purple.qc is key<TAB>value per line (QCStatus, Method, ...)."""
+    out = {}
+    with open(path) as fh:
+        for line in fh:
+            p = line.rstrip("\n").split("\t")
+            if len(p) >= 2:
+                out[p[0].strip()] = p[1].strip()
+    return out
 
 
 def expected_cn(chrom, sex):
@@ -65,12 +77,12 @@ def main():
         return 0
     try:
         pur = read_one_row(args.purity)
-        qc = read_one_row(args.qc) if args.qc else {}
+        qc = read_key_value(args.qc) if args.qc and os.path.isfile(args.qc) else {}
     except (OSError, IndexError) as exc:
         write_sentinel(args, "unreadable_purity: %s" % exc)
         return 0
-    status = pur.get("status") or qc.get("QCStatus") or "UNKNOWN"
-    method = qc.get("Method", pur.get("fitMethod", "NA"))
+    status = qc.get("QCStatus") or pur.get("status") or "UNKNOWN"
+    method = qc.get("Method") or pur.get("fitMethod") or pur.get("status") or "NA"
     gender = (pur.get("gender") or "").strip().upper()
     if gender not in ("MALE", "FEMALE"):
         gender = args.sex.upper() if args.sex.lower() in ("male", "female") else "UNKNOWN"

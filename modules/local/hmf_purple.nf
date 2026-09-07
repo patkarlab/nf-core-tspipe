@@ -1,5 +1,5 @@
 /*
- * modules/local/hmf_purple.nf  (HMF_PURPLE_V1; MARKER HMF_PURPLE_V1a: PURPLE 4.4 option names)
+\1; MARKER HMF_PURPLE_V1c: .purple.qc)
  *
  * PURPLE tumour-only, targeted: purity/ploidy fit from AMBER BAF and COBALT
  * ratios, absolute and allele-specific copy number per segment and gene,
@@ -58,7 +58,7 @@ process HMF_PURPLE {
         else
             purple_gene_table.py --sample ${meta.id} --sex ${sex} \\
                 --purity purple/${meta.id}.purple.purity.tsv \\
-                --qc purple/${meta.id}.purple.purity.qc \\
+                --qc purple/${meta.id}.purple.qc \\
                 --genes purple/${meta.id}.purple.cnv.gene.tsv \\
                 --out-genes ${meta.id}.purple.h_genes.tsv --out-summary ${meta.id}.purple.h_summary.tsv
         fi
