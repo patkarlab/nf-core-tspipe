@@ -62,7 +62,8 @@ process DECON {
 
         python3 ${projectDir}/bin/filter_decon_calls.py \\
             --calls ${meta.id}.decon_all.txt --exons ${paralog_exons} \\
-            --bf ${params.decon_bf} --out ${meta.id}.decon_filtered.tsv
+            --bf ${params.decon_bf} --del-multi-bf ${params.decon_del_multi_bf} \\
+            --out ${meta.id}.decon_filtered.tsv   // MARKER DECON_V1b
 
         python3 ${projectDir}/bin/decon_gene_table.py \\
             --sample ${meta.id} --filtered ${meta.id}.decon_filtered.tsv \\

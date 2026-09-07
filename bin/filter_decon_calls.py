@@ -130,13 +130,19 @@ def variants_in_call(variants_by_chrom, chrom, start, end, flank):
     return hits
 
 
-def classify(bf, n_exons, exon_hits, variant_hits, args):
+def classify(bf, n_exons, exon_hits, variant_hits, args, cnv_type=""):
     flags = sorted(set(e["flag"] for e in exon_hits if e["flag"] != "OK"))
     min_depth = min((e["depth"] for e in exon_hits), default=float("nan"))
 
-    if bf < args.bf:
+    # MARKER DECON_V1b: multi-exon deletions may report at a lower BF (no multi-exon
+    # call of any kind in 31 normals' LOO; real Delta-exon deletions sat at 9.9-10.6)
+    multi_del = n_exons > 1 and cnv_type.lower().startswith("del") and args.del_multi_bf >= 0
+    threshold = args.del_multi_bf if multi_del else args.bf
+    if bf < threshold:
         return "BELOW_BF", False, flags, min_depth
     if n_exons > 1:
+        if multi_del and bf < args.bf:
+            return "PASS_MULTIDEL", True, flags, min_depth
         return "PASS", True, flags, min_depth
     if "PARALOG_LIMITED" in flags:
         return "PARALOG_EXON", False, flags, min_depth
@@ -161,6 +167,8 @@ def main():
                         "'/outdir/{sample}/clinical/{sample}.somaticseq.filtered.tsv'")
     p.add_argument("--out", required=True)
     p.add_argument("--bf", type=float, default=12.0, help="reporting threshold (default 12)")
+    p.add_argument("--del-multi-bf", type=float, default=8.0,
+                   help="BF at which deletions of >= 2 exons are reportable (default 8; -1 disables)")
     p.add_argument("--low-power-depth", type=float, default=300.0,
                    help="exon median MAPQ>=20 depth below this = LOW_POWER_EXON (default 300)")
     p.add_argument("--low-power-bf", type=float, default=20.0,
@@ -227,7 +235,8 @@ def main():
             vtab = variants_for(sample)
             variant_hits = variants_in_call(vtab, chrom, start, end, args.variant_flank) if vtab else []
 
-            decision, reportable, flags, min_depth = classify(bf, n_ex, exon_hits, variant_hits, args)
+            decision, reportable, flags, min_depth = classify(bf, n_ex, exon_hits, variant_hits, args,
+                                                              cnv_type=row.get("CNV.type", ""))
             counts[decision] += 1
             if reportable:
                 reportable_rows.append((sample, row["Gene"], row["CNV.type"], n_ex, bf, decision))
@@ -245,7 +254,7 @@ def main():
 
     log("done", "wrote {}".format(args.out))
     log("summary", "  ".join("{}={}".format(k, counts[k]) for k in
-                             ["PASS", "BELOW_BF", "LOW_POWER_EXON", "PARALOG_EXON", "PROBE_VARIANT"]))
+                             ["PASS", "PASS_MULTIDEL", "BELOW_BF", "LOW_POWER_EXON", "PARALOG_EXON", "PROBE_VARIANT"]))
     log("summary", "reportable calls: {}".format(len(reportable_rows)))
     for sample, gene, cnvtype, n_ex, bf, decision in sorted(reportable_rows, key=lambda x: -x[4]):
         log("report", "{:<22s} {:<26s} {:<12s} exons={:<3d} BF={:<6.1f} {}".format(
