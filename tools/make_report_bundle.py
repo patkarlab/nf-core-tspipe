@@ -309,6 +309,10 @@ def bundle_one_sample(
 
         # Copy cnvkit_plots and assets as whole subtrees
         shutil.copytree(cnvkit_plots, staging / "cnvkit_plots")
+        # MARKER DASH_CNV_V1a: v2 CNV tree (consensus, exon plots, chromosome pages, DECoN, PURPLE, sex check)
+        cnv_v2 = clinical / "cnv"
+        if cnv_v2.is_dir():
+            shutil.copytree(cnv_v2, staging / "cnv")
         shutil.copytree(assets, staging / "assets")
 
         # Rewrite and write the entry-point HTML
