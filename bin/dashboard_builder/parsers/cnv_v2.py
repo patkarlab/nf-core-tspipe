@@ -27,9 +27,12 @@ import re
 from pathlib import Path
 
 TIER_ORDER = {"TIER_1": 0, "TIER_2": 1, "REVIEW": 2, "TIER_3": 3}
-CONSENSUS_COLUMNS = ["gene", "chrom", "start", "end", "consensus_call", "tier", "flags",
+# MARKER DASH_ANNOT_V1: cytoband beside gene; driver_role, clingen_hi, clingen_ts at the tail
+# (CMX_ANNOT_V1 columns; blank on pre-annotation TSVs because rows use r.get(c, ""))
+CONSENSUS_COLUMNS = ["gene", "cytoband", "chrom", "start", "end", "consensus_call", "tier", "flags",
                      "k_call", "k_cn", "k_log2", "g_call", "g_seg_log2", "b_call", "p_call", "p_C",
-                     "e_call", "e_bf", "h_call", "h_cn_min", "h_cn_max", "h_loh", "loo_fp_any"]
+                     "e_call", "e_bf", "h_call", "h_cn_min", "h_cn_max", "h_loh", "loo_fp_any",
+                     "driver_role", "clingen_hi", "clingen_ts"]
 DECON_COLUMNS = ["Gene", "CNV.type", "N.exons", "Chromosome", "Start", "End", "BF", "Reads.ratio", "decision", "reportable", "exon_flags"]
 
 
