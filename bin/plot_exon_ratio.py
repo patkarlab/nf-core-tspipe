@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-bin/plot_exon_ratio.py  (EXONPLOT_V1.2; importable renderer + CLI)
+bin/plot_exon_ratio.py  (EXONPLOT_V1.3; rows wrapped at gene boundaries)
 
 Per-exon CNVkit copy-ratio plot for a set of genes, in genomic order: one
 point per CNVkit bin (log2 vs the sex-matched PoN), dashed guide per bin,
@@ -86,25 +86,13 @@ def read_decon_calls(path):
 
 
 
-def render(bins, want, out, decon_calls=None, sample="", ymax=3.0, weight_floor=0.5):
-    """Draw the per-exon plot for the genes in `want` (any order) from a list of
-    (chrom, start, end, name, log2, depth, weight) bins. Returns (n_bins, missing_genes)."""
-    sel = [b for b in bins if bin_gene(b[3]) in want]
-    if not sel:
-        return 0, list(want)
-    sel.sort(key=lambda b: (CHROM_ORDER.get(b[0], 99), b[1]))
-    present = set(bin_gene(b[3]) for b in sel)
-    missing = [g for g in want if g not in present]
-
+def _draw_row(ax, sel, want, decon_calls, ymax, weight_floor, width=None):
+    """One row of exons (a subset of the selected bins in order)."""
     xs = list(range(len(sel)))
     ys = [max(-ymax, min(ymax, b[4])) for b in sel]
     genes = [bin_gene(b[3]) for b in sel]
     labels = [b[3] for b in sel]
     weights = [b[6] for b in sel]
-    have_w = any(w is not None for w in weights)
-
-    fig_w = max(10.0, 0.22 * len(sel) + 2.5)
-    fig, ax = plt.subplots(figsize=(fig_w, 4.6))
     for x in xs:
         ax.axvline(x, color="0.75", lw=0.6, ls="--", zorder=1)
     for y in (0.5, -0.5):
@@ -112,13 +100,11 @@ def render(bins, want, out, decon_calls=None, sample="", ymax=3.0, weight_floor=
     for y in (1.0, -1.0):
         ax.axhline(y, color="red", lw=0.6, ls=":", zorder=2)
     ax.axhline(0, color="black", lw=1.0, zorder=2)
-
     for x, y, w in zip(xs, ys, weights):
         size = 42 if w is None else 12 + 40 * max(0.0, min(1.0, w)) ** 2
         hollow = w is not None and w < weight_floor
         ax.scatter([x], [y], s=size, facecolors="none" if hollow else "0.55",
                    edgecolors="0.35", linewidths=0.8, zorder=4)
-
     ymin = -ymax - 0.55
     i = 0
     while i < len(sel):
@@ -130,7 +116,6 @@ def render(bins, want, out, decon_calls=None, sample="", ymax=3.0, weight_floor=
         if i > 0:
             ax.axvline(i - 0.5, color="0.2", lw=0.8, zorder=3)
         i = j + 1
-
     if decon_calls:
         merged = {}
         for c in decon_calls:
@@ -151,18 +136,57 @@ def render(bins, want, out, decon_calls=None, sample="", ymax=3.0, weight_floor=
                 c["type"], c["bf"], c["ratio"], (" " + c["decision"]) if c["decision"] else ""),
                 ha="center", va="bottom", fontsize=7, color=colour, zorder=6)
             drawn += 1
-
-    ax.set_xlim(-0.6, len(sel) - 0.4)
+    ax.set_xlim(-0.6, (width or len(sel)) - 0.4)
     ax.set_ylim(ymin, ymax + 0.6)
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, rotation=90, fontsize=6)
     ax.set_ylabel("Copy ratio (log2)")
+
+
+def _rows_by_gene(sel, max_per_row):
+    """Split the ordered bins into rows of at most max_per_row, never inside a gene
+    (a gene longer than the limit gets a row of its own)."""
+    rows, cur = [], []
+    i = 0
+    while i < len(sel):
+        j = i
+        while j + 1 < len(sel) and bin_gene(sel[j + 1][3]) == bin_gene(sel[i][3]):
+            j += 1
+        gene_bins = sel[i:j + 1]
+        if cur and len(cur) + len(gene_bins) > max_per_row:
+            rows.append(cur); cur = []
+        cur.extend(gene_bins)
+        i = j + 1
+    if cur:
+        rows.append(cur)
+    return rows
+
+
+def render(bins, want, out, decon_calls=None, sample="", ymax=3.0, weight_floor=0.5, max_per_row=120):
+    """Draw the per-exon plot for the genes in `want` (any order) from a list of
+    (chrom, start, end, name, log2, depth, weight) bins, wrapped into rows of at
+    most max_per_row exons at gene boundaries (EXONPLOT_V1.3). Returns (n_bins, missing_genes)."""
+    sel = [b for b in bins if bin_gene(b[3]) in want]
+    if not sel:
+        return 0, list(want)
+    sel.sort(key=lambda b: (CHROM_ORDER.get(b[0], 99), b[1]))
+    present = set(bin_gene(b[3]) for b in sel)
+    missing = [g for g in want if g not in present]
+    have_w = any(b[6] is not None for b in sel)
+
+    rows = _rows_by_gene(sel, max_per_row)
+    widest = max(len(r) for r in rows)
+    fig_w = max(10.0, 0.22 * widest + 2.5)
+    fig, axes = plt.subplots(len(rows), 1, figsize=(fig_w, 4.6 * len(rows)), squeeze=False)
+    for ax, row in zip(axes[:, 0], rows):
+        _draw_row(ax, row, want, decon_calls, ymax, weight_floor, width=widest)
     chroms = sorted(set(b[0] for b in sel), key=lambda c: CHROM_ORDER.get(c, 99))
     shown = [g for g in want if g in present]
-    ax.set_title("%s%s: %s" % ((sample + "  ") if sample else "", ",".join(chroms), " ".join(shown)), fontsize=10)
+    axes[0, 0].set_title("%s%s: %s%s" % ((sample + "  ") if sample else "", ",".join(chroms), " ".join(shown),
+                                          ("  (%d rows)" % len(rows)) if len(rows) > 1 else ""), fontsize=10)
     if have_w:
-        ax.text(0.995, 0.02, "point size = bin weight; hollow = weight < %.2f" % weight_floor,
-                transform=ax.transAxes, ha="right", va="bottom", fontsize=6, color="0.4")
+        axes[-1, 0].text(0.995, 0.02, "point size = bin weight; hollow = weight < %.2f" % weight_floor,
+                         transform=axes[-1, 0].transAxes, ha="right", va="bottom", fontsize=6, color="0.4")
     fig.tight_layout()
     fig.savefig(out, dpi=150)
     plt.close(fig)

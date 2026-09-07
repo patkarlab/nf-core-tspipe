@@ -1,5 +1,5 @@
 /*
- * modules/local/chrom_pages.nf  (CHROM_PAGES_V1)
+ * modules/local/chrom_pages.nf  (CHROM_PAGES_V1; MARKER VIZ_V1b: genome overview)
  *
  * Per-sample, per-chromosome CNV pages in target space (bin/plot_targets_trio.py):
  * depth per exon/backbone/SNP window (TITAN colours), BAF from the v2-catalog
@@ -52,5 +52,9 @@ process CHROM_PAGES {
             --decon-min-bf ${params.exon_plot_min_bf} \\
             --out chrom_pages/${meta.id} \\
             --index chrom_pages/${meta.id}.chrom_pages.tsv
+
+            # genome overview with arm medians (VIZ_V1b)
+            plot_genome_overview.py --sample ${meta.id} --consensus-json ${consensus_json} --allelic ${allelic} \\
+                ${purple_arg} --out chrom_pages/${meta.id}.genome.png
         """
 }
