@@ -112,7 +112,7 @@ def patch_nf(t):
     defs = "\n".join("        def %s_arg = %s ? \"--%s ${%s}\" : ''" % (v, v, a, v) for v, a in opts)
     t, n = sub_once(t, r'^(?P<i>[ \t]*)script:[ \t]*\n', lambda m: m.group(0) + "        // %s: optional v2 CNV args\n%s\n" % (TAG, defs), "script: optional arg definitions")
     notes.append(n)
-    rx = re.compile(r'^(?P<i>[ \t]*)--cnvkit-plots-dir \$\{cnvkit_plots_dir\}(?P<tail>[ \t]*\\\\)?[ \t]*$', re.M)
+    rx = re.compile(r'^(?P<i>[ \t]*)--cnvkit-plots-dir[ \t]+\$\{cnvkit_plots_dir\}(?P<tail>[ \t]*\\\\)?[ \t]*$', re.M)
     m_all = rx.findall(t)
     if len(m_all) != 1:
         raise ValueError("anchor --cnvkit-plots-dir line: %d matches" % len(m_all))
@@ -120,9 +120,9 @@ def patch_nf(t):
     ind = m.group("i")
     extra = " \\\\\n".join("%s${%s_arg}" % (ind, v) for v, _ in opts)
     if m.group("tail"):
-        repl = "%s--cnvkit-plots-dir ${cnvkit_plots_dir} \\\\\n%s \\\\" % (ind, extra)
+        repl = "%s--cnvkit-plots-dir    ${cnvkit_plots_dir} \\\\\n%s \\\\" % (ind, extra)
     else:
-        repl = "%s--cnvkit-plots-dir ${cnvkit_plots_dir} \\\\\n%s" % (ind, extra)
+        repl = "%s--cnvkit-plots-dir    ${cnvkit_plots_dir} \\\\\n%s" % (ind, extra)
     t = t[:m.start()] + repl + t[m.end():]
     notes.append("[ok] script: args appended after --cnvkit-plots-dir")
     return t, notes

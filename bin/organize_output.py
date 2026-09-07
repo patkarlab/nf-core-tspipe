@@ -132,6 +132,17 @@ def main():
     parser.add_argument("--cnvkit-diagram-pdf", required=True)
     parser.add_argument("--cnvkit-scatter-png", required=True)
     parser.add_argument("--cnvkit-plots-dir", required=True)
+    parser.add_argument("--cnv-consensus-genes", default=None, help="CMX consensus per-gene table (optional; ORG_CNV_V1)")
+    parser.add_argument("--cnv-consensus-segments", default=None, help="CMX consensus segment intersection (optional; ORG_CNV_V1)")
+    parser.add_argument("--cnv-consensus-json", default=None, help="CMX consensus JSON (tracks for figures) (optional; ORG_CNV_V1)")
+    parser.add_argument("--exon-plots-dir", default=None, help="EXON_PLOTS directory (per-chromosome exon figures + index) (optional; ORG_CNV_V1)")
+    parser.add_argument("--chrom-pages-dir", default=None, help="CHROM_PAGES directory (per-chromosome pages + index) (optional; ORG_CNV_V1)")
+    parser.add_argument("--decon-filtered", default=None, help="DECoN filtered calls (optional; ORG_CNV_V1)")
+    parser.add_argument("--decon-genes", default=None, help="DECoN per-gene table (arm E contract) (optional; ORG_CNV_V1)")
+    parser.add_argument("--purple-summary", default=None, help="PURPLE arm H summary (optional; ORG_CNV_V1)")
+    parser.add_argument("--purple-genes", default=None, help="PURPLE arm H gene table (optional; ORG_CNV_V1)")
+    parser.add_argument("--purple-dir", default=None, help="PURPLE output directory (optional; ORG_CNV_V1)")
+    parser.add_argument("--sex-check", default=None, help="SEX_CHECK table (optional; ORG_CNV_V1)")
     # Optional inputs (may be sentinels)
     parser.add_argument("--u2af1-report", required=True,
                         help="Optional; sentinel allowed")
@@ -213,6 +224,35 @@ def main():
         subsrc = Path(args.cnvkit_plots_dir) / sub
         if subsrc.exists():
             hardlink_dir(subsrc, plot_dst / sub, "CNVkit " + sub + " plots")
+
+    # --- CNV v2 (MARKER ORG_CNV_V1): consensus, exon plots, chromosome pages, DECoN, PURPLE, sex check ---
+    logger.info("--- CNV v2 ---")
+    cnv2 = out / "cnv"
+
+    def present(p):
+        return bool(p) and Path(p).exists() and not is_sentinel(Path(p))
+
+    for src, sub, desc in (
+            (args.cnv_consensus_genes,    "consensus", "CMX consensus per-gene table"),
+            (args.cnv_consensus_segments, "consensus", "CMX consensus segments"),
+            (args.cnv_consensus_json,     "consensus", "CMX consensus JSON"),
+            (args.decon_filtered,         "decon",     "DECoN filtered calls"),
+            (args.decon_genes,            "decon",     "DECoN per-gene table"),
+            (args.purple_summary,         "purple",    "PURPLE arm H summary"),
+            (args.purple_genes,           "purple",    "PURPLE arm H gene table"),
+            (args.sex_check,              "sex_check", "SEX_CHECK table")):
+        if present(src):
+            hardlink(src, cnv2 / sub / Path(src).name, desc)
+        else:
+            logger.info("skip (absent): %s", desc)
+    for src, sub, desc in (
+            (args.exon_plots_dir,  "exon_plots",  "exon figures"),
+            (args.chrom_pages_dir, "chrom_pages", "chromosome pages"),
+            (args.purple_dir,      "purple",      "PURPLE outputs")):
+        if src and Path(src).is_dir():
+            hardlink_dir(Path(src), cnv2 / sub, "CNV v2 " + desc)
+        else:
+            logger.info("skip (absent): %s", desc)
 
     # --- Summary ---
     total_bytes, unique_files = disk_usage_dedup(out)

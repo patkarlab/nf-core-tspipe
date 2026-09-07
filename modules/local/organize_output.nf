@@ -22,13 +22,30 @@ process ORGANIZE_OUTPUT {
               path(cnv_annotated_tsv),
               path(cnvkit_diagram),
               path(cnvkit_scatter),
-              path(cnvkit_plots_dir)
+              path(cnvkit_plots_dir),
+              path(cnv_consensus_genes), path(cnv_consensus_segments), path(cnv_consensus_json),   // MARKER ORG_CNV_V1
+              path(exon_plots_dir), path(chrom_pages_dir),
+              path(decon_filtered), path(decon_genes),
+              path(purple_summary), path(purple_genes), path(purple_dir),
+              path(sex_check)
 
     output:
         tuple val(meta), path("clinical/"), emit: clinical
         path  "versions.yml",                emit: versions
 
     script:
+        // ORG_CNV_V1: optional v2 CNV args
+        def cnv_consensus_genes_arg = cnv_consensus_genes ? "--cnv-consensus-genes ${cnv_consensus_genes}" : ''
+        def cnv_consensus_segments_arg = cnv_consensus_segments ? "--cnv-consensus-segments ${cnv_consensus_segments}" : ''
+        def cnv_consensus_json_arg = cnv_consensus_json ? "--cnv-consensus-json ${cnv_consensus_json}" : ''
+        def exon_plots_dir_arg = exon_plots_dir ? "--exon-plots-dir ${exon_plots_dir}" : ''
+        def chrom_pages_dir_arg = chrom_pages_dir ? "--chrom-pages-dir ${chrom_pages_dir}" : ''
+        def decon_filtered_arg = decon_filtered ? "--decon-filtered ${decon_filtered}" : ''
+        def decon_genes_arg = decon_genes ? "--decon-genes ${decon_genes}" : ''
+        def purple_summary_arg = purple_summary ? "--purple-summary ${purple_summary}" : ''
+        def purple_genes_arg = purple_genes ? "--purple-genes ${purple_genes}" : ''
+        def purple_dir_arg = purple_dir ? "--purple-dir ${purple_dir}" : ''
+        def sex_check_arg = sex_check ? "--sex-check ${sex_check}" : ''
         """
         organize_output.py \\
             --sample              ${meta.id} \\
@@ -49,7 +66,18 @@ process ORGANIZE_OUTPUT {
             --cnv-annotated-tsv   ${cnv_annotated_tsv} \\
             --cnvkit-diagram-pdf  ${cnvkit_diagram} \\
             --cnvkit-scatter-png  ${cnvkit_scatter} \\
-            --cnvkit-plots-dir    ${cnvkit_plots_dir}
+            --cnvkit-plots-dir    ${cnvkit_plots_dir} \\
+            ${cnv_consensus_genes_arg} \\
+            ${cnv_consensus_segments_arg} \\
+            ${cnv_consensus_json_arg} \\
+            ${exon_plots_dir_arg} \\
+            ${chrom_pages_dir_arg} \\
+            ${decon_filtered_arg} \\
+            ${decon_genes_arg} \\
+            ${purple_summary_arg} \\
+            ${purple_genes_arg} \\
+            ${purple_dir_arg} \\
+            ${sex_check_arg}
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
