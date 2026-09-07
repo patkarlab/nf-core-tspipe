@@ -78,9 +78,11 @@ def main():
         else:
             role = roles.get(g, "TSG")
             row = dict(templates[role]); row["gene"] = g
-            for col in header:
-                if col.startswith("reportGermline") or col in ("additionalReportedTranscripts",):
-                    row[col] = "NONE" if col in ("reportGermlineVariant", "reportGermlineHotspot") else ("FALSE" if row[col] in ("TRUE", "FALSE") else "")
+            for col in header:   # MARKER HMF_PURPLE_V1b: germline reporting columns are enums; never empty
+                if col.startswith("reportGermline"):
+                    row[col] = "FALSE" if row[col] in ("TRUE", "FALSE") else "NONE"
+                elif col == "additionalReportedTranscripts":
+                    row[col] = ""
             out_rows.append(row); prov.append((g, "template_" + role, role))
 
     with open(args.out, "w") as out:

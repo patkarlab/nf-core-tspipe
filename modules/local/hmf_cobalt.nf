@@ -20,6 +20,7 @@ process HMF_COBALT {
     output:
         tuple val(meta), path("cobalt"),                                  emit: dir
         tuple val(meta), path("cobalt/${meta.id}.cobalt.ratio.tsv.gz"),  emit: ratio
+        tuple val(meta), path("${meta.id}.cobalt.log"),              emit: log, optional: true   // MARKER HMF_PURPLE_V1b
 
     stub:
         """

@@ -26,6 +26,7 @@ process HMF_PURPLE {
         tuple val(meta), path("purple"),                              emit: dir,     optional: true
         tuple val(meta), path("${meta.id}.purple.h_genes.tsv"),       emit: genes
         tuple val(meta), path("${meta.id}.purple.h_summary.tsv"),     emit: summary
+        tuple val(meta), path("${meta.id}.purple.log"),              emit: log, optional: true   // MARKER HMF_PURPLE_V1b
 
     stub:
         """

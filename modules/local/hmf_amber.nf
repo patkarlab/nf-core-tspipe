@@ -21,6 +21,7 @@ process HMF_AMBER {
         tuple val(meta), path("amber"),                                emit: dir
         tuple val(meta), path("amber/${meta.id}.amber.baf.tsv.gz"),    emit: baf
         tuple val(meta), path("amber/${meta.id}.amber.qc"),            emit: qc
+        tuple val(meta), path("${meta.id}.amber.log"),              emit: log, optional: true   // MARKER HMF_PURPLE_V1b
 
     stub:
         """
