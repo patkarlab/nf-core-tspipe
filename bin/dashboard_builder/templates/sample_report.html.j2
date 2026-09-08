@@ -354,7 +354,7 @@
 
         {% if ctx.cnv.decon_table and ctx.cnv.decon_table.rows %}
           <h5 class="mt-4">DECoN exon-level calls</h5>
-          {# DASH_DECON_V1: BF explanation and column key #}
+          {# DASH_DECON_V1: BF explanation and column key; DASH_DECON_V1b: vocabulary corrected #}
           <p class="text-muted small mb-2">
             Exon-level calls from DECoN, listed at Bayes factor (BF) &ge; 5; sub-threshold calls carry
             decision BELOW_BF. BF is on a log10 scale, so BF 5 is about 100,000:1 evidence for a copy-number
@@ -370,9 +370,9 @@
                 <tr><td class="text-nowrap"><code>Chromosome, Start, End</code></td><td>span of the called exons (hg38)</td></tr>
                 <tr><td class="text-nowrap"><code>BF</code></td><td>Bayes factor, log10 scale: the evidence for a copy-number change over no change, from the sample's exon read depth against the sex-matched pool of normals. BF 5 is roughly 100,000:1; larger is stronger. Calls with BF &ge; 5 are listed; a call enters the consensus as arm E only at BF &ge; 8 for multi-exon deletions and BF &ge; 12 for single-exon calls</td></tr>
                 <tr><td class="text-nowrap"><code>Reads.ratio</code></td><td>observed / expected read depth over the called exons: about 0.5 for a heterozygous deletion, about 0 for a homozygous deletion, about 1.5 for a single-copy gain</td></tr>
-                <tr><td class="text-nowrap"><code>decision</code></td><td>how the call was classified: PASS, BELOW_BF (BF under the reporting threshold), or a flag naming why it is not reportable</td></tr>
-                <tr><td class="text-nowrap"><code>reportable</code></td><td>TRUE when the call meets the BF threshold and carries no disqualifying flag</td></tr>
-                <tr><td class="text-nowrap"><code>exon_flags</code></td><td>per-exon caveats such as PROBE_VARIANT (a variant under a probe can mimic a deletion), RECURRENT_IN_NORMALS or LOW_POWER</td></tr>
+                <tr><td class="text-nowrap"><code>decision</code></td><td>PASS: single-exon call at BF &ge; 12; PASS_MULTIDEL: multi-exon deletion at BF &ge; 8; BELOW_BF: listed for context only, under the reporting threshold</td></tr>
+                <tr><td class="text-nowrap"><code>reportable</code></td><td>yes when decision is PASS or PASS_MULTIDEL, otherwise no</td></tr>
+                <tr><td class="text-nowrap"><code>exon_flags</code></td><td>reserved for per-exon caveats (probe-site variant, recurrent in normals, low power); '-' in the current version</td></tr>
               </tbody>
             </table>
           </details>
