@@ -2,6 +2,8 @@
 
 MARKER DASH_QC_V1 (D7 QC page overhaul, D8 median instead of mean).
 MARKER DASH_QC_V1b: low genes explained by a consensus LOSS are CNV findings, not limitations.
+MARKER DASH_QC_V1d: known low-capture exons (panel asset) are panel limitations; genes are judged
+on their non-known exons; parse() emits panel_limitations.
 
 Input schema (bin/parse_exon_coverage.py):
   Gene, Exon, Chr, Start, End, Length_bp, Mean_Coverage, Pct_100x, Pct_250x, Pct_500x, Flag
@@ -90,6 +92,37 @@ def _range_text(thr_key, direction, kind):
 
 CNV_LOW_EXPLAINS = ("LOSS",)   # DASH_QC_V1b: consensus calls that explain low coverage biologically
 
+KNOWN_LOW_EXONS_PATH = None   # DASH_QC_V1d: set by build.py from --known-low-exons
+
+
+def read_known_low(path):
+    """(gene, exon) -> {median_cov, n_below, n_normals, frac_below} from known_low_exons.tsv; {} when absent."""
+    if not path:
+        return {}
+    p = Path(path)
+    if not p.exists():
+        return {}
+    out = {}
+    with open(p) as fh:
+        hdr = None
+        for line in fh:
+            line = line.rstrip("\n")
+            if not line or line.startswith("#"):
+                continue
+            f = line.split("\t")
+            if hdr is None:
+                hdr = f
+                continue
+            r = dict(zip(hdr, f))
+            try:
+                out[(r["gene"], r["exon"])] = {
+                    "normals_median": float(r["median_cov"]), "n_below": int(r["n_below"]),
+                    "n_normals": int(r["n_normals"]), "frac_below": float(r["frac_below"]),
+                }
+            except (KeyError, ValueError):
+                continue
+    return out
+
 
 def _consensus_info(consensus_genes):
     """gene -> {role, call, tier} from <sample>.cnv_consensus4.genes.tsv (CMX_ANNOT_V1); {} when absent."""
@@ -147,6 +180,8 @@ def parse(path, consensus_genes=None):
     exon_low = QC_THRESHOLDS["exon_low"]
     gene_low = QC_THRESHOLDS["gene_low_median"]
     cinfo = _consensus_info(consensus_genes)   # DASH_QC_V1b
+    known = read_known_low(KNOWN_LOW_EXONS_PATH)   # DASH_QC_V1d
+    panel_limitations = []
 
     genes = []
     if "Gene" in valid.columns:
@@ -154,20 +189,41 @@ def parse(path, consensus_genes=None):
             covs = sub["_cov"]
             i_min = covs.idxmin()
             n_low = int((covs < exon_low).sum())
+            # DASH_QC_V1d: known low-capture exons of the panel are set aside
+            exon_labels = sub["Exon"].astype(str) if "Exon" in sub.columns else pd.Series([""] * len(sub), index=sub.index)
+            is_known = [(gene, e) in known for e in exon_labels]
+            known_here = [e for e, k in zip(exon_labels, is_known) if k]
+            for e, k, cv in zip(exon_labels, is_known, covs):
+                if k:
+                    kk = known[(gene, e)]
+                    panel_limitations.append({"gene": gene, "exon": e, "sample_cov": round(float(cv), 1),
+                                              "normals_median": kk["normals_median"], "n_below": kk["n_below"],
+                                              "n_normals": kk["n_normals"]})
+            rest = covs[[not k for k in is_known]]
+            worst_unknown = ""
+            if len(rest) and float(rest.min()) < exon_low:
+                j = rest.idxmin()
+                worst_unknown = "%s %.0fx" % (str(sub.loc[j, "Exon"]) if "Exon" in sub.columns else "", float(rest.min()))
+            n_low_known = sum(1 for k, cv in zip(is_known, covs) if k and cv < exon_low)
             genes.append({
                 "gene": gene,
                 "n_exons": int(len(sub)),
                 "median_cov": round(float(covs.median()), 1),
+                "median_cov_excl_known": round(float(rest.median()), 1) if len(rest) else None,
+                "known_low_exons": known_here,
+                "worst_unknown_exon": worst_unknown,
                 "min_exon": str(sub.loc[i_min, "Exon"]) if "Exon" in sub.columns else "",
                 "min_cov": round(float(covs.min()), 1),
                 "n_low": n_low,
+                "n_low_known": n_low_known,
                 "frac_low": round(n_low / float(len(sub)), 2),
                 "driver_role": cinfo.get(gene, {}).get("role", ""),
                 "cnv_call": cinfo.get(gene, {}).get("call", ""),   # DASH_QC_V1b
                 "cnv_tier": cinfo.get(gene, {}).get("tier", ""),
             })
     genes.sort(key=lambda g: (g["median_cov"], g["gene"]))
-    low_genes = [g for g in genes if g["median_cov"] < gene_low]
+    # DASH_QC_V1d: a gene is low on the median of its non-known exons; genes with only known exons are panel limitations
+    low_genes = [g for g in genes if g["median_cov_excl_known"] is not None and g["median_cov_excl_known"] < gene_low]
 
     low_df = valid.loc[valid["_cov"] < exon_low].sort_values("_cov").head(8)
     low_examples = [{"Gene": r.get("Gene", ""), "Exon": r.get("Exon", ""), "Mean_Coverage": r.get("Mean_Coverage", "")}
@@ -185,6 +241,7 @@ def parse(path, consensus_genes=None):
     }
     out["genes"] = genes
     out["low_genes"] = low_genes
+    out["panel_limitations"] = sorted(panel_limitations, key=lambda r: (r["gene"], r["exon"]))   # DASH_QC_V1d
     return out
 
 
@@ -226,8 +283,9 @@ def verdict(coverage, hsmetrics):
     explained = [g for g in low_genes if g.get("cnv_call") in CNV_LOW_EXPLAINS]
     low_tech = [g for g in low_genes if g.get("cnv_call") not in CNV_LOW_EXPLAINS]
     driver_exon_low = [g for g in (coverage or {}).get("genes", []) if coverage
-                       and g.get("driver_role") and g["n_low"] > 0 and g["gene"] not in low_set
-                       and g.get("cnv_call") not in CNV_LOW_EXPLAINS]
+                       and g.get("driver_role") and (g["n_low"] - g.get("n_low_known", 0)) > 0
+                       and g["gene"] not in low_set
+                       and g.get("cnv_call") not in CNV_LOW_EXPLAINS]   # DASH_QC_V1d: known exons ignored
 
     limitations, findings = [], []
     if low_tech:
@@ -241,7 +299,7 @@ def verdict(coverage, hsmetrics):
         findings.append("%d low-coverage gene(s) explained by a copy-number loss, not a library limitation: %s"
                         % (len(explained), names))
     if driver_exon_low:
-        names = ", ".join("%s (%s %.0fx)" % (g["gene"], g["min_exon"], g["min_cov"]) for g in driver_exon_low[:12])
+        names = ", ".join("%s (%s)" % (g["gene"], g.get("worst_unknown_exon", g["min_exon"])) for g in driver_exon_low[:12])   # DASH_QC_V1d
         more = " and %d more" % (len(driver_exon_low) - 12) if len(driver_exon_low) > 12 else ""
         limitations.append("%d driver gene(s) with individual exons below %dx (gene median acceptable): %s%s"
                            % (len(driver_exon_low), QC_THRESHOLDS["exon_low"], names, more))

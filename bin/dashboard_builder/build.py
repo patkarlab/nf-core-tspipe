@@ -221,6 +221,7 @@ def collect_sample_context(sample_dir, build_time, subdir="",
         "filtered": None,
         "flt3": None,
         "coverage": None,
+        "qc_verdict": None,   # DASH_QC_V1
         "cnv": None,
         "igv": None,
         "genebe": {},        # chr:pos:ref:alt -> annotation dict (empty unless --annotate-genebe)
@@ -284,9 +285,15 @@ def collect_sample_context(sample_dir, build_time, subdir="",
     # --- Exon coverage ---
     cov_path = effective_dir / f"{sample}_exon_coverage.tsv"
     try:
-        ctx["coverage"] = p_coverage.parse(cov_path)
+        ctx["coverage"] = p_coverage.parse(
+            cov_path,
+            consensus_genes=effective_dir / "cnv" / "consensus" / f"{sample}.cnv_consensus4.genes.tsv")   # DASH_QC_V1
     except Exception as exc:
         logging.warning("[%s] coverage parse failed: %s", sample, exc)
+    try:   # DASH_QC_V1: sample-level verdict from run metrics + gene-level coverage
+        ctx["qc_verdict"] = p_coverage.verdict(ctx.get("coverage"), ctx.get("hsmetrics"))
+    except Exception as exc:
+        logging.warning("[%s] qc verdict failed: %s", sample, exc)
 
     # --- CNV (MARKER CNV_RETIRE_7B: v2 parser only; legacy parsers/cnv.py retired) ---
     try:
@@ -580,6 +587,12 @@ def main():
              "CancerVar tier for newly-selected variants."
     )
     parser.add_argument(
+        "--known-low-exons", dest="known_low_exons", default=None,
+        help="known_low_exons.tsv for the panel (tools/build_known_low_exons.py): exons "
+             "systematically under-captured in the PoN normals, reported as panel "
+             "limitations and excluded from the sample QC verdict. Optional."   # DASH_QC_V1d
+    )
+    parser.add_argument(
         "--panel-bed", default=None,
         help="Panel BED whose column-4 labels carry exon names (e.g. "
              "GNB1_Ex_11). Used as the fallback exon source for the Reporting "
@@ -588,6 +601,7 @@ def main():
              "to VEP's EXON column."
     )
     args = parser.parse_args()
+    p_coverage.KNOWN_LOW_EXONS_PATH = args.known_low_exons   # DASH_QC_V1d
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,

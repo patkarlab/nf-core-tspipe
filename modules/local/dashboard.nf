@@ -73,6 +73,8 @@ process DASHBOARD {
 
         def builder_dir   = "${projectDir}/bin/dashboard_builder"
         def py            = params.dashboard_python ?: "${params.legacy_python_env}/bin/python"
+        def known_low     = file("${projectDir}/assets/${params.panel}/known_low_exons.tsv")   // DASH_QC_V1d
+        def known_low_arg = known_low.exists() ? "--known-low-exons ${known_low}" : ''
         def sample_ids_sh = sample_ids.collect { "'${it}'" }.join(' ')
         """
         set -euo pipefail
@@ -118,6 +120,7 @@ process DASHBOARD {
             ${ params.mobidetails_enabled ? "" : "--no-annotate-mobidetails" } \\
             ${ params.oncokb_enabled ? "--annotate-oncokb" : "" } \\
             ${ params.oncokb_enabled && params.oncokb_token ? "--oncokb-token '" + params.oncokb_token + "'" : "" } \\
+            ${known_low_arg} \\
             ${task.ext.args ?: ''}
 
         # ----------------------------------------------------------------

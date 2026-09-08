@@ -1,0 +1,12 @@
+# known_low_exons.tsv -- KNOWN_LOW_V1
+# built 2026-09-08 10:35 by tools/build_known_low_exons.py
+# rule: exon coverage < 100x in >= 50% of included normals
+# normals: 31 (Male1-TwistMy, Male2-TwistMy, Male3-TwistMy, Male4-TwistMy, Male5-TwistMy, Male6-TwistMy, Male7-TwistMy, Male8-TwistMy, Male9-TwistMy, Male10-TwistMy, Male12-TwistMy, Male13-TwistMy, Male14-TwistMy, Male15-TwistMy, Male16-TwistMy, Male17-TwistMy, Male18-TwistMy, Male19-TwistMy, Male20-TwistMy, Male21-TwistMy, Male22-TwistMy, Male23-TwistMy, Male24-TwistMy, Female17-TwistMyRun2, Female18-TwistMyRun2, Female19-TwistMyRun2, Female20-TwistMyRun2, Female21-TwistMyRun2, Female22-TwistMyRun2, Female23-TwistMyRun2, Female24-TwistMyRun2)
+# normals md5: 1ee1588f44e8752ea9a4880b2728d9ad
+gene	exon	chr	start	end	n_normals	n_below	frac_below	median_cov	min_cov	max_cov
+DNMT3A	Ex__1	chr2	25341805	25341925	31	16	0.516	98.1	24.5	385.7
+CCNC	Ex__7	chr6	99550974	99551094	31	28	0.903	19.9	1.9	152.9
+CCNC	Ex__6	chr6	99551785	99551905	31	27	0.871	19.8	4.8	324.1
+ANKRD26	Ex__29	chr10	27022561	27022681	31	23	0.742	19.1	2.9	760.1
+ANKRD26	Ex__19	chr10	27044134	27044254	31	23	0.742	13.5	3.4	405.5
+AKT1	Ex__1	chr14	104795482	104795747	31	29	0.935	31.8	8.7	114.4

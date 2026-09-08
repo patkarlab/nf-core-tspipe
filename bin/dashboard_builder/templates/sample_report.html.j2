@@ -144,6 +144,13 @@
             <div class="small text-muted mt-1">Full detail on the QC tab.</div>
           </div>
         {% endif %}
+        {# DASH_QC_V1d: known panel limitations, one line #}
+        {% if ctx.coverage and ctx.coverage.panel_limitations %}
+          <div class="alert alert-light border small" role="alert">
+            <strong>Known panel limitations</strong> (under-captured in the normal cohort; not counted against this sample):
+            {% for r in ctx.coverage.panel_limitations %}<span class="badge bg-light text-dark border me-1">{{ r.gene }} {{ r.exon }} &middot; {{ r.sample_cov | format_num(0) }}x</span>{% endfor %}
+          </div>
+        {% endif %}
       </div>
 
       {# ===== QC tab ===== #}
@@ -180,6 +187,20 @@
           <p class="text-muted small">No gene below {{ ctx.coverage.thresholds.gene_low_median }}x median exon coverage.</p>
         {% else %}
           <div class="tspipe-empty">Per-exon coverage file not available.</div>
+        {% endif %}
+
+        {# DASH_QC_V1d: known panel limitations with cohort statistics #}
+        {% if ctx.coverage and ctx.coverage.panel_limitations %}
+          <h4 class="mt-4">Known panel limitations</h4>
+          <p class="text-muted small mb-2">Exons below {{ ctx.coverage.thresholds.exon_low }}x in at least half of the panel-of-normals cohort (assets/known_low_exons.tsv). They are a property of the capture design, are excluded from this sample's verdict, and variants in them are not reportable as negative.</p>
+          <table class="table table-sm tspipe-kv-table" style="max-width: 760px;">
+            <thead><tr><th>gene</th><th>exon</th><th>this sample</th><th>normals median</th><th>normals below threshold</th></tr></thead>
+            <tbody>
+              {% for r in ctx.coverage.panel_limitations %}
+                <tr><td>{{ r.gene }}</td><td>{{ r.exon }}</td><td class="value">{{ r.sample_cov | format_num(0) }}x</td><td class="value">{{ r.normals_median | format_num(0) }}x</td><td class="value">{{ r.n_below }} / {{ r.n_normals }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         {% endif %}
 
         <h4 class="mt-4">Run metrics (Picard CollectHsMetrics)</h4>
