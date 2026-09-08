@@ -317,6 +317,15 @@
             independent arm; TIER_2: two depth arms or two independent arms; TIER_3: single arm;
             REVIEW: arms disagree. Blacklisted genes are excluded.
           </p>
+          {# DASH_TIER_V1: tier filter; first button is the default view #}
+          <div id="cnv-tier-filter" class="btn-group btn-group-sm mb-2" role="group" aria-label="Tier filter">
+            <button type="button" class="btn btn-outline-secondary" data-tiers="TIER_1,TIER_2">Reportable (TIER_1 + TIER_2)</button>
+            <button type="button" class="btn btn-outline-secondary" data-tiers="TIER_1">TIER_1</button>
+            <button type="button" class="btn btn-outline-secondary" data-tiers="TIER_2">TIER_2</button>
+            <button type="button" class="btn btn-outline-secondary" data-tiers="TIER_3">TIER_3</button>
+            <button type="button" class="btn btn-outline-secondary" data-tiers="REVIEW">REVIEW</button>
+            <button type="button" class="btn btn-outline-secondary" data-tiers="">All</button>
+          </div>
           {{ macros.render_datatable('cnv-consensus-table', ctx.cnv.consensus_table.columns, ctx.cnv.consensus_table.rows) }}
         {% elif ctx.cnv.consensus_tiers is defined %}
           <div class="tspipe-empty">No non-neutral consensus CNV calls.</div>
@@ -741,7 +750,22 @@
     initCNVGallery();
 
     if ($('#coverage-table').length)     { $('#coverage-table').DataTable({ pageLength: 25, order: [] }); }
-    if ($('#cnv-annotated-table').length) { $('#cnv-annotated-table').DataTable({ pageLength: 25, order: [] }); }
+    // DASH_TIER_V1: consensus + DECoN tables as DataTables; tier filter on the consensus table
+    if ($('#cnv-consensus-table').length) {
+      const cnvTable = $('#cnv-consensus-table').DataTable({ pageLength: 25, order: [] });
+      const tierIdx = $('#cnv-consensus-table thead th').toArray()
+        .findIndex(function (th) { return th.textContent.trim() === 'tier'; });
+      $('#cnv-tier-filter [data-tiers]').on('click', function () {
+        $('#cnv-tier-filter .btn').removeClass('active');
+        $(this).addClass('active');
+        if (tierIdx < 0) { return; }
+        const tiers = String($(this).attr('data-tiers') || '');
+        const rx = tiers ? '^(' + tiers.split(',').join('|') + ')$' : '';
+        cnvTable.column(tierIdx).search(rx, true, false).draw();
+      });
+      $('#cnv-tier-filter [data-tiers]').first().trigger('click');
+    }
+    if ($('#cnv-decon-table').length) { $('#cnv-decon-table').DataTable({ pageLength: 25, order: [] }); }
   });
 
   // ---------------------------------------------------------------------------
