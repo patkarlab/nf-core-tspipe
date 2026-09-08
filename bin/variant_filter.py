@@ -577,6 +577,25 @@ def apply_filters(df):
     df["_consequence"] = df["Consequence"].astype(str).str.strip()
     df["Variant_Class"] = df["_consequence"].map(variant_class)   # D14 (FILTER_D14_D15_A19_V1)
 
+    # MNV_MERGE_V1 (N2): components of a merged MNV are demoted to MNV_COMPONENT; the MNV row
+    # inherits BLACKLIST from any blacklisted component and COMMON_POLYMORPHISM when every
+    # component is common (a merged allele rarely matches a gnomAD record on its own).
+    _mnv_notes = df["MNV_Note"].astype(str).str.strip() if "MNV_Note" in df.columns else pd.Series([""] * len(df), index=df.index)
+    _bl_col = df["Blacklist_Reason"].astype(str).str.strip() if "Blacklist_Reason" in df.columns else pd.Series([""] * len(df), index=df.index)
+    _mnv_comp_af = {}
+    _mnv_comp_bl = {}
+    for _i in range(len(df)):
+        _n = _mnv_notes.iloc[_i]
+        if _n.startswith("component of "):
+            _p = _n[len("component of "):]
+            _mnv_comp_af.setdefault(_p, []).append(df["_max_af"].iloc[_i])
+            if _bl_col.iloc[_i]:
+                _mnv_comp_bl.setdefault(_p, []).append(_bl_col.iloc[_i])
+    _mnv_common = {p for p, afs in _mnv_comp_af.items() if afs and all((not np.isnan(a)) and a > 0.01 for a in afs)}
+    if _mnv_comp_af:
+        log.info("MNV_MERGE_V1: %d merged MNV(s) with components; %d inherit BLACKLIST, %d inherit COMMON_POLYMORPHISM",
+                 len(_mnv_comp_af), len(_mnv_comp_bl), len(_mnv_common))
+
     # Ensure Blacklist_Reason exists (zero-impact if apply_snv_blacklist already ran)
     if "Blacklist_Reason" not in df.columns:
         df["Blacklist_Reason"] = ""
@@ -588,6 +607,21 @@ def apply_filters(df):
         if str(row.get("Blacklist_Reason", "")).strip():
             filters.append("BLACKLIST")
             continue
+
+        # MNV_MERGE_V1 (N2): component SNVs of a merged MNV; MNV inheritance from components
+        _mnv_note = str(row.get("MNV_Note", "")).strip()
+        if _mnv_note.startswith("component of "):
+            filters.append("MNV_COMPONENT")
+            continue
+        if _mnv_note.startswith("MNV of "):
+            _mnv_key = "%s:%s:%s:%s" % (row["Chr"], row["Start"], row["Ref"], row["Alt"])
+            if _mnv_key in _mnv_comp_bl:
+                df.at[_, "Blacklist_Reason"] = "MNV|INHERITED_FROM_COMPONENT|" + _mnv_comp_bl[_mnv_key][0].replace("|", "/")
+                filters.append("BLACKLIST")
+                continue
+            if _mnv_key in _mnv_common:
+                filters.append("COMMON_POLYMORPHISM")
+                continue
 
         # Check if this is a U2AF1 hotspot (exempt from LOW_CALLERS/LOW_DEPTH)
         _is_u2af1_hotspot = False
@@ -652,7 +686,7 @@ def apply_filters(df):
     counts = df["Filter"].value_counts()
     log.info("Filter results:")
     for filt in ["PASS", "BLACKLIST", "COMMON_POLYMORPHISM", "LOW_IMPACT", "CLINVAR_BENIGN", "NON_REPORTABLE_CONSEQUENCE",
-                 "LOW_CALLERS", "LOW_DEPTH", "NO_CALLER_INFO"]:
+                 "LOW_CALLERS", "LOW_DEPTH", "NO_CALLER_INFO", "MNV_COMPONENT"]:   # MNV_MERGE_V1
         n = counts.get(filt, 0)
         log.info("  %-25s %d", filt, n)
     log.info("  %-25s %d", "TOTAL", len(df))
@@ -889,7 +923,7 @@ def main():
     log.info("Total input:         %d", pd.read_csv(input_path, sep="\t").shape[0])
     log.info("After dedup:         %d", len(df))
     for filt in ["PASS", "BLACKLIST", "COMMON_POLYMORPHISM", "LOW_IMPACT", "CLINVAR_BENIGN", "NON_REPORTABLE_CONSEQUENCE",
-                 "LOW_CALLERS", "LOW_DEPTH", "NO_CALLER_INFO"]:
+                 "LOW_CALLERS", "LOW_DEPTH", "NO_CALLER_INFO", "MNV_COMPONENT"]:   # MNV_MERGE_V1
         n = (df["Filter"] == filt).sum()
         if n > 0:
             log.info("  %-25s %d", filt, n)

@@ -26,6 +26,7 @@ include { PREPROCESSING       } from '../subworkflows/local/preprocessing'
 include { VARIANT_CALLING     } from '../subworkflows/local/variant_calling'
 include { SOMATICSEQ_ENSEMBLE } from '../modules/local/somaticseq'
 include { SOMATICSEQ_POSTPROCESS } from '../modules/local/somaticseq_postprocess'
+include { MNV_MERGE              } from '../modules/local/mnv_merge'   // MARKER MNV_MERGE_V1 (N2)
 include { FLT3_ITD            } from '../subworkflows/local/flt3_itd'
 include { CNV_CALLING         } from '../subworkflows/local/cnv_calling'
 include { GATK_CNV_CALLING    } from '../subworkflows/local/gatk_cnv_calling'   // TGC_V1
@@ -176,7 +177,15 @@ workflow TSPIPE {
         SOMATICSEQ_ENSEMBLE.out.consensus_snv
             .join(SOMATICSEQ_ENSEMBLE.out.consensus_indel)
     )
-    ch_somaticseq_vcf = SOMATICSEQ_POSTPROCESS.out.vcf
+    // MARKER MNV_MERGE_V1 (N2): re-join SomaticSeq-decomposed MNVs before VEP. Evidence from the
+    // Mutect2 (FilterMutectCalls) VCF -- MNV records and PGT/PID phase sets -- and VarDict MNVs.
+    MNV_MERGE(
+        SOMATICSEQ_POSTPROCESS.out.vcf
+            .join(VARIANT_CALLING.out.mutect2_vcf, by: 0)
+            .join(VARIANT_CALLING.out.vardict_vcf, by: 0),
+        ch_reference
+    )
+    ch_somaticseq_vcf = MNV_MERGE.out.vcf
 
     // ----- 3. FLT3-ITD 4-tool ensemble (Pindel added 2026-05-19, D1) -----
     FLT3_ITD(

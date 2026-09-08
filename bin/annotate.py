@@ -83,6 +83,7 @@ COLUMNS = [
     "COSMIC_ID", "ClinVar", "SIFT", "PolyPhen",
     "gnomAD_exome_AF", "gnomAD_genome_AF", "AF_1KG", "Max_AF", "rsID",
     "MANE_SELECT", "Canonical", "HGVSg", "Existing_variation",
+    "MNV_Note",   # MNV_MERGE_V1 (N2): "MNV of <positions> (<evidence>)" or "component of <chrom:pos:ref:alt>"
 ]
 
 
@@ -281,6 +282,14 @@ def parse_vcf_fields(vcf_path):
             # Caller participation from MVDKFP (one-hot flags) + NUM_TOOLS
             mvdkfp = _get_info_value(info, "MVDKFP")
             num_tools_str = _get_info_value(info, "NUM_TOOLS")
+            # MNV_MERGE_V1 (N2): merged-MNV / component tags written by bin/mnv_merge.py
+            mnv_note = ""
+            _mnv_of = _get_info_value(info, "MNV_OF")
+            _mnv_parent = _get_info_value(info, "MNV_PARENT")
+            if _mnv_of:
+                mnv_note = "MNV of %s (%s)" % (_mnv_of, _get_info_value(info, "MNV_EVIDENCE") or "")
+            elif _mnv_parent:
+                mnv_note = "component of %s" % _mnv_parent
             if num_tools_str:
                 try:
                     num_tools = int(float(num_tools_str))
@@ -335,6 +344,7 @@ def parse_vcf_fields(vcf_path):
                 "vaf_pct": vaf_pct,
                 "num_tools": num_tools,
                 "callers": callers,
+                "mnv_note": mnv_note,   # MNV_MERGE_V1
             }
 
     log.info("Parsed %d variants from input VCF", len(variants))
@@ -684,6 +694,7 @@ def merge_annotations(vcf_fields, vep_variants, annovar_variants,
             "Canonical": _clean(vep.get("CANONICAL", "")),
             "HGVSg": _clean(vep.get("HGVSg", "")),
             "Existing_variation": _clean(vep.get("Existing_variation", "")),
+            "MNV_Note": _clean(vcf.get("mnv_note", "")),   # MNV_MERGE_V1 (N2)
         }
         rows.append(row)
 
