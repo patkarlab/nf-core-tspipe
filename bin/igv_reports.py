@@ -48,6 +48,10 @@ def parse_args():
         description="Generate IGV HTML reports for clinical variants"
     )
     parser.add_argument("-s", "--sample", required=True, help="Sample name")
+    parser.add_argument("--extra-input", default=None,
+                        help="Filtered TSV (same columns); rows inside --spikein-regions are added (SPIKEIN_V1d)")
+    parser.add_argument("--spikein-regions", default=None,
+                        help="assets/<panel>/spikein_regions.tsv; regulatory rows define the regions (SPIKEIN_V1d)")
     parser.add_argument("-i", "--input", required=True,
                         help="Input clinical TSV")
     parser.add_argument("--bam", required=True, help="BAM file (post-ABRA2)")
@@ -164,6 +168,39 @@ def main():
 
     rows = read_clinical_tsv(args.input)
     log.info("Read %d clinical variants from %s", len(rows), args.input)
+
+    # SPIKEIN_V1d (D13b-2): filtered-table calls inside the spike-in regions join the site list so
+    # the dashboard's Spike-in tab IGV chips resolve; de-duplicated against the clinical rows.
+    if args.extra_input and args.spikein_regions:
+        regions = []
+        with open(args.spikein_regions) as fh:
+            header = None
+            for line in fh:
+                line = line.rstrip("\n")
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split("\t")
+                if header is None:
+                    header = parts
+                    continue
+                rec = dict(zip(header, parts))
+                if rec.get("class") == "regulatory":
+                    regions.append((rec["chrom"], int(rec["start"]), int(rec["end"])))
+        have = {(r["Chr"], r["Start"], r["Ref"], r["Alt"]) for r in rows}
+        extra = []
+        for r in read_clinical_tsv(args.extra_input):
+            try:
+                pos = int(r["Start"])
+            except (KeyError, ValueError):
+                continue
+            if any(r["Chr"] == c and s < pos <= e for c, s, e in regions):
+                key = (r["Chr"], r["Start"], r["Ref"], r["Alt"])
+                if key not in have:
+                    have.add(key)
+                    extra.append(r)
+        rows.extend(extra)
+        log.info("SPIKEIN_V1d: added %d spike-in region call(s) from %s (%d regions)",
+                 len(extra), args.extra_input, len(regions))
 
     if not rows:
         log.warning("No variants found -- skipping report generation")

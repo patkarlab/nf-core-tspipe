@@ -373,10 +373,15 @@ workflow TSPIPE {
         ch_reference,
     )
 
+    // SPIKEIN_V1d (D13b-2): spike-in region calls join the IGV report so the Spike-in tab chips resolve
+    def igv_spikein_file = file("${projectDir}/assets/${params.panel}/spikein_regions.tsv")
+    ch_igv_spikein = Channel.value( igv_spikein_file.exists() ? igv_spikein_file : [] )
+
     // ----- 6b. IGV_REPORTS: per-sample HTML for clinical review (D2) -----
     IGV_REPORTS(
-        ANNOTATION.out.clinical_tsv.join(PREPROCESSING.out.final_bam),
-        ch_reference
+        ANNOTATION.out.clinical_tsv.join(PREPROCESSING.out.final_bam).join(ANNOTATION.out.filtered_tsv),   // SPIKEIN_V1d
+        ch_reference,
+        ch_igv_spikein
     )
 
     // ----- 7. ORGANIZE_OUTPUT: build clinical/ deliverable tree --------

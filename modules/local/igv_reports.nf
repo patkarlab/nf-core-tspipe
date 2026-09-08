@@ -34,8 +34,9 @@ process IGV_REPORTS {
     container  'quay.io/biocontainers/igv-reports:1.12.0--pyh7cba7a3_0'
 
     input:
-        tuple val(meta), path(clinical_tsv), path(bam), path(bai)
+        tuple val(meta), path(clinical_tsv), path(bam), path(bai), path(filtered_tsv)   // SPIKEIN_V1d
         tuple path(fasta), path(fai), path(dict)
+        path spikein_asset   // SPIKEIN_V1d: assets/<panel>/spikein_regions.tsv, or [] when the panel has none
 
     output:
         tuple val(meta), path("${meta.id}_igv_report.html"), emit: html
@@ -52,13 +53,15 @@ process IGV_REPORTS {
         """
 
     script:
+        def spikein_args = spikein_asset ? "--extra-input ${filtered_tsv} --spikein-regions ${spikein_asset}" : ''   // SPIKEIN_V1d
         """
         igv_reports.py \\
             --sample  ${meta.id} \\
             --input   ${clinical_tsv} \\
             --bam     ${bam} \\
             --fasta   ${fasta} \\
-            --output  ${meta.id}_igv_report.html
+            --output  ${meta.id}_igv_report.html \\
+            ${spikein_args}
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
