@@ -125,6 +125,7 @@ def main():
     parser.add_argument("--hsmetrics", required=True)
     parser.add_argument("--dashboard", required=True)
     parser.add_argument("--fastp-html", required=True)
+    parser.add_argument("--fastp-json", default=None, help="fastp JSON metrics (optional; DASH_QC_V2)")
     parser.add_argument("--igv-report", required=True,
                         help="IGV HTML report from create_report")
     # MARKER CNV_RETIRE_7B: legacy CNV arguments (clinical/annotated tables, CNVkit plots) removed
@@ -195,6 +196,9 @@ def main():
              "Per-exon coverage analysis")
     hardlink(args.fastp_html,    out / (s + "_fastp.html"),
              "Fastp trimming QC report")
+    if args.fastp_json:   # DASH_QC_V2
+        hardlink(args.fastp_json, out / (s + "_fastp.json"),
+                 "Fastp trimming QC metrics (JSON)")
     hardlink(args.igv_report,    out / (s + "_igv_report.html"),
              "IGV review report")
     hardlink(args.dashboard,     out / (s + "_dashboard.html"),

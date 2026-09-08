@@ -175,6 +175,17 @@
           <div class="tspipe-empty">Verdict not available (coverage or HsMetrics missing).</div>
         {% endif %}
 
+        {# DASH_QC_V2: sample identity #}
+        <h4 class="mt-4">Sample identity (sex check)</h4>
+        {% if ctx.qc_verdict and ctx.qc_verdict.identity %}
+          <p class="text-muted small mb-2">Sex is decided by chrX heterozygosity at the het catalog (males near 0, females near the autosomal fraction); X/autosome depth confirms it or flags a chrX copy-number change. A samplesheet sex that contradicts heterozygosity is a possible sample swap and sets REVIEW.</p>
+          <table class="table table-sm tspipe-kv-table" style="max-width: 760px;"><tbody>
+            {% for k, v in ctx.qc_verdict.identity %}<tr><td class="label">{{ k }}</td><td class="value">{{ v }}</td></tr>{% endfor %}
+          </tbody></table>
+        {% else %}
+          <div class="tspipe-empty">Sex check not available.</div>
+        {% endif %}
+
         <h4 class="mt-4">Low-coverage genes</h4>
         {% if ctx.coverage and ctx.coverage.low_genes %}
           <p class="text-muted small mb-2">Every gene whose median exon coverage is below {{ ctx.coverage.thresholds.gene_low_median }}x, lowest first. Coverage is mosdepth per-exon mean with duplicates included; the gene value is the median across its exons. A gene with a consensus LOSS in the CNV tab is low because it is deleted, and is not counted as a limitation.</p>
@@ -261,11 +272,24 @@
           </div>
         {% endif %}
 
-        <h4 class="mt-4">fastp QC report</h4>
-        {% if ctx.files.fastp %}
-          <iframe class="tspipe-iframe-full" data-src="./{{ ctx.files.fastp }}" loading="lazy"></iframe>
+        {# DASH_QC_V2: read-level QC table replaces the fastp iframe #}
+        <h4 class="mt-4">Read-level QC (fastp)</h4>
+        {% if ctx.qc_verdict and ctx.qc_verdict.read_metrics %}
+          <p class="text-muted small mb-2">From fastp on the raw FASTQs, before alignment. Adapter trimming on a third of reads is expected with ~160 bp inserts on 150 bp reads. Limits are shown only for metrics that feed the verdict.</p>
+          <table class="table table-sm tspipe-kv-table" style="max-width: 760px;">
+            <thead><tr><th>metric</th><th>value</th><th>limit</th><th></th></tr></thead>
+            <tbody>
+              {% for r in ctx.qc_verdict.read_metrics %}
+                <tr><td class="label">{{ r.label }}</td><td class="value">{{ r.display }}</td><td class="value">{{ r.range }}</td>
+                    <td>{% if r.ok is true %}<span class="badge qc-pill-pass">ok</span>{% elif r.ok is false %}<span class="badge qc-pill-fail">out of limit</span>{% endif %}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% if ctx.files.fastp %}<p class="small text-muted">Full fastp report (per-base quality, GC content, k-mer plots): <a href="./{{ ctx.files.fastp }}" target="_blank">{{ ctx.files.fastp }}</a></p>{% endif %}
+        {% elif ctx.files.fastp %}
+          <div class="tspipe-empty">fastp metrics not available (no <code>_fastp.json</code> in clinical/); full report: <a href="./{{ ctx.files.fastp }}" target="_blank">{{ ctx.files.fastp }}</a></div>
         {% else %}
-          <div class="tspipe-empty">fastp report not available.</div>
+          <div class="tspipe-empty">fastp output not available.</div>
         {% endif %}
 
         <details class="mt-4">

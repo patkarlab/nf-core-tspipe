@@ -409,6 +409,7 @@ workflow TSPIPE {
         .join(PREPROCESSING.out.hsmetrics)                                   // + hsmetrics
         .join(PREPROCESSING.out.exon_coverage)                               // + exon_coverage
         .join(PREPROCESSING.out.fastp_html)                                  // + fastp_html
+        .join(PREPROCESSING.out.fastp_json)                                  // + fastp_json (DASH_QC_V2)
         .join(IGV_REPORTS.out.html)                                           // + igv_report (D2)
         .join(PREPROCESSING.out.dashboard)                                   // + dashboard
         .join(CNV_CONSENSUS_MULTI.out.genes)                                     // + cnv_consensus_genes (MARKER ORG_CNV_V1; MARKER ORG_CNV_V1a)

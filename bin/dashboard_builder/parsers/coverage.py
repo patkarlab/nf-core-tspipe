@@ -263,7 +263,7 @@ def parse(path, consensus_genes=None):
     return out
 
 
-def verdict(coverage, hsmetrics):
+def verdict(coverage, hsmetrics, fastp=None, sex_check=None):   # DASH_QC_V2: fastp + sex check
     """Sample-level QC verdict from Picard run metrics and the gene-level coverage table."""
     m = (hsmetrics or {}).get("metrics", {}) if isinstance(hsmetrics, dict) else {}
     run_rows, review = [], []
@@ -331,6 +331,58 @@ def verdict(coverage, hsmetrics):
         limitations.append("%d driver gene(s) with individual exons below %dx (gene median acceptable): %s%s"
                            % (len(driver_exon_low), QC_THRESHOLDS["exon_low"], names, more))
 
+    # DASH_QC_V2: read-level QC from fastp
+    read_rows = []
+    fp = fastp or {}
+    if fp:
+        thr = fp.get("thresholds", {})
+
+        def _add(label, val, disp, rng="", ok=None):
+            read_rows.append({"label": label, "value": val, "display": disp, "range": rng, "ok": ok})
+
+        _add("Total reads before filtering (both mates)", fp.get("reads_before"), _fmt(fp.get("reads_before"), "int"))
+        _add("Reads passing fastp filters", fp.get("pct_passed"), _fmt(fp.get("pct_passed"), "pct"))
+        q30, q30_min = fp.get("q30_after"), thr.get("q30_min", 0.85)
+        ok_q = None if q30 is None else (q30 >= q30_min)
+        _add("Q30 bases after filtering", q30, _fmt(q30, "pct"), ">= " + _fmt(q30_min, "pct"), ok_q)
+        if ok_q is False:
+            review.append("Q30 bases after filtering %s (limit >= %s)" % (_fmt(q30, "pct"), _fmt(q30_min, "pct")))
+        l1, l2 = fp.get("mean_len_r1_after"), fp.get("mean_len_r2_after")
+        _add("Mean read length after trimming (R1 / R2)", l1, "%s / %s bp" % (l1 if l1 is not None else "\u2014", l2 if l2 is not None else "\u2014"))
+        _add("Reads with adapter trimmed", fp.get("adapter_trimmed_frac"), _fmt(fp.get("adapter_trimmed_frac"), "pct"))
+        _add("Duplication estimate (fastp, sequence-based)", fp.get("dup_rate"), _fmt(fp.get("dup_rate"), "pct"))
+        ip, ip_min = fp.get("insert_peak"), thr.get("insert_peak_min", 150)
+        ok_i = None if ip is None else (ip >= ip_min)
+        _add("Insert size peak", ip, ("%d bp" % ip) if ip is not None else "\u2014", ">= %d bp" % ip_min, ok_i)
+        if ok_i is False:
+            review.append("Insert size peak %d bp (limit >= %d bp)" % (ip, ip_min))
+
+    # DASH_QC_V2: sample identity from SEX_CHECK
+    identity = []
+    sx = sex_check or {}
+    if sx:
+        sheet = (sx.get("sheet_sex") or "").strip().lower()
+        het = (sx.get("het_inferred_sex") or "").strip().lower()
+        dep = (sx.get("depth_inferred_sex") or "").strip().lower()
+        res = (sx.get("resolved_sex") or "").strip().lower()
+        flags = str(sx.get("flags") or "")
+        status_sx = str(sx.get("status") or "")
+        identity = [
+            ("Samplesheet sex", sheet or "unknown"),
+            ("Sex by chrX heterozygosity", "%s (chrX het fraction %s vs autosomal %s; %s chrX catalog sites)"
+             % (het or "NA", sx.get("x_het_frac", "NA"), sx.get("auto_het_frac", "NA"), sx.get("n_x_het_sites", "NA"))),
+            ("Sex by X/autosome depth", "%s (X/A %s)" % (dep or "NA", sx.get("x_auto_ratio", "NA"))),
+            ("Sex used by the pipeline", res or "NA"),
+            ("Sex-check status", ("%s %s" % (status_sx, flags)).strip()),
+        ]
+        if sheet in ("male", "female") and het in ("male", "female") and sheet != het:
+            review.append("Sex mismatch: samplesheet %s, chrX heterozygosity %s (possible sample swap)" % (sheet, het))
+        elif sheet not in ("male", "female"):
+            findings.append("Sex not given on the samplesheet; %s inferred from chrX heterozygosity" % (het or res or "unknown"))
+        if "X_DEPTH_CONFLICT" in flags:
+            findings.append("chrX depth (%s, X/A %s) disagrees with chrX heterozygosity (%s): consistent with a chrX copy-number change in the tumour; see the CNV tab"
+                            % (dep or "NA", sx.get("x_auto_ratio", "NA"), het or "NA"))
+
     if not have_cov and not have_hs:
         status, label, pill, reasons = "PENDING", "QC not available", "qc-pill-pending", ["no coverage or HsMetrics file"]
     elif review:
@@ -343,4 +395,5 @@ def verdict(coverage, hsmetrics):
             reasons.append("HsMetrics not available; run-level checks not applied")
         if not have_cov:
             reasons.append("per-exon coverage not available; gene-level checks not applied")
-    return {"status": status, "label": label, "pill": pill, "reasons": reasons, "run_metrics": run_rows}
+    return {"status": status, "label": label, "pill": pill, "reasons": reasons, "run_metrics": run_rows,
+            "read_metrics": read_rows, "identity": identity}   # DASH_QC_V2

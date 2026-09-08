@@ -43,6 +43,7 @@ from parsers import variants as p_variants
 from parsers import flt3 as p_flt3
 from parsers import coverage as p_coverage
 from parsers import cnv_v2 as p_cnv_v2   # MARKER DASH_CNV_V1
+from parsers import fastp as p_fastp   # DASH_QC_V2
 from parsers import igv as p_igv
 from parsers import genebe as p_genebe
 from parsers import mobidetails as p_mobidetails
@@ -222,6 +223,7 @@ def collect_sample_context(sample_dir, build_time, subdir="",
         "flt3": None,
         "coverage": None,
         "qc_verdict": None,   # DASH_QC_V1
+        "fastp": None,   # DASH_QC_V2
         "cnv": None,
         "igv": None,
         "genebe": {},        # chr:pos:ref:alt -> annotation dict (empty unless --annotate-genebe)
@@ -290,10 +292,11 @@ def collect_sample_context(sample_dir, build_time, subdir="",
             consensus_genes=effective_dir / "cnv" / "consensus" / f"{sample}.cnv_consensus4.genes.tsv")   # DASH_QC_V1
     except Exception as exc:
         logging.warning("[%s] coverage parse failed: %s", sample, exc)
-    try:   # DASH_QC_V1: sample-level verdict from run metrics + gene-level coverage
-        ctx["qc_verdict"] = p_coverage.verdict(ctx.get("coverage"), ctx.get("hsmetrics"))
+    fastp_path = effective_dir / f"{sample}_fastp.json"   # DASH_QC_V2
+    try:
+        ctx["fastp"] = p_fastp.parse(fastp_path)
     except Exception as exc:
-        logging.warning("[%s] qc verdict failed: %s", sample, exc)
+        logging.warning("[%s] fastp parse failed: %s", sample, exc)
 
     # --- CNV (MARKER CNV_RETIRE_7B: v2 parser only; legacy parsers/cnv.py retired) ---
     try:
@@ -301,6 +304,12 @@ def collect_sample_context(sample_dir, build_time, subdir="",
     except Exception as exc:  # noqa: BLE001
         logging.warning("[%s] cnv v2 parse failed: %s", sample, exc)
         ctx["cnv"] = {}
+    try:   # DASH_QC_V2: verdict after coverage, hsmetrics, fastp and the sex check are all parsed
+        ctx["qc_verdict"] = p_coverage.verdict(ctx.get("coverage"), ctx.get("hsmetrics"),
+                                               fastp=ctx.get("fastp"),
+                                               sex_check=(ctx.get("cnv") or {}).get("sex_check"))
+    except Exception as exc:
+        logging.warning("[%s] qc verdict failed: %s", sample, exc)
 
     # --- IGV lookup + idempotent hash-router injection ---
     # The hash-router script lets the parent dashboard select a variant by

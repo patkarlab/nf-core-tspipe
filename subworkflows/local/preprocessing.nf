@@ -127,6 +127,7 @@ workflow PREPROCESSING {
         ch_sexed_exon_coverage = withResolvedSex(PARSE_EXON_COVERAGE.out.tsv, ch_sex_by_id)
         ch_sexed_dashboard = withResolvedSex(SAMPLE_DASHBOARD.out.html, ch_sex_by_id)
         ch_sexed_fastp_html = withResolvedSex(FASTP.out.html, ch_sex_by_id)
+        ch_sexed_fastp_json = withResolvedSex(FASTP.out.json, ch_sex_by_id)   // DASH_QC_V2
         ch_sexed_sex_check = withResolvedSex(SEX_CHECK.out.tsv, ch_sex_by_id)
 
     emit:
@@ -139,5 +140,6 @@ workflow PREPROCESSING {
         exon_coverage = ch_sexed_exon_coverage
         dashboard     = ch_sexed_dashboard
         fastp_html    = ch_sexed_fastp_html
+        fastp_json    = ch_sexed_fastp_json   // DASH_QC_V2
         sex_check     = ch_sexed_sex_check
 }

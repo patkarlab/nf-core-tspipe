@@ -16,6 +16,7 @@ process ORGANIZE_OUTPUT {
               path(hsmetrics),
               path(exon_coverage),
               path(fastp_html),
+              path(fastp_json),   // MARKER DASH_QC_V2
               path(igv_report),
               path(dashboard),
               // MARKER CNV_RETIRE_7B: legacy CNV inputs (clinical/annotated tables, CNVkit plots) removed
@@ -58,6 +59,7 @@ process ORGANIZE_OUTPUT {
             --hsmetrics           ${hsmetrics} \\
             --exon-coverage       ${exon_coverage} \\
             --fastp-html          ${fastp_html} \\
+            --fastp-json          ${fastp_json} \\
             --igv-report          ${igv_report} \\
             --dashboard           ${dashboard} \\
             ${cnv_consensus_genes_arg} \\
@@ -93,6 +95,7 @@ process ORGANIZE_OUTPUT {
         touch clinical/${meta.id}_hsmetrics.txt
         touch clinical/${meta.id}_exon_coverage.tsv
         touch clinical/${meta.id}_fastp.html
+        touch clinical/${meta.id}_fastp.json
         touch clinical/${meta.id}_igv_report.html
         touch clinical/${meta.id}_dashboard.html
         touch versions.yml
