@@ -1,0 +1,25 @@
+# spikein_regions.tsv -- SPIKEIN_V1 (D13)
+# Twist myeloid TE-99430185 non-exonic spike-in targets.
+# Region rows: BED-style 0-based half-open intervals, named exactly as in targets.exonwise.bed
+#   so the dashboard joins <sample>_exon_coverage.tsv on Gene (Exon "-").
+# SNP rows: pos is the 1-based site. In the hg38 Main probe BED
+#   (probes_ok_ACTREC_Myeloid_TE-99430185_hg38_Main_260602213057.bed) every SNP sits at
+#   probe start + 61; verified against dbSNP GRCh38 on 2026-09-08.
+#   rs63723577 (probe label) is a merged identifier for rs10821936.
+#   rs3824662 has no probe of its own; it is the centre of the GATA3_intronic probe.
+# risk_allele: plus-strand allele reported by the association literature; "-" = not curated,
+#   no carrier call is made for that site.
+name	class	chrom	start	end	pos	gene	rsid	rsid_alias	risk_allele	description
+MLH1_5UTR	regulatory	chr3	36993328	36993568	-	MLH1	-	-	-	MLH1 promoter / 5'UTR
+KLHDC8B_5UTR	regulatory	chr3	49171580	49171700	-	KLHDC8B	-	-	-	KLHDC8B 5'UTR
+GATA2_intron4	regulatory	chr3	128482979	128483579	-	GATA2	-	-	-	GATA2 intron 4 (+9.5 kb) enhancer
+TERC	regulatory	chr3	169764399	169765734	-	TERC	-	-	-	TERC (telomerase RNA component)
+GATA3_intronic	regulatory	chr10	8062184	8062304	-	GATA3	-	-	-	GATA3 intronic enhancer, centred on rs3824662
+ANKRD26_5UTR	regulatory	chr10	27100326	27100510	-	ANKRD26	-	-	-	ANKRD26 5'UTR
+FANCI_intron31	regulatory	chr15	89305910	89306030	-	FANCI	-	-	-	FANCI intron 31
+DKC1_5UTR	regulatory	chrX	154762755	154762964	-	DKC1	-	-	-	DKC1 5'UTR
+GATA3_rs3824662	germline_snp	chr10	8062244	8062245	8062245	GATA3	rs3824662	-	A	B-ALL (BCR::ABL1-like) germline risk SNP
+GATA3_rs3781093	germline_snp	chr10	8059963	8059964	8059964	GATA3	rs3781093	-	-	B-ALL germline risk SNP
+ARID5B_rs10994982	germline_snp	chr10	61950344	61950345	61950345	ARID5B	rs10994982	-	-	B-ALL germline risk SNP
+ARID5B_rs10821936	germline_snp	chr10	61963817	61963818	61963818	ARID5B	rs10821936	rs63723577	C	B-ALL germline risk SNP
+IKZF1_rs11978267	germline_snp	chr7	50398605	50398606	50398606	IKZF1	rs11978267	-	G	B-ALL germline risk SNP

@@ -75,6 +75,8 @@ process DASHBOARD {
         def py            = params.dashboard_python ?: "${params.legacy_python_env}/bin/python"
         def known_low     = file("${projectDir}/assets/${params.panel}/known_low_exons.tsv")   // DASH_QC_V1d
         def known_low_arg = known_low.exists() ? "--known-low-exons ${known_low}" : ''
+        def spikein_asset = file("${projectDir}/assets/${params.panel}/spikein_regions.tsv")   // SPIKEIN_V1
+        def spikein_arg   = spikein_asset.exists() ? "--spikein-regions ${spikein_asset}" : ''
         def sample_ids_sh = sample_ids.collect { "'${it}'" }.join(' ')
         """
         set -euo pipefail
@@ -121,6 +123,7 @@ process DASHBOARD {
             ${ params.oncokb_enabled ? "--annotate-oncokb" : "" } \\
             ${ params.oncokb_enabled && params.oncokb_token ? "--oncokb-token '" + params.oncokb_token + "'" : "" } \\
             ${known_low_arg} \\
+            ${spikein_arg} \\
             ${task.ext.args ?: ''}
 
         # ----------------------------------------------------------------

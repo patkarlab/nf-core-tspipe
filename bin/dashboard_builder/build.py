@@ -44,6 +44,7 @@ from parsers import flt3 as p_flt3
 from parsers import coverage as p_coverage
 from parsers import cnv_v2 as p_cnv_v2   # MARKER DASH_CNV_V1
 from parsers import fastp as p_fastp   # DASH_QC_V2
+from parsers import spikein as p_spikein   # SPIKEIN_V1
 from parsers import igv as p_igv
 from parsers import genebe as p_genebe
 from parsers import mobidetails as p_mobidetails
@@ -297,6 +298,15 @@ def collect_sample_context(sample_dir, build_time, subdir="",
         ctx["fastp"] = p_fastp.parse(fastp_path)
     except Exception as exc:
         logging.warning("[%s] fastp parse failed: %s", sample, exc)
+    ctx["spikein"] = None   # SPIKEIN_V1: Spike-in tab renders only when the panel has the asset
+    if p_spikein.ASSET_PATH:
+        try:
+            ctx["spikein"] = p_spikein.parse(
+                p_spikein.ASSET_PATH, coverage_path=cov_path,
+                snps_path=effective_dir / f"{sample}.spikein_snps.tsv",
+                filtered=ctx.get("filtered"))
+        except Exception as exc:
+            logging.warning("[%s] spikein parse failed: %s", sample, exc)
 
     # --- CNV (MARKER CNV_RETIRE_7B: v2 parser only; legacy parsers/cnv.py retired) ---
     try:
@@ -609,8 +619,14 @@ def main():
              "VariantValidator VV_Exon. Optional; without it, exon falls back "
              "to VEP's EXON column."
     )
+    parser.add_argument(
+        "--spikein-regions", dest="spikein_regions", default=None,
+        help="spikein_regions.tsv for the panel: non-exonic spike-in regions and germline "
+             "SNP sites shown on the Spike-in tab. Optional."   # SPIKEIN_V1
+    )
     args = parser.parse_args()
     p_coverage.KNOWN_LOW_EXONS_PATH = args.known_low_exons   # DASH_QC_V1d
+    p_spikein.ASSET_PATH = args.spikein_regions   # SPIKEIN_V1
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,

@@ -25,7 +25,8 @@ process ORGANIZE_OUTPUT {
               path(decon_filtered), path(decon_genes),
               path(purple_summary), path(purple_genes), path(purple_dir),
               path(sex_check),
-              path(reconcnv_dir)   // MARKER VIZ_V1 (MARKER VIZ_V1b: styled_scatter_dir removed)
+              path(reconcnv_dir),   // MARKER VIZ_V1 (MARKER VIZ_V1b: styled_scatter_dir removed)
+              path(spikein)   // MARKER SPIKEIN_V1: SPIKEIN_SITES genotype table
 
     output:
         tuple val(meta), path("clinical/"), emit: clinical
@@ -45,6 +46,7 @@ process ORGANIZE_OUTPUT {
         def purple_dir_arg = purple_dir ? "--purple-dir ${purple_dir}" : ''
         def sex_check_arg = sex_check ? "--sex-check ${sex_check}" : ''
         def reconcnv_dir_arg = reconcnv_dir ? "--reconcnv-dir ${reconcnv_dir}" : ''
+        def spikein_arg = spikein ? "--spikein-snps ${spikein}" : ''   // SPIKEIN_V1
         """
         organize_output.py \\
             --sample              ${meta.id} \\
@@ -73,7 +75,8 @@ process ORGANIZE_OUTPUT {
             ${purple_genes_arg} \\
             ${purple_dir_arg} \\
             ${sex_check_arg} \\
-            ${reconcnv_dir_arg}
+            ${reconcnv_dir_arg} \\
+            ${spikein_arg}
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -98,6 +101,7 @@ process ORGANIZE_OUTPUT {
         touch clinical/${meta.id}_fastp.json
         touch clinical/${meta.id}_igv_report.html
         touch clinical/${meta.id}_dashboard.html
+        touch clinical/${meta.id}.spikein_snps.tsv
         touch versions.yml
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

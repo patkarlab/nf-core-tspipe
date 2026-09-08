@@ -142,6 +142,7 @@ def main():
     parser.add_argument("--sex-check", default=None, help="SEX_CHECK table (optional; ORG_CNV_V1)")
     parser.add_argument("--styled-scatter-dir", default=None, help="unused since MARKER VIZ_V1b; accepted for compatibility")
     parser.add_argument("--reconcnv-dir", default=None, help="RECONCNV directory (optional; VIZ_V1)")
+    parser.add_argument("--spikein-snps", default=None, help="SPIKEIN_SITES genotype table (optional; SPIKEIN_V1)")
     # Optional inputs (may be sentinels)
     parser.add_argument("--u2af1-report", required=True,
                         help="Optional; sentinel allowed")
@@ -235,6 +236,12 @@ def main():
             hardlink_dir(Path(src), cnv2 / sub, "CNV v2 " + desc)
         else:
             logger.info("skip (absent): %s", desc)
+
+    # --- Spike-in SNP genotypes (MARKER SPIKEIN_V1): top-level clinical/<sample>.spikein_snps.tsv ---
+    if present(args.spikein_snps):
+        hardlink(args.spikein_snps, out / Path(args.spikein_snps).name, "spike-in SNP genotypes")
+    else:
+        logger.info("skip (absent): spike-in SNP genotypes")
 
     # --- Summary ---
     total_bytes, unique_files = disk_usage_dedup(out)

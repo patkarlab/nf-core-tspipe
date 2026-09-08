@@ -26,6 +26,10 @@
       {% set _bl_rows = (ctx.filtered.rows if ctx.filtered and ctx.filtered.rows else []) | selectattr('Filter', 'equalto', 'BLACKLIST') | list %}
       {% set _bl_supported = _bl_rows | selectattr('VariantCaller_Count', 'ne', '-1') | selectattr('VariantCaller_Count', 'ne', '1') | selectattr('VariantCaller_Count', 'ne', '0') | list %}
       <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#tab-blacklist" type="button" role="tab">Blacklisted <span class="badge bg-secondary ms-1">{{ _bl_supported | length }}</span></button></li>
+      {# SPIKEIN_V1 (D13) #}
+      {% if ctx.spikein %}
+      <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#tab-spikein" type="button" role="tab">Spike-in <span class="badge bg-secondary ms-1">{{ ctx.spikein.n_variants }}</span></button></li>
+      {% endif %}
       <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#tab-flt3"      type="button" role="tab">FLT3</button></li>
       <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#tab-cnv"       type="button" role="tab">CNV</button></li>
       <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#tab-igv"       type="button" role="tab">IGV</button></li>
@@ -354,6 +358,76 @@
           <div class="tspipe-empty">No blacklisted variants in this sample.</div>
         {% endif %}
       </div>
+
+      {# ===== Spike-in tab (SPIKEIN_V1, D13) ===== #}
+      {% if ctx.spikein %}
+      <div class="tab-pane fade" id="tab-spikein" role="tabpanel">
+        <h4>Spike-in regions and germline risk SNPs</h4>
+        <p class="text-muted small mb-2">
+          Non-exonic targets of the panel (<code>assets/&lt;panel&gt;/spikein_regions.tsv</code>): regulatory regions whose calls the
+          consequence filter keeps out of the clinical table, and germline B-ALL risk SNPs genotyped directly from the BAM.
+          Region coverage is the mean over the interval (duplicates included) against the {{ ctx.spikein.tier_x }}x reportability tier.
+          Every <code>somaticseq.filtered.tsv</code> call inside a region is listed with its Filter value; none of it has been reviewed for
+          reporting. SNP genotypes are germline calls read from a tumour sample: a copy-number change or copy-neutral LOH on that
+          chromosome can shift the allele fraction. Sites below {{ ctx.spikein.min_depth }}x are not called.
+        </p>
+
+        <h5 class="mt-3">Regions</h5>
+        <div class="table-responsive">
+          <table id="spikein-regions-table" class="table table-sm table-striped w-100">
+            <thead><tr><th>region</th><th>gene</th><th>interval (hg38)</th><th>bp</th><th>mean cov</th><th>&ge;100x %</th><th>&ge;250x %</th><th>&ge;500x %</th><th>{{ ctx.spikein.tier_x }}x</th><th>calls</th><th>note</th></tr></thead>
+            <tbody>
+            {% for r in ctx.spikein.regions %}
+              <tr><td>{{ r.name }}</td><td>{{ r.gene }}</td><td class="text-nowrap">{{ r.chrom }}:{{ r.start }}-{{ r.end }}</td><td>{{ r.length }}</td>
+                  <td>{{ '%.0f' | format(r.mean_cov) if r.mean_cov is not none else 'n/a' }}</td>
+                  <td>{{ r.pct_100x if r.pct_100x is not none else '' }}</td><td>{{ r.pct_250x if r.pct_250x is not none else '' }}</td><td>{{ r.pct_500x if r.pct_500x is not none else '' }}</td>
+                  <td>{% if r.at_tier is none %}<span class="badge bg-secondary">no coverage row</span>{% elif r.at_tier %}<span class="badge bg-success">PASS</span>{% else %}<span class="badge bg-warning text-dark">BELOW</span>{% endif %}</td>
+                  <td>{{ r.variants | length }}</td><td class="small">{{ r.description }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <h5 class="mt-3">Calls inside spike-in regions <span class="badge bg-secondary">{{ ctx.spikein.n_variants }}</span></h5>
+        {% if ctx.spikein.region_variants %}
+          <div class="table-responsive">
+            <table id="spikein-variants-table" class="table table-sm table-striped table-hover w-100">
+              <thead><tr><th>region</th><th>gene</th><th>position</th><th>HGVSc</th><th>HGVSp</th><th>consequence</th><th>class</th><th>VAF %</th><th>callers</th><th>n</th><th>Max AF</th><th>ClinVar</th><th>Filter</th></tr></thead>
+              <tbody>
+              {% for v in ctx.spikein.region_variants %}
+                <tr><td>{{ v.region }}</td><td>{{ v.Gene }}</td><td class="text-nowrap">{{ v.Chr }}:{{ v.Start }} {{ v.Ref }}&gt;{{ v.Alt }}</td>
+                    <td>{{ v.HGVSc }}</td><td>{{ v.HGVSp }}</td><td class="small">{{ v.Consequence }}</td><td>{{ v.Variant_Class }}</td>
+                    <td>{{ v.VAF_pct }}</td><td class="small">{{ v.Callers }}</td><td>{{ v.VariantCaller_Count }}</td>
+                    <td>{{ v.Max_AF }}</td><td class="small">{{ v.ClinVar_Significance }}</td>
+                    <td>{% if v.Filter == 'PASS' %}<span class="badge bg-success">PASS</span>{% else %}<span class="badge bg-light text-dark border">{{ v.Filter }}</span>{% endif %}</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="tspipe-empty">No calls inside the spike-in regions in this sample.</div>
+        {% endif %}
+
+        <h5 class="mt-3">Germline risk SNP genotypes</h5>
+        <div class="table-responsive">
+          <table id="spikein-snps-table" class="table table-sm table-striped w-100">
+            <thead><tr><th>site</th><th>rsID</th><th>gene</th><th>position (hg38)</th><th>ref</th><th>alt</th><th>ref n</th><th>alt n</th><th>depth</th><th>alt AF</th><th>genotype</th><th>risk allele</th><th>risk copies</th><th>status</th><th>caller Filter</th></tr></thead>
+            <tbody>
+            {% for s in ctx.spikein.snps %}
+              <tr><td>{{ s.name }}</td><td>{{ s.rsid }}{% if s.rsid_alias and s.rsid_alias != '-' %} <span class="text-muted small">({{ s.rsid_alias }})</span>{% endif %}</td><td>{{ s.gene }}</td>
+                  <td class="text-nowrap">{{ s.chrom }}:{{ s.pos }}</td><td>{{ s.ref if s.ref is defined else '' }}</td><td>{{ s.alt if s.alt is defined else '' }}</td>
+                  <td>{{ s.ref_count if s.ref_count is defined else '' }}</td><td>{{ s.alt_count if s.alt_count is defined else '' }}</td><td>{{ s.depth if s.depth is defined else '' }}</td><td>{{ s.alt_af if s.alt_af is defined else '' }}</td>
+                  <td>{% if s.genotype is defined and s.genotype != '-' %}<span class="badge {% if s.genotype == 'het' %}bg-info text-dark{% elif s.genotype == 'hom_alt' %}bg-primary{% else %}bg-secondary{% endif %}">{{ s.genotype }}</span>{% endif %}</td>
+                  <td>{{ s.risk_allele }}</td>
+                  <td>{% if s.risk_copies is defined and s.risk_copies in ['1', '2'] %}<span class="badge bg-warning text-dark">{{ s.risk_copies }}</span>{% elif s.risk_copies is defined %}{{ s.risk_copies }}{% endif %}</td>
+                  <td>{% if s.status == 'OK' %}<span class="badge bg-success">OK</span>{% else %}<span class="badge bg-warning text-dark">{{ s.status }}</span>{% endif %}</td>
+                  <td class="small">{% if s.filtered_row %}{{ s.filtered_row.Filter }} ({{ s.filtered_row.VAF_pct }}%){% else %}not called{% endif %}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
 
       <div class="tab-pane fade" id="tab-filtered" role="tabpanel">
         <h4>All filtered variants</h4>
@@ -927,6 +1001,7 @@
 
     if ($('#coverage-table').length)     { $('#coverage-table').DataTable({ pageLength: 25, order: [] }); }
     if ($('#blacklist-table').length)    { $('#blacklist-table').DataTable({ pageLength: 25, order: [[7, 'desc'], [5, 'desc']] }); }   // DASH_BLACKLIST_V1
+    if ($('#spikein-variants-table').length) { $('#spikein-variants-table').DataTable({ pageLength: 25, order: [] }); }   // SPIKEIN_V1
     // DASH_QC_V1: gene tables + per-gene median chart
     if ($('#qc-low-genes-table').length) { $('#qc-low-genes-table').DataTable({ pageLength: 25, order: [[2, 'asc']] }); }
     if ($('#qc-gene-table').length)      { $('#qc-gene-table').DataTable({ pageLength: 25, order: [[2, 'asc']] }); }

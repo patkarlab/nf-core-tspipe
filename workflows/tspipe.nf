@@ -424,6 +424,7 @@ workflow TSPIPE {
         .join(ch_purple_dir)                                                 // + purple_dir
         .join(PREPROCESSING.out.sex_check)                                   // + sex_check
         .join(RECONCNV.out.dir)                                              // + reconcnv_dir
+        .join(PREPROCESSING.out.spikein)                                     // + spikein (SPIKEIN_V1)
 
     ORGANIZE_OUTPUT(ch_organize)
 

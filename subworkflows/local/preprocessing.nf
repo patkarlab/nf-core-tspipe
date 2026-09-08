@@ -13,6 +13,7 @@ include { HSMETRICS              } from '../../modules/local/hsmetrics'
 include { MOSDEPTH               } from '../../modules/local/mosdepth'
 include { PARSE_EXON_COVERAGE    } from '../../modules/local/parse_exon_coverage'
 include { SEX_CHECK              } from '../../modules/local/sex_check'   // MARKER SEX_CHECK_V1
+include { SPIKEIN_SITES          } from '../../modules/local/spikein_sites'   // MARKER SPIKEIN_V1
 include { SAMPLE_DASHBOARD       } from '../../modules/local/sample_dashboard'
 
 // MARKER SEX_CHECK_V1: rewrite meta.sex on a [meta, ...] channel from the per-sample
@@ -86,6 +87,18 @@ workflow PREPROCESSING {
             reference_ch,
             ch_sex_het_catalog
         )
+        // MARKER SPIKEIN_V1: germline spike-in SNP genotypes on the final BAM. Panels without
+        // assets/<panel>/spikein_regions.tsv stage [] and get a header-only table.
+        def spikein_asset_path = "${projectDir}/assets/${params.panel}/spikein_regions.tsv"
+        def spikein_asset_file = file(spikein_asset_path)
+        if( !spikein_asset_file.exists() )
+            log.info "[SPIKEIN_SITES] no spike-in asset at ${spikein_asset_path}; header-only tables"
+        ch_spikein_asset = Channel.value( spikein_asset_file.exists() ? spikein_asset_file : [] )
+        SPIKEIN_SITES(
+            ABRA2.out.bam,
+            reference_ch,
+            ch_spikein_asset
+        )
         // MARKER SEX_CHECK_V1a: the map closure is replayed per consumer of ch_sex_by_id; log once.
         def sex_check_logged = java.util.concurrent.ConcurrentHashMap.newKeySet()
         ch_sex_by_id = SEX_CHECK.out.tsv
@@ -129,6 +142,7 @@ workflow PREPROCESSING {
         ch_sexed_fastp_html = withResolvedSex(FASTP.out.html, ch_sex_by_id)
         ch_sexed_fastp_json = withResolvedSex(FASTP.out.json, ch_sex_by_id)   // DASH_QC_V2
         ch_sexed_sex_check = withResolvedSex(SEX_CHECK.out.tsv, ch_sex_by_id)
+        ch_sexed_spikein = withResolvedSex(SPIKEIN_SITES.out.tsv, ch_sex_by_id)   // SPIKEIN_V1
 
     emit:
         trimmed       = ch_sexed_trimmed
@@ -142,4 +156,5 @@ workflow PREPROCESSING {
         fastp_html    = ch_sexed_fastp_html
         fastp_json    = ch_sexed_fastp_json   // DASH_QC_V2
         sex_check     = ch_sexed_sex_check
+        spikein       = ch_sexed_spikein   // SPIKEIN_V1
 }
