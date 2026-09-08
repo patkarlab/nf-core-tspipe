@@ -625,13 +625,36 @@ _CAVA_HGVS_RE = {
 }
 
 
+_CAVA_ACC_RE = re.compile(r"^[A-Za-z]{2}_[0-9]+\.[0-9]+(\([^)]*\))?$")   # CAVA_V1b2: NP_1.1 / NC_1.1(NM_2.2)
+
+
+def _cava_split_hgvs(value):
+    """CAVA_V1b2: tokenise a ':'-joined multi-transcript HGVS value.
+
+    Items are either '<accession>:<description>' (two tokens) or '.' (one token,
+    a transcript with no value at this level), so a plain split on ':' cannot be
+    used. An accession token opens an item and consumes the next token.
+    """
+    tokens = value.split(":")
+    items, i = [], 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if _CAVA_ACC_RE.match(tok) and i + 1 < len(tokens):
+            items.append(tok + ":" + tokens[i + 1])
+            i += 2
+        else:
+            items.append(tok)
+            i += 1
+    return items
+
+
 def _cava_split(tag, value, n_transcripts):
     """Split one CAVA tag value into a per-transcript list of length n_transcripts."""
     value = _urlparse_cava.unquote(value or "")
     if n_transcripts <= 1:
         return [value]
     if tag in _CAVA_HGVS_RE:
-        parts = _CAVA_HGVS_RE[tag].findall(value)
+        parts = _cava_split_hgvs(value)   # CAVA_V1b2
         if len(parts) == n_transcripts:
             return parts
         return [value] * n_transcripts       # unexpected shape: keep whole string

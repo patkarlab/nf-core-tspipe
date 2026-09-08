@@ -49,7 +49,7 @@ process VEP_ANNOTATE {
     script:
         """
         # annotate.py ANNOVAR_KEY_V1: ANNOVAR rows keyed on the VCF record; A19 COSMIC_ID from VEP Existing_variation (bash comment; busts the task cache)
-        # CAVA_V1b (N3): --cava-vcf merges CAVA_* columns
+        # CAVA_V1b (N3): --cava-vcf merges CAVA_* columns; CAVA_V1b2 multi-transcript split fix; CSQ_MANE_V1 MANE-first CSQ selection (bash comment; busts the task cache)
         annotate.py \\
             --somaticseq-vcf ${vcf} \\
             --cava-vcf ${cava_vcf} \\
