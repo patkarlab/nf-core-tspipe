@@ -10,7 +10,7 @@ from pathlib import Path
 
 FASTP_THRESHOLDS = {
     "q30_min": 0.85,        # Q30 fraction after filtering below this -> REVIEW
-    "insert_peak_min": 150, # insert-size peak (bp) below this -> REVIEW
+    "insert_peak_min": 120, # insert-size peak (bp) below this -> REVIEW (DASH_QC_V2b: run8 peaks 144-164 bp)
 }
 
 
