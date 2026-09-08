@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 bin/plot_targets_trio.py  (TARGETS_TRIO_V2.7; explicit inputs for the CHROM_PAGES module; py3.6/matplotlib 3.2 safe)
+MARKER IDEO_V1: --cytoband adds a target-space cytoband strip under the targets track on
+--every-chrom pages, band names in the targets footer, band ranges on backbone runs.
 
 Target-space trio for one sample (depth, BAF, PURPLE) with three layouts:
   --style interleaved  targets in genomic order (exons, SNP windows, backbone tiles);
@@ -43,6 +45,97 @@ CENTROMERE = {"chr1": 123.4, "chr2": 93.9, "chr3": 90.9, "chr4": 50.0, "chr5": 4
 GENE_COLOURS = ["#dbe9f6", "#e8f4e0", "#fbe9d9", "#efe3f5", "#f6f0d5", "#ddf1f1"]
 C_NEUT, C_LOSS, C_GAIN = "#2e8b57", "#c0392b", "#1f5fbf"   # TITAN-style: neutral green, loss red, gain blue
 C_HET, C_DEV = "0.55", "#2e8b57"                              # BAF: near 0.5 grey, deviated green
+
+
+# ---------------------------------------------------------------- IDEO_V1: cytobands
+STAIN_COLOURS = {"gneg": "#ffffff", "gpos25": "#c8c8c8", "gpos50": "#9a9a9a", "gpos75": "#666666",
+                 "gpos100": "#2b2b2b", "acen": "#c0392b", "gvar": "#dcdcdc", "stalk": "#e9e9e9"}
+DARK_STAINS = ("gpos75", "gpos100", "acen")
+
+
+def read_cytobands(path):
+    """IDEO_V1: UCSC cytoBand.txt -> {chrom: [(start, end, band, stain)]} sorted by start."""
+    bands = {}
+    if not path:
+        return bands
+    with open(path) as fh:
+        for line in fh:
+            f = line.rstrip("\n").split("\t")
+            if len(f) < 5 or f[0].startswith("#"):
+                continue
+            c = norm_chrom(f[0])
+            if c not in CHROM_ORDER:
+                continue
+            bands.setdefault(c, []).append((int(f[1]), int(f[2]), f[3], f[4]))
+    for v in bands.values():
+        v.sort()
+    print("[ok] cytobands: %d chromosomes" % len(bands))
+    return bands
+
+
+def band_at(bands, c, pos):
+    """IDEO_V1: (band, stain, start, end) containing pos, or None."""
+    lst = bands.get(c, [])
+    if not lst:
+        return None
+    starts = [b[0] for b in lst]
+    i = bisect.bisect_right(starts, pos) - 1
+    if i < 0 or pos >= lst[i][1]:
+        return None
+    s, e, name, stain = lst[i]
+    return name, stain, s, e
+
+
+def chrom_label(c):
+    return c[3:] if c.startswith("chr") else c
+
+
+def band_span(bands, c, s, e):
+    """IDEO_V1: '9p21.3' or '9p24.1-p13.1' for the bands overlapping [s, e); '' without a catalog."""
+    hits = [b for (bs, be, b, st) in bands.get(c, []) if bs < e and be > s]
+    if not hits:
+        return ""
+    if len(hits) == 1:
+        return chrom_label(c) + hits[0]
+    return "%s%s-%s" % (chrom_label(c), hits[0], hits[-1])
+
+
+def draw_ideogram(ax, sel, xs, bands, args):
+    """IDEO_V1: cytoband strip in target space; consecutive targets in one band form one block."""
+    ax.set_ylim(0, 1); ax.set_yticks([]); ax.set_xticks([])
+    for sp in ("top", "right", "left", "bottom"):
+        ax.spines[sp].set_visible(False)
+    ax.set_ylabel("cytoband", fontsize=8)
+    if not bands or not sel:
+        return
+    total_w = max(x1 for _, x1 in xs) if xs else 1
+    runs = []   # [chrom, band, stain, x0, x1, band_start, band_end, n_skipped_before]
+    for (c, s, e, name), (x0, x1) in zip(sel, xs):
+        hit = band_at(bands, c, (s + e) // 2)
+        if hit is None:
+            continue
+        b, stain, bs, be = hit
+        if runs and runs[-1][0] == c and runs[-1][1] == b:
+            runs[-1][4] = x1
+        else:
+            skipped = 0
+            if runs and runs[-1][0] == c:
+                prev_end = runs[-1][6]
+                skipped = sum(1 for (qs, qe, q, st) in bands[c] if qs >= prev_end and qe <= bs)
+            runs.append([c, b, stain, x0, x1, bs, be, skipped])
+    for c, b, stain, x0, x1, bs, be, skipped in runs:
+        w = x1 - x0
+        ax.add_patch(plt.Rectangle((x0, 0.12), w, 0.76, facecolor=STAIN_COLOURS.get(stain, "#ffffff"),
+                                   edgecolor="0.25", linewidth=0.5, zorder=2))
+        lab = chrom_label(c) + b
+        col = "white" if stain in DARK_STAINS else "black"
+        if w >= 0.035 * total_w:
+            ax.text((x0 + x1) / 2.0, 0.5, lab, ha="center", va="center", fontsize=6.5, color=col, zorder=3)
+        elif w >= 0.006 * total_w:
+            ax.text((x0 + x1) / 2.0, 0.5, lab, ha="center", va="center", fontsize=5, rotation=90, color=col, zorder=3)
+        if skipped:
+            ax.plot([x0 - args.gap / 2.0, x0 - args.gap / 2.0], [0.02, 0.98], color="0.3", lw=0.7, ls=":", zorder=4)
+    print("[ok] ideogram: %d band blocks" % len(runs))
 
 
 def depth_colour(v):
@@ -342,7 +435,7 @@ def groups_of(sel, xs):
 
 
 # ---------------------------------------------------------------- drawing
-def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, colorbar=True):
+def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, colorbar=True, bands=None):   # IDEO_V1: bands
     bin_by, site_by, site_pos, find_seg = ctx["bin_by"], ctx["site_by"], ctx["site_pos"], ctx["find_seg"]
     L = args.log2_lim
     dx, dy, dw, clip_lo, clip_hi = [], [], [], [], []
@@ -436,12 +529,19 @@ def draw_panels(axes, sel, xs, ctx, args, show_gene_bands=True, colorbar=True):
             lab = ("SNP (n=%d)" % n) if (n >= big and wide) else ""
         elif key[1] == "backbone":
             lab = ("backbone (n=%d)" % n) if (n >= big and wide) else ""
+            if lab and bands:   # IDEO_V1: band range of the run
+                span_lab = band_span(bands, key[0], gs, ge)
+                lab = ("%s %s" % (span_lab, lab)) if span_lab else lab
         else:
             lab = key[2]
         if lab:
             t.text((g0 + g1) / 2.0, 0.9 + 0.16 * (k % 2), lab, ha="center", va="bottom", fontsize=7.5); k += 1
         if key[1] == "exon" or (n >= big and wide):
-            t.text((g0 + g1) / 2.0, 0.02, "%.2f-%.2f Mb" % (gs / 1e6, ge / 1e6), ha="center", va="bottom", fontsize=5.5, color="0.35")
+            foot = "%.2f-%.2f Mb" % (gs / 1e6, ge / 1e6)
+            if bands and key[1] == "exon":   # IDEO_V1: band in the gene footer
+                span_lab = band_span(bands, key[0], gs, ge)
+                foot = ("%s  %s" % (span_lab, foot)) if span_lab else foot
+            t.text((g0 + g1) / 2.0, 0.02, foot, ha="center", va="bottom", fontsize=5.5, color="0.35")
     t.set_ylabel("targets", fontsize=8)
     width = max(x1 for _, x1 in xs) if xs else 1
     for a in axes:
@@ -480,7 +580,9 @@ def main():
     ap.add_argument("--no-gene-panels", action="store_true", help="omit the per-gene exon panels below the chromosome view")
     ap.add_argument("--gene-cols", type=int, default=5, help="columns of per-gene panels")
     ap.add_argument("--decon-min-bf", type=float, default=5.0, help="DECoN calls drawn in the gene panels at or above this BF")
+    ap.add_argument("--cytoband", default=None, help="UCSC cytoBand.txt (IDEO_V1): cytoband strip and band labels; optional")
     args = ap.parse_args()
+    bands = read_cytobands(args.cytoband)   # IDEO_V1
 
     sd = args.sample_dir or ""
     targets = read_targets(args.targets)
@@ -608,10 +710,13 @@ def main():
             g_rows = len(rows)
             fig = plt.figure(figsize=(fig_w, 10 + 2.4 * g_rows))
             outer = fig.add_gridspec(2 if g_rows else 1, 1, height_ratios=[10, 2.4 * g_rows] if g_rows else [1], hspace=0.16)
-            inner = outer[0].subgridspec(4, 1, height_ratios=[1.1, 1.0, 1.1, 0.55], hspace=0.1)
+            # IDEO_V1: fifth row, the cytoband strip, directly under the targets track
+            inner = outer[0].subgridspec(5, 1, height_ratios=[1.1, 1.0, 1.1, 0.55, 0.26], hspace=0.1)
             axes = [fig.add_subplot(inner[0])]
             axes += [fig.add_subplot(inner[i], sharex=axes[0]) for i in range(1, 4)]
-            n = draw_panels(axes, sel, xs, ctx, args)
+            n = draw_panels(axes, sel, xs, ctx, args, bands=bands)
+            ideo = fig.add_subplot(inner[4], sharex=axes[0])
+            draw_ideogram(ideo, sel, xs, bands, args)
             if g_rows:
                 rows_gs = outer[1].subgridspec(g_rows, 1, hspace=0.9)
                 gaxes, glist = [], []

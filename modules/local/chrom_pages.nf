@@ -20,6 +20,7 @@ process CHROM_PAGES {
         path panel_bed
         path snp_base_bed
         path baf_background
+        path cytoband   // MARKER IDEO_V1 (empty list when absent)
 
     output:
         tuple val(meta), path("chrom_pages/${meta.id}.chrom_pages.tsv"), emit: index
@@ -37,17 +38,19 @@ process CHROM_PAGES {
         def purple_arg = purple_dir     ? "--purple-dir ${purple_dir}" : ''
         def snp_arg    = snp_base_bed   ? "--targets ${snp_base_bed}" : ''
         def bg_arg     = baf_background ? "--background ${baf_background}" : ''
+        def ideo_arg   = cytoband       ? "--cytoband ${cytoband}" : ''   // IDEO_V1
         """
         export MPLCONFIGDIR=\$PWD/.mpl
         export XDG_CACHE_HOME=\$PWD/.cache
         mkdir -p \$MPLCONFIGDIR \$XDG_CACHE_HOME chrom_pages
+        # chrom pages: IDEO_V1 cytoband strip (bash comment; busts the task cache)
 
         plot_targets_trio.py \\
             --sample ${meta.id} \\
             --consensus-json ${consensus_json} \\
             --allelic ${allelic} \\
             ${decon_arg} ${purple_arg} \\
-            --targets ${panel_bed} ${snp_arg} ${bg_arg} \\
+            --targets ${panel_bed} ${snp_arg} ${bg_arg} ${ideo_arg} \\
             --every-chrom \\
             --decon-min-bf ${params.exon_plot_min_bf} \\
             --out chrom_pages/${meta.id} \\

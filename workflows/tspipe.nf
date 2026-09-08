@@ -341,7 +341,7 @@ workflow TSPIPE {
             .join( GATK_CNV_CALLING.out.allelic, by: 0 )
             .join( ch_decon_filtered,            by: 0 )
             .join( ch_purple_dir,                by: 0 )
-        CHROM_PAGES( ch_chrom_pages_in, ch_cp_panel_bed, ch_cp_snp_base, ch_cp_baf_bg )
+        CHROM_PAGES( ch_chrom_pages_in, ch_cp_panel_bed, ch_cp_snp_base, ch_cp_baf_bg, ch_cnv_cytoband )   // IDEO_V1
         // VIZ_V1: reconCNV (styled scatters removed by MARKER VIZ_V1b; the genome overview lives in CHROM_PAGES)
         ch_viz_vcf = VARIANT_CALLING.out.mutect2_vcf.map { it -> [ it[0], it[1] ] }
         def reconcnv_tpl = params.containsKey('reconcnv_template') ? params.reconcnv_template : "${projectDir}/assets/reconcnv/reconcnv_config_twist_myeloid.json"
