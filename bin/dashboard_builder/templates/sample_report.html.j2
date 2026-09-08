@@ -354,7 +354,28 @@
 
         {% if ctx.cnv.decon_table and ctx.cnv.decon_table.rows %}
           <h5 class="mt-4">DECoN exon-level calls</h5>
-          <p class="text-muted small mb-2">Reportable calls and multi-exon calls at BF &ge; 5 (sub-threshold ones carry decision BELOW_BF).</p>
+          {# DASH_DECON_V1: BF explanation and column key #}
+          <p class="text-muted small mb-2">
+            Exon-level calls from DECoN, listed at Bayes factor (BF) &ge; 5; sub-threshold calls carry
+            decision BELOW_BF. BF is on a log10 scale, so BF 5 is about 100,000:1 evidence for a copy-number
+            change over none. Only calls at BF &ge; 8 (multi-exon deletions) or BF &ge; 12 (single exon)
+            vote as arm E in the consensus table above. Reads.ratio near 0.5 indicates a heterozygous
+            deletion, near 0 a homozygous deletion, near 1.5 a single-copy gain.
+          </p>
+          <details class="small text-muted mb-2">
+            <summary>Column key</summary>
+            <table class="table table-sm table-borderless mb-0" style="max-width: 1100px;">
+              <tbody>
+                <tr><td class="text-nowrap"><code>Gene, CNV.type, N.exons</code></td><td>gene, deletion or duplication, number of consecutive exons in the call</td></tr>
+                <tr><td class="text-nowrap"><code>Chromosome, Start, End</code></td><td>span of the called exons (hg38)</td></tr>
+                <tr><td class="text-nowrap"><code>BF</code></td><td>Bayes factor, log10 scale: the evidence for a copy-number change over no change, from the sample's exon read depth against the sex-matched pool of normals. BF 5 is roughly 100,000:1; larger is stronger. Calls with BF &ge; 5 are listed; a call enters the consensus as arm E only at BF &ge; 8 for multi-exon deletions and BF &ge; 12 for single-exon calls</td></tr>
+                <tr><td class="text-nowrap"><code>Reads.ratio</code></td><td>observed / expected read depth over the called exons: about 0.5 for a heterozygous deletion, about 0 for a homozygous deletion, about 1.5 for a single-copy gain</td></tr>
+                <tr><td class="text-nowrap"><code>decision</code></td><td>how the call was classified: PASS, BELOW_BF (BF under the reporting threshold), or a flag naming why it is not reportable</td></tr>
+                <tr><td class="text-nowrap"><code>reportable</code></td><td>TRUE when the call meets the BF threshold and carries no disqualifying flag</td></tr>
+                <tr><td class="text-nowrap"><code>exon_flags</code></td><td>per-exon caveats such as PROBE_VARIANT (a variant under a probe can mimic a deletion), RECURRENT_IN_NORMALS or LOW_POWER</td></tr>
+              </tbody>
+            </table>
+          </details>
           {{ macros.render_datatable('cnv-decon-table', ctx.cnv.decon_table.columns, ctx.cnv.decon_table.rows) }}
         {% endif %}
 
