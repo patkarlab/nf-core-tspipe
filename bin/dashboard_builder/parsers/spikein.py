@@ -8,7 +8,8 @@ Inputs
 
 Returns None when there is no asset, else a dict:
   regions   list of region dicts with coverage and the filtered rows inside them
-  region_variants  the same rows flattened, each with a "region" key (for one DataTable)
+  region_variants  the same rows flattened, each with a "region" key
+  region_keys      Chr:Start:Ref:Alt of those rows, for the client-side variant browser (SPIKEIN_V1c)
   snps      list of SNP dicts (SPIKEIN_SITES row + the filtered row at that site, if any)
   n_variants, n_pass, n_low_regions, tier_x, min_depth
 Region variants are shown WITH their Filter value on purpose: the consequence
@@ -141,6 +142,7 @@ def parse(asset_path, coverage_path=None, snps_path=None, filtered=None):
 
     return {
         "regions": regions, "region_variants": region_variants, "snps": snps,
+        "region_keys": ["%s:%s:%s:%s" % (v.get("Chr", ""), v.get("Start", ""), v.get("Ref", ""), v.get("Alt", "")) for v in region_variants],
         "n_regions": len(regions), "n_snps": len(snps),
         "n_variants": n_variants, "n_pass": n_pass, "n_low_regions": n_low,
         "tier_x": TIER_X, "min_depth": MIN_DEPTH,

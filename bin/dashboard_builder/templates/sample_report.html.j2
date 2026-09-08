@@ -389,21 +389,10 @@
         </div>
 
         <h5 class="mt-3">Calls inside spike-in regions <span class="badge bg-secondary">{{ ctx.spikein.n_variants }}</span></h5>
+        {# SPIKEIN_V1c (D13b): rendered by the shared variant browser, see body_scripts #}
         {% if ctx.spikein.region_variants %}
-          <div class="table-responsive">
-            <table id="spikein-variants-table" class="table table-sm table-striped table-hover w-100">
-              <thead><tr><th>region</th><th>gene</th><th>position</th><th>HGVSc</th><th>HGVSp</th><th>consequence</th><th>class</th><th>VAF %</th><th>callers</th><th>n</th><th>Max AF</th><th>ClinVar</th><th>Filter</th></tr></thead>
-              <tbody>
-              {% for v in ctx.spikein.region_variants %}
-                <tr><td>{{ v.region }}</td><td>{{ v.Gene }}</td><td class="text-nowrap">{{ v.Chr }}:{{ v.Start }} {{ v.Ref }}&gt;{{ v.Alt }}</td>
-                    <td>{{ v.HGVSc }}</td><td>{{ v.HGVSp }}</td><td class="small">{{ v.Consequence }}</td><td>{{ v.Variant_Class }}</td>
-                    <td>{{ v.VAF_pct }}</td><td class="small">{{ v.Callers }}</td><td>{{ v.VariantCaller_Count }}</td>
-                    <td>{{ v.Max_AF }}</td><td class="small">{{ v.ClinVar_Significance }}</td>
-                    <td>{% if v.Filter == 'PASS' %}<span class="badge bg-success">PASS</span>{% else %}<span class="badge bg-light text-dark border">{{ v.Filter }}</span>{% endif %}</td></tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
+          <p class="text-muted small mb-1">Same cards and link-outs as the Variants tabs; the region is the gene column (TERC, GATA2, MLH1 ...).</p>
+          <div id="spikein-browser"></div>
         {% else %}
           <div class="tspipe-empty">No calls inside the spike-in regions in this sample.</div>
         {% endif %}
@@ -411,7 +400,7 @@
         <h5 class="mt-3">Germline risk SNP genotypes</h5>
         <div class="table-responsive">
           <table id="spikein-snps-table" class="table table-sm table-striped w-100">
-            <thead><tr><th>site</th><th>rsID</th><th>gene</th><th>position (hg38)</th><th>ref</th><th>alt</th><th>ref n</th><th>alt n</th><th>depth</th><th>alt AF</th><th>genotype</th><th>risk allele</th><th>risk copies</th><th>status</th><th>caller Filter</th></tr></thead>
+            <thead><tr><th>site</th><th>rsID</th><th>gene</th><th>position (hg38)</th><th>ref</th><th>alt</th><th>ref n</th><th>alt n</th><th>depth</th><th>alt AF</th><th>genotype</th><th>risk allele</th><th>risk copies</th><th>status</th><th>caller Filter</th><th>links</th></tr></thead>
             <tbody>
             {% for s in ctx.spikein.snps %}
               <tr><td>{{ s.name }}</td><td>{{ s.rsid }}{% if s.rsid_alias and s.rsid_alias != '-' %} <span class="text-muted small">({{ s.rsid_alias }})</span>{% endif %}</td><td>{{ s.gene }}</td>
@@ -421,7 +410,18 @@
                   <td>{{ s.risk_allele }}</td>
                   <td>{% if s.risk_copies is defined and s.risk_copies in ['1', '2'] %}<span class="badge bg-warning text-dark">{{ s.risk_copies }}</span>{% elif s.risk_copies is defined %}{{ s.risk_copies }}{% endif %}</td>
                   <td>{% if s.status == 'OK' %}<span class="badge bg-success">OK</span>{% else %}<span class="badge bg-warning text-dark">{{ s.status }}</span>{% endif %}</td>
-                  <td class="small">{% if s.filtered_row %}{{ s.filtered_row.Filter }} ({{ s.filtered_row.VAF_pct }}%){% else %}not called{% endif %}</td></tr>
+                  <td class="small">{% if s.filtered_row %}{{ s.filtered_row.Filter }} ({{ s.filtered_row.VAF_pct }}%){% else %}not called{% endif %}</td>
+                  {# SPIKEIN_V1c (D13b): link-outs #}
+                  {% set _c = s.chrom | replace('chr', '') %}
+                  {% set _ref = s.ref if (s.ref is defined and s.ref != '-') else '' %}
+                  {% set _alt = s.alt if (s.alt is defined and s.alt != '-') else (s.risk_allele if (s.risk_allele != '-' and s.risk_allele != _ref) else '') %}
+                  <td class="small text-nowrap">
+                    {% if s.rsid and s.rsid != '-' %}<a href="https://www.ncbi.nlm.nih.gov/snp/{{ s.rsid }}" target="_blank" rel="noopener">dbSNP</a>{% endif %}
+                    {% if _ref and _alt %}
+                      &middot; <a href="https://franklin.genoox.com/clinical-db/variant/snp/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}-hg38" target="_blank" rel="noopener">Franklin</a>
+                      &middot; <a href="https://genebe.net/variant/hg38/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}" target="_blank" rel="noopener">GeneBe</a>
+                    {% endif %}
+                  </td></tr>
             {% endfor %}
             </tbody>
           </table>
@@ -1001,7 +1001,36 @@
 
     if ($('#coverage-table').length)     { $('#coverage-table').DataTable({ pageLength: 25, order: [] }); }
     if ($('#blacklist-table').length)    { $('#blacklist-table').DataTable({ pageLength: 25, order: [[7, 'desc'], [5, 'desc']] }); }   // DASH_BLACKLIST_V1
-    if ($('#spikein-variants-table').length) { $('#spikein-variants-table').DataTable({ pageLength: 25, order: [] }); }   // SPIKEIN_V1
+    // SPIKEIN_V1c (D13b): spike-in region calls through the shared variant browser, initialised on first show
+    (function () {
+      var el = document.getElementById("spikein-browser");
+      if (!el || typeof initVariantBrowser !== "function") return;
+      var keys = new Set({{ (ctx.spikein.region_keys if ctx.spikein else []) | tojson }});
+      var inited = false;
+      function initSpikein() {
+        if (inited) return;
+        inited = true;
+        var rows = filteredVariants.filter(function (r) {
+          return keys.has((r.Chr || "") + ":" + (r.Start || "") + ":" + (r.Ref || "") + ":" + (r.Alt || ""));
+        });
+        initVariantBrowser({
+          containerId: "spikein-browser",
+          variants: rows,
+          filterIds: ["filter_status", "gene", "vaf_min", "callers_buttons"],
+          igvLookup: igvLookup,
+          igvFrameId: "igv-frame",
+          igvTabSelector: '[data-bs-target="#tab-igv"]',
+          genebeAnnotations: {},
+          oncokbAnnotations: {},
+          cancervarAnnotations: {},
+          mobidetailsAnnotations: {},
+          enableReportSelect: false
+        });
+      }
+      var btn = document.querySelector('[data-bs-target="#tab-spikein"]');
+      if (btn) btn.addEventListener("shown.bs.tab", initSpikein);
+      if (btn && btn.classList.contains("active")) initSpikein();
+    })();
     // DASH_QC_V1: gene tables + per-gene median chart
     if ($('#qc-low-genes-table').length) { $('#qc-low-genes-table').DataTable({ pageLength: 25, order: [[2, 'asc']] }); }
     if ($('#qc-gene-table').length)      { $('#qc-gene-table').DataTable({ pageLength: 25, order: [[2, 'asc']] }); }
