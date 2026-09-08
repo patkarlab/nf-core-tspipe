@@ -1,0 +1,8 @@
+catalog_name      mane-1.5-grch38-refseq
+build             GRCh38
+source            MANE 1.5
+transcript_ids    REFSEQ
+cava_version_spec >=2.0.15
+repository        https://github.com/sicotteh/CAVA
+commit            398eb1d6ff635925fedb7dcd88a9a6617d1a7c3b
+notes             Built with patched cava/MANE.py; explicitly includes GSTT1 NM_000853.4 on chr22_KI270879v1_alt

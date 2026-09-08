@@ -1,0 +1,31 @@
+# CAVA configuration for nf-core-tspipe (CAVA 2.0.15, MANE 1.5 GRCh38 RefSeq catalog).
+# The CAVA module substitutes __REFERENCE__ and __CATALOG__ at run time.
+# Everything else is fixed; change here, not in the module.
+@inputformat = VCF
+@outputformat = VCF
+@reference = __REFERENCE__
+@ensembl = __CATALOG__
+@dbsnp = .
+@nonannot = TRUE
+@filter = FALSE
+@type = ALL
+@target = .
+@genelist = .
+@transcriptlist = .
+@snplist = .
+@logfile = FALSE
+@ontology = BOTH
+@impactdef = SG,ESS,FS | SS5,IM,SL,EE,IF,NSY,IG | SY,SS,INT,5PU,3PU
+# ALTANN (the alternative annotation itself) rather than the bare ALTFLAG.
+@givealt = TRUE
+@givealtflag = FALSE
+@ssrange = 8
+# Every tag is written as CAVA_<name>; annotate.py reads them by that prefix.
+@prefix = TRUE
+@chrom = 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y,MT
+@codon_usage = 1
+@selenogenes = DIO1,DIO2,DIO3,GPX1,GPX2,GPX3,GPX4,GPX6,SELENOF,SELENOH,SELENOI,SELENOK,SELENOM,SELENON,SELENOO,SELENOP,SELENOS,SELENOT,SELENOU,SELENOV,SELENOW,MSRB1,SEPHS2,TXNRD1,TXNRD2,TXNRD3
+# MNVs already arrive as single delins alleles from MNV_MERGE (N2); haplotype parsing is not used.
+@parseHaplotype = FALSE
+@splitBasedOnProtein = FALSE
+@splitadjacentprotein = FALSE
