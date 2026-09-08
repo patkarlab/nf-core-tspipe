@@ -77,9 +77,14 @@
           </div>
           <div class="col-md-3">
             <div class="tspipe-summary-card">
-              <div class="label">% Target &ge; 100x (Picard)</div>
-              <div class="value">{{ (m.PCT_TARGET_BASES_100X * 100) | format_num(1) if m.PCT_TARGET_BASES_100X is defined and m.PCT_TARGET_BASES_100X is not none else '—' }}%</div>
-              <div class="subvalue">Picard, dup-filtered</div>
+              {# DASH_QC_V1e: reportability tier #}
+              <div class="label">% Regions &ge; {{ ctx.coverage.thresholds.exon_reportable if ctx.coverage else 200 }}x</div>
+              {% if ctx.coverage and ctx.coverage.summary %}
+                <div class="value">{{ (ctx.coverage.summary.pct_exons_ge_200 * 100) | format_num(1) }}%</div>
+                <div class="subvalue">{{ ctx.coverage.summary.n_exons_ge_200 }} of {{ ctx.coverage.summary.n_exons }} exons &middot; {{ ctx.coverage.regions_below_reportable | length }} below &middot; mosdepth, duplicates included</div>
+              {% else %}
+                <div class="value">&mdash;</div>
+              {% endif %}
             </div>
           </div>
           <div class="col-md-3">
@@ -189,6 +194,24 @@
           <div class="tspipe-empty">Per-exon coverage file not available.</div>
         {% endif %}
 
+        {# DASH_QC_V1e: every region under the reportability tier #}
+        <h4 class="mt-4">Regions below {{ ctx.coverage.thresholds.exon_reportable if ctx.coverage else 200 }}x</h4>
+        {% if ctx.coverage and ctx.coverage.regions_below_reportable %}
+          <p class="text-muted small mb-2">{{ ctx.coverage.summary.n_exons_ge_200 }} of {{ ctx.coverage.summary.n_exons }} regions ({{ (ctx.coverage.summary.pct_exons_ge_200 * 100) | format_num(1) }}%) are at or above {{ ctx.coverage.thresholds.exon_reportable }}x. The rest are listed here, lowest first: below {{ ctx.coverage.thresholds.exon_low }}x the region is low; between {{ ctx.coverage.thresholds.exon_low }}x and {{ ctx.coverage.thresholds.exon_reportable }}x it is covered but under the reportability tier. Known panel limitations are marked.</p>
+          <div class="table-responsive">
+            <table id="qc-regions-table" class="table table-sm table-striped table-hover w-100">
+              <thead><tr><th>gene</th><th>exon</th><th>coverage</th><th>band</th><th>driver role</th><th>known limitation</th><th>CNV consensus</th></tr></thead>
+              <tbody>
+                {% for r in ctx.coverage.regions_below_reportable %}
+                  <tr class="{% if r.band.startswith('<') %}table-danger{% endif %}"><td>{{ r.gene }}</td><td>{{ r.exon }}</td><td>{{ r.cov | format_num(0) }}</td><td>{{ r.band }}</td><td>{{ r.driver_role }}</td><td>{% if r.known %}yes{% endif %}</td><td>{{ r.cnv_call }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% elif ctx.coverage and ctx.coverage.summary %}
+          <p class="text-muted small">All {{ ctx.coverage.summary.n_exons }} regions at or above {{ ctx.coverage.thresholds.exon_reportable }}x.</p>
+        {% endif %}
+
         {# DASH_QC_V1d: known panel limitations with cohort statistics #}
         {% if ctx.coverage and ctx.coverage.panel_limitations %}
           <h4 class="mt-4">Known panel limitations</h4>
@@ -253,9 +276,7 @@
             <div class="tspipe-empty">Per-exon coverage file not available.</div>
           {% endif %}
         </details>
-        {% if ctx.files.existing_dashboard %}
-          <p class="small text-muted mt-3">Legacy pipeline QC dashboard: <a href="./{{ ctx.files.existing_dashboard }}" target="_blank">{{ ctx.files.existing_dashboard }}</a></p>
-        {% endif %}
+        {# DASH_QC_V1e: legacy per-sample dashboard no longer referenced #}
       </div>
 
       {# ===== Variants — Clinical tab ===== #}
@@ -848,6 +869,7 @@
     // DASH_QC_V1: gene tables + per-gene median chart
     if ($('#qc-low-genes-table').length) { $('#qc-low-genes-table').DataTable({ pageLength: 25, order: [[2, 'asc']] }); }
     if ($('#qc-gene-table').length)      { $('#qc-gene-table').DataTable({ pageLength: 25, order: [[2, 'asc']] }); }
+    if ($('#qc-regions-table').length)   { $('#qc-regions-table').DataTable({ pageLength: 25, order: [[2, 'asc']] }); }   // DASH_QC_V1e
     const qcCanvas = document.getElementById('qc-gene-chart');
     if (qcCanvas && window.Chart && window.QC_GENES) {
       const qg = window.QC_GENES, qlow = window.QC_GENE_LOW;
@@ -857,7 +879,8 @@
                 datasets: [{ label: 'median exon coverage', data: qg.map(function (r) { return Math.max(r.median_cov, 1); }),
                              backgroundColor: qg.map(function (r) { return r.median_cov < qlow ? '#dc3545' : '#6c757d'; }) }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                   scales: { x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 90, font: { size: 8 } } },
+                   scales: { x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 90, font: { size: 8 },
+                                           color: function (c) { return (qg[c.index] && qg[c.index].median_cov < qlow) ? '#dc3545' : '#666666'; } } },   // DASH_QC_V1e
                              y: { type: 'logarithmic', title: { display: true, text: 'median exon coverage (x)' } } } },
         plugins: [{ id: 'qcThresholdLine', afterDraw: function (chart) {
           const y = chart.scales.y.getPixelForValue(qlow); const c = chart.ctx;

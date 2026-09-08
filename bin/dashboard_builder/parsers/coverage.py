@@ -41,6 +41,8 @@ QC_THRESHOLDS = {   # DASH_QC_V1c: Picard median dropped (capped at COVERAGE_CAP
     "review_pct_100x": 0.95,       # Picard PCT_TARGET_BASES_100X below this -> REVIEW
     "review_pct_250x": 0.90,       # Picard PCT_TARGET_BASES_250X below this -> REVIEW
     "review_pct_dupe": 0.50,       # Picard PCT_EXC_DUPE above this -> REVIEW
+    "exon_reportable": 200,        # DASH_QC_V1e: reportability tier per region (exon)
+    "review_pct_exons_200x": 0.95, # DASH_QC_V1e: fraction of regions at >= exon_reportable below this -> REVIEW
 }
 
 # key, label, threshold key (or None), direction ('min' value must be >= thr; 'max' value must be <= thr), format
@@ -229,7 +231,23 @@ def parse(path, consensus_genes=None):
     low_examples = [{"Gene": r.get("Gene", ""), "Exon": r.get("Exon", ""), "Mean_Coverage": r.get("Mean_Coverage", "")}
                     for r in low_df.to_dict(orient="records")]
 
+    rep = QC_THRESHOLDS["exon_reportable"]   # DASH_QC_V1e
+    n_ge_rep = int((valid["_cov"] >= rep).sum())
+    below_rep = valid.loc[valid["_cov"] < rep].sort_values("_cov")
+    regions_below_reportable = []
+    for r in below_rep.to_dict(orient="records"):
+        g, e = r.get("Gene", ""), str(r.get("Exon", ""))
+        regions_below_reportable.append({
+            "gene": g, "exon": e, "cov": round(float(r["_cov"]), 1),
+            "band": "< %dx" % exon_low if float(r["_cov"]) < exon_low else "%d-%dx" % (exon_low, rep),
+            "driver_role": cinfo.get(g, {}).get("role", ""),
+            "known": (g, e) in known,
+            "cnv_call": cinfo.get(g, {}).get("call", ""),
+        })
+    out["regions_below_reportable"] = regions_below_reportable
     out["summary"] = {
+        "n_exons_ge_200": n_ge_rep,
+        "pct_exons_ge_200": n_ge_rep / float(n_exons),
         "median_of_per_exon": float(valid["_cov"].median()),
         "mean_of_per_exon_means": float(valid["_cov"].mean()),
         "n_exons": n_exons,
@@ -276,6 +294,15 @@ def verdict(coverage, hsmetrics):
             review.append("Median per-exon coverage (mosdepth, dup-inclusive) %s (limit >= %s)" % (_fmt(med, "x"), _fmt(floor, "x")))
         run_rows.insert(0, {"key": "MOSDEPTH_MEDIAN_EXON", "label": "Median per-exon coverage (mosdepth, dup-inclusive)",
                             "value": med, "display": _fmt(med, "x"), "range": ">= " + _fmt(floor, "x"), "ok": ok})
+        # DASH_QC_V1e: reportability tier
+        pct = float(coverage["summary"]["pct_exons_ge_200"])
+        lim = QC_THRESHOLDS["review_pct_exons_200x"]
+        ok2 = pct >= lim
+        if not ok2:
+            review.append("Regions at >= %dx (mosdepth, dup-inclusive) %s (limit >= %s)"
+                          % (QC_THRESHOLDS["exon_reportable"], _fmt(pct, "pct"), _fmt(lim, "pct")))
+        run_rows.insert(1, {"key": "MOSDEPTH_PCT_EXONS_200X", "label": "Regions (exons) at >= %dx (mosdepth, dup-inclusive)" % QC_THRESHOLDS["exon_reportable"],
+                            "value": pct, "display": _fmt(pct, "pct"), "range": ">= " + _fmt(lim, "pct"), "ok": ok2})
     # driver genes with a healthy median but at least one exon below the exon threshold:
     # the gene is not "low", yet that exon is not reportable
     low_set = set(g["gene"] for g in low_genes)
