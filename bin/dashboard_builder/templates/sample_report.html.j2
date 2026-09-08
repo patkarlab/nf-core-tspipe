@@ -317,6 +317,27 @@
             independent arm; TIER_2: two depth arms or two independent arms; TIER_3: single arm;
             REVIEW: arms disagree. Blacklisted genes are excluded.
           </p>
+          {# DASH_GLOSS_V1: column key, collapsed by default #}
+          <details class="small text-muted mb-2">
+            <summary>Column key</summary>
+            <table class="table table-sm table-borderless mb-0" style="max-width: 1100px;">
+              <tbody>
+                <tr><td class="text-nowrap"><code>gene, cytoband, chrom, start, end</code></td><td>gene symbol, UCSC cytoband (hg38), and the span of the gene's targets</td></tr>
+                <tr><td class="text-nowrap"><code>consensus_call</code></td><td>GAIN, LOSS, CNLOH, NEUTRAL, DISCORDANT (arms disagree) or BLACKLISTED</td></tr>
+                <tr><td class="text-nowrap"><code>tier</code></td><td>TIER_1: a depth arm (K or G) and an independent arm (B, P, E, H) agree and the LOO false-positive rate is acceptable; TIER_2: both depth arms agree (LOO ok) or two independent arms agree; TIER_3: a single arm; REVIEW: arms contradict</td></tr>
+                <tr><td class="text-nowrap"><code>flags</code></td><td>letters of the arms that voted: K G B P E H</td></tr>
+                <tr><td class="text-nowrap"><code>k_call, k_cn, k_log2</code></td><td>K = CNVkit (read depth vs the sex-matched panel of normals): call, integer copy number, segment log2 ratio</td></tr>
+                <tr><td class="text-nowrap"><code>g_call, g_seg_log2</code></td><td>G = GATK ModelSegments (read depth, same PoN): call, segment log2 ratio</td></tr>
+                <tr><td class="text-nowrap"><code>b_call</code></td><td>B = B-allele frequency / cnLOH (17p region in the current version): LOSS, CNLOH or NEUTRAL</td></tr>
+                <tr><td class="text-nowrap"><code>p_call, p_C</code></td><td>P = PureCN: call and absolute copy number; advisory only when the purity fit is flagged</td></tr>
+                <tr><td class="text-nowrap"><code>e_call, e_bf</code></td><td>E = DECoN (exon-level, multi-exon deletions): call and Bayes factor</td></tr>
+                <tr><td class="text-nowrap"><code>h_call, h_cn_min, h_cn_max, h_loh</code></td><td>H = PURPLE (hmftools, purity/ploidy adjusted): call, minimum and maximum copy number over the gene, LOH flag; advisory on low purity</td></tr>
+                <tr><td class="text-nowrap"><code>loo_fp_any</code></td><td>fraction of panel-of-normals samples in which this gene was called non-neutral in leave-one-out; must be below 0.10 for TIER_1 or TIER_2</td></tr>
+                <tr><td class="text-nowrap"><code>driver_role</code></td><td>hmftools DriverGenePanel: ONCO (oncogene) or TSG (tumour suppressor)</td></tr>
+                <tr><td class="text-nowrap"><code>clingen_hi, clingen_ts</code></td><td>ClinGen dosage-sensitivity scores for haploinsufficiency / triplosensitivity: 3 sufficient evidence, 2 emerging, 1 little, 0 none, 30 autosomal-recessive phenotype, 40 dosage sensitivity unlikely; NA when the gene is not curated</td></tr>
+              </tbody>
+            </table>
+          </details>
           {# DASH_TIER_V1: tier filter; first button is the default view #}
           <div id="cnv-tier-filter" class="btn-group btn-group-sm mb-2" role="group" aria-label="Tier filter">
             <button type="button" class="btn btn-outline-secondary" data-tiers="TIER_1,TIER_2">Reportable (TIER_1 + TIER_2)</button>
