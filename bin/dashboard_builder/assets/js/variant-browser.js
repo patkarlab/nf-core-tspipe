@@ -410,6 +410,17 @@
       ["MANE_SELECT", "MANE Select"],
       ["Canonical", "Canonical"],
     ]],
+    // CAVA_V1c (N3): CAVA 2.0.15 on the MANE 1.5 RefSeq catalog
+    ["CAVA (MANE 1.5 RefSeq)", [
+      ["CAVA_CSN", "CSN"],
+      ["CAVA_HGVSc", "CAVA HGVSc"],
+      ["CAVA_HGVSp", "CAVA HGVSp"],
+      ["CAVA_Transcript", "CAVA transcript"],
+      ["CAVA_Class", "CAVA class"],
+      ["CAVA_SO", "CAVA SO"],
+      ["CAVA_AltAnn", "Alternative alignment"],
+      ["CAVA_HGVSp_Match", "Protein agrees with VEP"],
+    ]],
     ["VariantValidator", [
       ["VV_HGVSc", "VV HGVSc"],
       ["VV_HGVSp", "VV HGVSp"],
@@ -900,6 +911,19 @@
         ? ' <span class="badge bg-light text-dark border ms-1">' + escapeHtml(r.Filter) + "</span>"
         : "";
 
+      // CAVA_V1c (N3): CSN when VEP gives no protein string (complex / delins calls);
+      // badges when CAVA's protein call differs from VEP or an alternative alignment exists.
+      const cavaCsn = (r.CAVA_CSN && r.CAVA_CSN !== "-1") ? r.CAVA_CSN : "";
+      let cavaBadges = "";
+      if (r.CAVA_HGVSp_Match === "DIFFER") {
+        cavaBadges += '<span class="badge bg-warning text-dark" title="CAVA: ' +
+                      escapeHtml(r.CAVA_HGVSp || "") + '">CAVA differs</span>';
+      }
+      if (r.CAVA_AltAnn && r.CAVA_AltAnn !== "-1") {
+        cavaBadges += '<span class="badge bg-light text-dark border" title="Alternative alignment: ' +
+                      escapeHtml(r.CAVA_AltAnn) + '">alt alignment</span>';
+      }
+
       // IGV chip on the compact view — visible without expanding the card.
       let igvChip = "";
       if (hasIGV) {
@@ -942,10 +966,11 @@
               '<span class="vb-gene">' + escapeHtml(r.Gene || "?") + "</span>" +
               '<span class="text-muted small">' + escapeHtml(conseq) + "</span>" +
               (r.IMPACT ? '<span class="badge bg-light text-dark border">' + escapeHtml(r.IMPACT) + "</span>" : "") +
+              cavaBadges +   // CAVA_V1c
               igvChip +
             "</div>" +
             '<div class="small font-monospace text-muted mt-1">' +
-              escapeHtml(hgvsp || (r.HGVSc || "")) +
+              escapeHtml(hgvsp || cavaCsn || (r.HGVSc || "")) +   // CAVA_V1c: CSN fallback
               ' \u00b7 ' +
               escapeHtml(r.Chr || "") + ":" + escapeHtml(r.Start || "") + " " +
               escapeHtml(r.Ref || "") + "&gt;" + escapeHtml(r.Alt || "") +
@@ -979,7 +1004,9 @@
             '<dt class="col-sm-5 text-muted fw-normal small">' + escapeHtml(label) + "</dt>" +
             '<dd class="col-sm-7 small mb-1' +
               (field === "HGVSc" || field === "HGVSg" || field === "VV_HGVSc" || field === "VV_HGVSg" ||
-               field === "HGVSp" || field === "VV_HGVSp" ? ' font-monospace' : '') +
+               field === "HGVSp" || field === "VV_HGVSp" ||
+               field === "CAVA_CSN" || field === "CAVA_HGVSc" || field === "CAVA_HGVSp" || field === "CAVA_AltAnn"   // CAVA_V1c
+               ? ' font-monospace' : '') +
             '">' + emptyVal(v) + "</dd>"
           );
         }

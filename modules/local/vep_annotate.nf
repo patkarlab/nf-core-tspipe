@@ -12,6 +12,7 @@
  *
  * Inputs:
  *   vcf       -- SomaticSeq consensus VCF
+ *   cava_vcf  -- the same VCF annotated by the CAVA module (CAVA_V1b, N3)
  *   fasta+fai+dict -- reference genome (staged together by Nextflow)
  *
  * Output:
@@ -27,7 +28,7 @@ process VEP_ANNOTATE {
     conda      'conda-forge::pandas=2.1.4'
 
     input:
-        tuple val(meta), path(vcf)
+        tuple val(meta), path(vcf), path(cava_vcf)   // CAVA_V1b (N3): CAVA-annotated copy of vcf
         tuple path(fasta), path(fai), path(dict)
 
     output:
@@ -48,8 +49,10 @@ process VEP_ANNOTATE {
     script:
         """
         # annotate.py ANNOVAR_KEY_V1: ANNOVAR rows keyed on the VCF record; A19 COSMIC_ID from VEP Existing_variation (bash comment; busts the task cache)
+        # CAVA_V1b (N3): --cava-vcf merges CAVA_* columns
         annotate.py \\
             --somaticseq-vcf ${vcf} \\
+            --cava-vcf ${cava_vcf} \\
             --sample-name ${meta.id} \\
             --reference ${fasta} \\
             --vep-cache ${params.vep_cache} \\

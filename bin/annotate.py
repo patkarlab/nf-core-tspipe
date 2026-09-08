@@ -84,6 +84,10 @@ COLUMNS = [
     "gnomAD_exome_AF", "gnomAD_genome_AF", "AF_1KG", "Max_AF", "rsID",
     "MANE_SELECT", "Canonical", "HGVSg", "Existing_variation",
     "MNV_Note",   # MNV_MERGE_V1 (N2): "MNV of <positions> (<evidence>)" or "component of <chrom:pos:ref:alt>"
+    # CAVA_V1b (N3): CAVA 2.0.15 on the MANE 1.5 RefSeq catalog. Appended after MNV_Note so
+    # existing column positions are unchanged. '-1' when CAVA produced no annotation.
+    "CAVA_CSN", "CAVA_HGVSc", "CAVA_HGVSp", "CAVA_Transcript", "CAVA_Class",
+    "CAVA_SO", "CAVA_Impact", "CAVA_AltAnn", "CAVA_HGVSp_Match",
 ]
 
 
@@ -116,6 +120,9 @@ def parse_args():
     ap.add_argument("--vep-fork", type=int, default=4,
                     help="VEP parallel forks (default: 4). The Nextflow "
                          "module passes task.cpus here.")
+    ap.add_argument("--cava-vcf", default=None,   # CAVA_V1b (N3)
+                    help="CAVA-annotated copy of the same input VCF (output of the "
+                         "CAVA module). Optional; CAVA_* columns are -1 without it.")
     return ap.parse_args()
 
 
@@ -587,6 +594,154 @@ def parse_annovar_txt(annovar_txt):
     return variants
 
 
+# CAVA_V1b (N3) ------------------------------------------------------------------
+# CAVA (2.0.15, config @prefix=TRUE) writes one INFO tag per annotation, all named
+# CAVA_<name>. Within one record, values for multiple transcripts are joined with
+# ':' (multiple ALT alleles with ',', not applicable: the consensus VCF is
+# one-ALT-per-record). The HGVS tags contain ':' inside each value
+# (NC_000017.11(NM_000546.6):c.524G>A), so those are re-split by pattern.
+import urllib.parse as _urlparse_cava
+
+_CAVA_TAGS = ("CAVA_TRANSCRIPT", "CAVA_GENE", "CAVA_CSN", "CAVA_CLASS", "CAVA_SO",
+              "CAVA_IMPACT", "CAVA_ALTANN", "CAVA_HGVSc", "CAVA_HGVSp", "CAVA_HGVSg")
+_CAVA_HGVS_RE = {
+    # one match per transcript; the accession/transcript part never contains ':'
+    "CAVA_HGVSc": re.compile(r"[A-Za-z]{2}_[0-9]+\.[0-9]+\([^)]*\):c\.[^:]+"),
+    "CAVA_HGVSp": re.compile(r"[A-Za-z]{2}_[0-9]+\.[0-9]+:p\.[^:]+"),
+    "CAVA_HGVSg": re.compile(r"[A-Za-z]{2}_[0-9]+\.[0-9]+:g\.[^:]+"),
+}
+
+
+def _cava_split(tag, value, n_transcripts):
+    """Split one CAVA tag value into a per-transcript list of length n_transcripts."""
+    value = _urlparse_cava.unquote(value or "")
+    if n_transcripts <= 1:
+        return [value]
+    if tag in _CAVA_HGVS_RE:
+        parts = _CAVA_HGVS_RE[tag].findall(value)
+        if len(parts) == n_transcripts:
+            return parts
+        return [value] * n_transcripts       # unexpected shape: keep whole string
+    parts = value.split(":")
+    if len(parts) == n_transcripts:
+        return parts
+    return [value] * n_transcripts
+
+
+def _strip_version(acc):
+    return str(acc or "").split(".")[0].strip()
+
+
+def parse_cava_vcf(cava_vcf):
+    """Parse the CAVA output VCF -> dict keyed by chr:pos:ref:alt.
+
+    Each value is a dict with one entry per transcript:
+        {"transcripts": ["NM_000546.6", ...], "per_tx": [{tag: value, ...}, ...]}
+    Records with no CAVA_TRANSCRIPT (CAVA could not annotate them, e.g. a
+    reference-mismatched allele, which CAVA passes through with an error line)
+    are stored with an empty transcript list so the merge can count them.
+    """
+    variants = {}
+    if not cava_vcf:
+        return variants
+    if not os.path.isfile(cava_vcf):
+        log.warning("CAVA VCF not found: %s", cava_vcf)
+        return variants
+    n_unannotated = 0
+    with open(cava_vcf) as f:
+        for line in f:
+            if line.startswith("#"):
+                continue
+            cols = line.rstrip("\n").split("\t")
+            if len(cols) < 8:
+                continue
+            chrom, pos, ref, alt, info = cols[0], cols[1], cols[3], cols[4], cols[7]
+            key = "{0}:{1}:{2}:{3}".format(chrom, pos, ref, alt)
+            tx_raw = _get_info_value(info, "CAVA_TRANSCRIPT")
+            transcripts = [t for t in tx_raw.split(":") if t and t != "."] if tx_raw else []
+            n = len(transcripts)
+            if n == 0:
+                n_unannotated += 1
+                variants[key] = {"transcripts": [], "per_tx": []}
+                continue
+            per_tx = [{} for _ in range(n)]
+            for tag in _CAVA_TAGS:
+                vals = _cava_split(tag, _get_info_value(info, tag), n)
+                for i in range(n):
+                    per_tx[i][tag] = vals[i]
+            variants[key] = {"transcripts": transcripts, "per_tx": per_tx}
+    log.info("Parsed %d variants from CAVA VCF (%d without a CAVA annotation)",
+             len(variants), n_unannotated)
+    return variants
+
+
+def _cava_pick(entry, vep):
+    """Choose the per-transcript CAVA block that matches the VEP transcript.
+
+    Preference: VEP MANE_SELECT accession, then VEP Feature, both compared
+    without version; otherwise the first transcript in CAVA's order.
+    """
+    txs = entry.get("transcripts") or []
+    if not txs:
+        return None
+    wanted = [_strip_version(vep.get("MANE_SELECT", "")), _strip_version(vep.get("Feature", ""))]
+    wanted = [w for w in wanted if w]
+    for w in wanted:
+        for i, t in enumerate(txs):
+            if _strip_version(t) == w:
+                return entry["per_tx"][i]
+    return entry["per_tx"][0]
+
+
+def _normalize_hgvsp_for_match(val):
+    """'NP_000537.3:p.(Arg175His)' / 'NP_000537.3:p.Arg175His' / 'p.Arg175%3D' -> 'Arg175His' / 'Arg175='."""
+    s = _urlparse_cava.unquote(str(val or "")).strip()
+    if s in ("", "-1", "."):
+        return ""
+    if ":" in s:
+        s = s.rsplit(":", 1)[1]
+    if s.startswith("p."):
+        s = s[2:]
+    s = s.replace("(", "").replace(")", "")
+    return s
+
+
+def _cava_hgvsp_match(vep_hgvsp, cava_hgvsp):
+    a = _normalize_hgvsp_for_match(vep_hgvsp)
+    b = _normalize_hgvsp_for_match(cava_hgvsp)
+    if not a or not b:
+        return "NA"
+    if a == b:
+        return "MATCH"
+    # CAVA writes p.? for unpredictable protein effects; VEP leaves HGVSp empty
+    # for those, so a populated VEP string against p.? is a genuine difference.
+    return "DIFFER"
+
+
+def _cava_columns(entry, vep):
+    """The nine CAVA_* output columns for one merged row ('-1' when absent)."""
+    blk = _cava_pick(entry, vep) if entry else None
+    if not blk:
+        return {
+            "CAVA_CSN": "-1", "CAVA_HGVSc": "-1", "CAVA_HGVSp": "-1", "CAVA_Transcript": "-1",
+            "CAVA_Class": "-1", "CAVA_SO": "-1", "CAVA_Impact": "-1", "CAVA_AltAnn": "-1",
+            "CAVA_HGVSp_Match": "NA",
+        }
+    cava_hgvsp = _clean(blk.get("CAVA_HGVSp", ""))
+    return {
+        "CAVA_CSN": _clean(blk.get("CAVA_CSN", "")),
+        "CAVA_HGVSc": _clean(blk.get("CAVA_HGVSc", "")),
+        "CAVA_HGVSp": cava_hgvsp,
+        "CAVA_Transcript": _clean(blk.get("CAVA_TRANSCRIPT", "")),
+        "CAVA_Class": _clean(blk.get("CAVA_CLASS", "")),
+        "CAVA_SO": _clean(blk.get("CAVA_SO", "")),
+        "CAVA_Impact": _clean(blk.get("CAVA_IMPACT", "")),
+        "CAVA_AltAnn": _clean(blk.get("CAVA_ALTANN", "")),
+        "CAVA_HGVSp_Match": _cava_hgvsp_match(vep.get("HGVSp", ""), cava_hgvsp),
+    }
+# end CAVA_V1b -----------------------------------------------------------------
+
+
 def _cosmic_id(annovar_val, existing_variation):
     """A19 (FILTER_D14_D15_A19_V1): COSMIC identifier(s) for the merged row.
 
@@ -615,7 +770,7 @@ def _clean(val):
 
 
 def merge_annotations(vcf_fields, vep_variants, annovar_variants,
-                      output_tsv, sample):
+                      output_tsv, sample, cava_variants=None):   # CAVA_V1b (N3)
     """Merge VCF fields + VEP + ANNOVAR into the final flat TSV.
 
     PORT NOTE: bit-for-bit identical to production's merge_annotations()
@@ -643,6 +798,13 @@ def merge_annotations(vcf_fields, vep_variants, annovar_variants,
     log.info("Merging annotations: %d VCF, %d VEP, %d ANNOVAR, %d total unique",
              len(vcf_fields), len(vep_variants), len(annovar_variants),
              len(all_keys))
+    # CAVA_V1b (N3): CAVA rows are the input records echoed back, so every key should match.
+    cava_variants = cava_variants or {}
+    if cava_variants:
+        _cava_annotated = sum(1 for v in cava_variants.values() if v.get("transcripts"))
+        log.info("CAVA merge: %d records, %d annotated, %d matched a VCF record",
+                 len(cava_variants), _cava_annotated, len(set(cava_variants) & _vcf_keys))
+    _cava_match_counts = {"MATCH": 0, "DIFFER": 0, "NA": 0}
 
     rows = []
     for key in sorted(all_keys):
@@ -696,6 +858,8 @@ def merge_annotations(vcf_fields, vep_variants, annovar_variants,
             "Existing_variation": _clean(vep.get("Existing_variation", "")),
             "MNV_Note": _clean(vcf.get("mnv_note", "")),   # MNV_MERGE_V1 (N2)
         }
+        row.update(_cava_columns(cava_variants.get(key), vep))   # CAVA_V1b (N3)
+        _cava_match_counts[row["CAVA_HGVSp_Match"]] = _cava_match_counts.get(row["CAVA_HGVSp_Match"], 0) + 1
         rows.append(row)
 
     # csv.DictWriter writes the rows in the order specified by fieldnames,
@@ -707,6 +871,10 @@ def merge_annotations(vcf_fields, vep_variants, annovar_variants,
         writer.writeheader()
         writer.writerows(rows)
 
+    if cava_variants:   # CAVA_V1b (N3)
+        log.info("CAVA vs VEP HGVSp: %d MATCH, %d DIFFER, %d NA",
+                 _cava_match_counts.get("MATCH", 0), _cava_match_counts.get("DIFFER", 0),
+                 _cava_match_counts.get("NA", 0))
     log.info("Wrote %d variants to %s", len(rows), output_tsv)
     return len(rows)
 
@@ -726,6 +894,7 @@ def main():
     log.info("ANNOVAR db:     %s", args.annovar_db)
     log.info("Output TSV:     %s", output_tsv)
     log.info("VEP forks:      %d", args.vep_fork)
+    log.info("CAVA VCF:       %s", args.cava_vcf or "(none)")   # CAVA_V1b (N3)
 
     # Up-front validation of every file/dir we need. Fail fast with a
     # clear message rather than getting a cryptic error from VEP or
@@ -771,8 +940,9 @@ def main():
     # Step 4: parse and merge.
     vep_variants, _ = parse_vep_csq(vep_vcf)
     annovar_variants = parse_annovar_txt(annovar_txt)
+    cava_variants = parse_cava_vcf(args.cava_vcf)   # CAVA_V1b (N3): empty dict when not given
     n = merge_annotations(vcf_fields, vep_variants, annovar_variants,
-                          output_tsv, sample)
+                          output_tsv, sample, cava_variants=cava_variants)
 
     elapsed = time.time() - t0
     log.info("Wrote %d variants in %.0fs", n, elapsed)

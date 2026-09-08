@@ -8,6 +8,7 @@
  * (the numbers reflect when scripts were ADDED, not when they execute).
  */
 
+include { CAVA                } from '../../modules/local/cava'           // CAVA_V1c (N3)
 include { VEP_ANNOTATE        } from '../../modules/local/vep_annotate'
 include { VARIANT_FILTER      } from '../../modules/local/variant_filter'
 include { VARIANT_VALIDATOR   } from '../../modules/local/variant_validator'
@@ -24,7 +25,13 @@ workflow ANNOTATION {
         reference_ch
 
     main:
-        VEP_ANNOTATE(somaticseq_vcf_ch, reference_ch)
+        // CAVA_V1c (N3): CAVA (CSN / HGVS / ALTANN on MANE 1.5 RefSeq) runs on the same
+        // post-MNV VCF; VEP_ANNOTATE merges its tags into the CAVA_* columns.
+        ch_cava_catalog = Channel.value(file(params.cava_catalog, checkIfExists: true))
+        ch_cava_config  = Channel.value(file(params.cava_config,  checkIfExists: true))
+        CAVA(somaticseq_vcf_ch, reference_ch, ch_cava_catalog, ch_cava_config)
+
+        VEP_ANNOTATE(somaticseq_vcf_ch.join(CAVA.out.vcf, by: 0), reference_ch)
 
         // Join VEP output with U2AF1 rescue on meta.id. Both channels
         // emit one tuple per sample so this is 1:1. variant_filter.py
