@@ -49,11 +49,9 @@ def parse(path):
 
 
 def best_hgvsp(row):
-    """Prefer VV_HGVSp (VariantValidator) over HGVSp when available."""
-    vv = row.get("VV_HGVSp", "")
-    hg = row.get("HGVSp", "")
-    if vv and vv != "-1":
-        return vv
-    if hg and hg != "-1":
-        return hg
+    """DASH_HGVS_PREF_V1 (D3b): VariantValidator -> CAVA (MANE 1.5 RefSeq) -> VEP."""
+    for col in ("VV_HGVSp", "CAVA_HGVSp", "HGVSp"):
+        v = row.get(col, "")
+        if v and v != "-1":
+            return v
     return ""

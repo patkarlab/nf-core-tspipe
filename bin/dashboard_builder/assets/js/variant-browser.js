@@ -482,9 +482,12 @@
     });
   }
 
+  // DASH_HGVS_PREF_V1 (D3b): VariantValidator -> CAVA (MANE 1.5 RefSeq) -> VEP (Ensembl accessions)
   function bestHGVSp(row) {
     const vv = row.VV_HGVSp;
     if (vv && vv !== "-1") return vv;
+    const cv = row.CAVA_HGVSp;
+    if (cv && cv !== "-1") return cv;
     const hg = row.HGVSp;
     if (hg && hg !== "-1") return hg;
     return "";
@@ -493,6 +496,8 @@
   function bestHGVSc(row) {
     const vv = row.VV_HGVSc;
     if (vv && vv !== "-1") return vv;
+    const cv = row.CAVA_HGVSc;
+    if (cv && cv !== "-1") return cv;
     const hg = row.HGVSc;
     if (hg && hg !== "-1") return hg;
     return "";
