@@ -47,6 +47,7 @@ process VEP_ANNOTATE {
 
     script:
         """
+        # annotate.py ANNOVAR_KEY_V1: ANNOVAR rows keyed on the VCF record (bash comment; busts the task cache)
         annotate.py \\
             --somaticseq-vcf ${vcf} \\
             --sample-name ${meta.id} \\

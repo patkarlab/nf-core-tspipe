@@ -500,6 +500,47 @@ def parse_vep_csq(vep_vcf):
     return variants, csq_fields
 
 
+_ANNOVAR_KEY_STATS = {"vcf": 0, "fallback": 0}   # ANNOVAR_KEY_V1
+import re as _re_annovar
+_ALLELE_RE = _re_annovar.compile(r"^(?:[ACGTNacgtn]+|\*)$")   # ANNOVAR_KEY_V1b
+
+
+def _annovar_vcf_key(row):
+    """ANNOVAR_KEY_V1 (A18): chr:pos:ref:alt from the -vcfinput Otherinfo columns, or None.
+
+    ANNOVAR writes indels in its own representation (start past the anchor base,
+    '-' for the absent allele: chr11 119278646 ATG -) while the VCF record is
+    chr11 119278645 TATG T, so keys built from ANNOVAR's Chr/Start/Ref/Alt never
+    match the VCF/VEP key for indels. With -vcfinput, table_annovar.pl appends
+    the input VCF record to each row as Otherinfo columns (... CHROM POS ID REF
+    ALT QUAL FILTER INFO FORMAT sample). The number of bookkeeping columns before
+    CHROM varies between ANNOVAR versions, so CHROM is located by pattern: the
+    first Otherinfo column equal to the row's Chr whose successor is an integer.
+    """
+    chrom = (row.get("Chr", "") or "").strip()
+    if not chrom:
+        return None
+    cols = [c for c in row.keys() if c and c.startswith("Otherinfo")]
+    try:
+        cols.sort(key=lambda c: int(c[len("Otherinfo"):] or 0))
+    except ValueError:
+        cols.sort()
+    for i in range(len(cols) - 4):
+        v = (row.get(cols[i]) or "").strip()
+        if v != chrom and v != chrom.replace("chr", "") and ("chr" + v) != chrom:
+            continue
+        pos = (row.get(cols[i + 1]) or "").strip()
+        if not pos.isdigit() or int(pos) <= 0:
+            continue
+        ref = (row.get(cols[i + 3]) or "").strip()
+        alt = (row.get(cols[i + 4]) or "").strip()
+        # ANNOVAR_KEY_V1b: both must look like alleles, or this was a bookkeeping column
+        if not (_ALLELE_RE.match(ref) and _ALLELE_RE.match(alt)):
+            continue
+        return "{0}:{1}:{2}:{3}".format(chrom, pos, ref, alt)
+    return None
+
+
 def parse_annovar_txt(annovar_txt):
     """Parse ANNOVAR's multianno.txt (tab-separated) output.
 
@@ -519,14 +560,20 @@ def parse_annovar_txt(annovar_txt):
         # csv.DictReader gives each row as a dict {column_name: value}.
         reader = csv.DictReader(f, delimiter="\t")
         for row in reader:
-            chrom = row.get("Chr", "")
-            pos = row.get("Start", "")
-            ref = row.get("Ref", "")
-            alt = row.get("Alt", "")
-            key = "{0}:{1}:{2}:{3}".format(chrom, pos, ref, alt)
+            key = _annovar_vcf_key(row)   # ANNOVAR_KEY_V1 (A18): key on the VCF record when present
+            if key is None:
+                chrom = row.get("Chr", "")
+                pos = row.get("Start", "")
+                ref = row.get("Ref", "")
+                alt = row.get("Alt", "")
+                key = "{0}:{1}:{2}:{3}".format(chrom, pos, ref, alt)
+                _ANNOVAR_KEY_STATS["fallback"] += 1
+            else:
+                _ANNOVAR_KEY_STATS["vcf"] += 1
             variants[key] = row
 
-    log.info("Parsed %d variants from ANNOVAR txt", len(variants))
+    log.info("Parsed %d variants from ANNOVAR txt (%d keyed on the VCF record, %d on ANNOVAR coordinates)",
+             len(variants), _ANNOVAR_KEY_STATS["vcf"], _ANNOVAR_KEY_STATS["fallback"])   # ANNOVAR_KEY_V1
     return variants
 
 
@@ -555,6 +602,18 @@ def merge_annotations(vcf_fields, vep_variants, annovar_variants,
     # it), or in ANNOVAR but not the original VCF (impossible in
     # practice, included for symmetry).
     all_keys = set(vcf_fields.keys()) | set(vep_variants.keys()) | set(annovar_variants.keys())
+    # ANNOVAR_KEY_V1 (A18): merge diagnostics -- an ANNOVAR row that matches no VCF record is an
+    # orphan (it carries no caller evidence and is discarded downstream); a VCF record with no
+    # ANNOVAR row has lost ClinVar / COSMIC / ANNOVAR gnomAD for that variant.
+    _ann_keys = set(annovar_variants.keys())
+    _vcf_keys = set(vcf_fields.keys())
+    _orphans = _ann_keys - _vcf_keys
+    _unannotated = _vcf_keys - _ann_keys
+    log.info("ANNOVAR merge: %d rows, %d matched a VCF record, %d orphan ANNOVAR rows, %d VCF records without ANNOVAR",
+             len(_ann_keys), len(_ann_keys & _vcf_keys), len(_orphans), len(_unannotated))
+    if _vcf_keys and len(_orphans) > 0.02 * len(_vcf_keys):
+        log.warning("ANNOVAR merge: %.1f%% orphan rows -- key mismatch between ANNOVAR and the VCF (see A18)",
+                    100.0 * len(_orphans) / len(_vcf_keys))
     log.info("Merging annotations: %d VCF, %d VEP, %d ANNOVAR, %d total unique",
              len(vcf_fields), len(vep_variants), len(annovar_variants),
              len(all_keys))
