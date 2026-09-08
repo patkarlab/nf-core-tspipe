@@ -43,7 +43,7 @@ process CHROM_PAGES {
         export MPLCONFIGDIR=\$PWD/.mpl
         export XDG_CACHE_HOME=\$PWD/.cache
         mkdir -p \$MPLCONFIGDIR \$XDG_CACHE_HOME chrom_pages
-        # chrom pages: IDEO_V1 cytoband strip (bash comment; busts the task cache)
+        # chrom pages: IDEO_V1 cytoband strip; DECON_BRACKET_V1 one bracket per call per gene (bash comment; busts the task cache)
 
         plot_targets_trio.py \\
             --sample ${meta.id} \\

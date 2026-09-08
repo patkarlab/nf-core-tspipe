@@ -292,11 +292,12 @@ def read_decon(path, min_bf):
             if bf < min_bf:
                 continue
             calls.append((norm_chrom(r["Chromosome"]), int(float(r["Start"])), int(float(r["End"])), r["CNV.type"], bf,
-                          float(r.get("Reads.ratio", "nan") or "nan"), r.get("decision", "")))
+                          float(r.get("Reads.ratio", "nan") or "nan"), r.get("decision", ""),
+                          (r.get("Gene") or "").strip(), (r.get("CNV.ID") or "").strip()))   # DECON_BRACKET_V1
     return calls
 
 
-def draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon):
+def draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon, bands=None):   # DECON_BRACKET_V1: bands
     """one mini-panel per gene: exon-order log2 per exon, guides, DECoN brackets, PURPLE CN in the title."""
     L = args.log2_lim
     for ax, g in zip(gaxes, genes):
@@ -330,9 +331,16 @@ def draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon):
         # DECoN brackets: calls overlapping this gene's exons
         gs, ge = min(t[1] for t in ex), max(t[2] for t in ex)
         k = 0
-        for dc, ds, de, typ, bf, ratio, dec in decon:
+        seen_ids = set()   # DECON_BRACKET_V1
+        for dc, ds, de, typ, bf, ratio, dec, dgene, cid in decon:
             if dc != c or de < gs or ds > ge:
                 continue
+            if dgene and dgene != g:   # DECON_BRACKET_V1: DECoN emits one row per gene; draw only this gene's row
+                continue
+            if cid:
+                if cid in seen_ids:
+                    continue
+                seen_ids.add(cid)
             idx = [i for i, t in enumerate(ex) if t[2] >= ds and t[1] <= de]
             if not idx:
                 continue
@@ -343,7 +351,11 @@ def draw_gene_panels(gaxes, genes, sel_by_gene, ctx, args, find_seg, decon):
                     ha="center", va="bottom", fontsize=5.5, color=col, zorder=5)
         sg = find_seg(c, (gs + ge) // 2)
         cn_txt = ("\nPURPLE %.1f / %.1f" % (sg[2], sg[3])) if sg and sg[3] is not None else ""
-        ax.set_title("%s (%d ex)%s" % (g, len(ex), cn_txt), fontsize=7, pad=3)
+        band_txt = ""
+        if bands:   # DECON_BRACKET_V1: cytoband in the panel title
+            bs_ = band_span(bands, c, gs, ge)
+            band_txt = ("  " + bs_) if bs_ else ""
+        ax.set_title("%s (%d ex)%s%s" % (g, len(ex), band_txt, cn_txt), fontsize=7, pad=3)
         ax.set_xlim(-0.6, len(ex) - 0.4); ax.set_ylim(-L - 0.1, L + 0.1)
         ax.set_xticks(list(range(len(ex))))
         ax.set_xticklabels(labels, fontsize=6 if len(ex) <= 25 else 5, rotation=0 if len(ex) <= 30 else 90)
@@ -726,7 +738,7 @@ def main():
                     rg = rows_gs[r_i].subgridspec(1, len(row) + 1, width_ratios=widths, wspace=0.35)
                     for j, g in enumerate(row):
                         gaxes.append(fig.add_subplot(rg[0, j])); glist.append(g)
-                draw_gene_panels(gaxes, glist, sel_by_gene, ctx, args, find_seg, decon)
+                draw_gene_panels(gaxes, glist, sel_by_gene, ctx, args, find_seg, decon, bands=bands)   # DECON_BRACKET_V1
             fig.suptitle("%s  |  %s: %d targets on %s  |  genomic order%s" % (head, label, len(sel), ",".join(chroms),
                          ("; %d gene panels (exon order, DECoN calls at BF >= %.0f)" % (len(genes), args.decon_min_bf)) if g_rows else ""), fontsize=11)
         out = "%s.%s.%s%s.png" % (args.out, label, args.style, ".mirror" if args.mirror_baf else "")
