@@ -32,11 +32,12 @@ from pathlib import Path
 
 import pandas as pd
 
-QC_THRESHOLDS = {
+QC_THRESHOLDS = {   # DASH_QC_V1c: Picard median dropped (capped at COVERAGE_CAP=200 until N11)
     "gene_low_median": 100,        # gene is low when the median of its exon coverages is below this
     "exon_low": 100,               # exon is low below this (matches parse_exon_coverage.py)
-    "review_median_target": 250,   # Picard MEDIAN_TARGET_COVERAGE below this -> REVIEW
+    "review_median_mosdepth": 500, # mosdepth median of per-exon coverage (dup-inclusive, the reported number) below this -> REVIEW
     "review_pct_100x": 0.95,       # Picard PCT_TARGET_BASES_100X below this -> REVIEW
+    "review_pct_250x": 0.90,       # Picard PCT_TARGET_BASES_250X below this -> REVIEW
     "review_pct_dupe": 0.50,       # Picard PCT_EXC_DUPE above this -> REVIEW
 }
 
@@ -47,10 +48,10 @@ RUN_METRICS = [
     ("PCT_EXC_DUPE", "Bases excluded as duplicate", "review_pct_dupe", "max", "pct"),
     ("PCT_SELECTED_BASES", "On- or near-bait bases", None, None, "pct"),
     ("MEAN_TARGET_COVERAGE", "Mean target coverage (Picard, dup-filtered)", None, None, "x"),
-    ("MEDIAN_TARGET_COVERAGE", "Median target coverage (Picard, dup-filtered)", "review_median_target", "min", "x"),
+    ("MEDIAN_TARGET_COVERAGE", "Median target coverage (Picard; capped at 200 by COVERAGE_CAP)", None, None, "x"),
     ("FOLD_80_BASE_PENALTY", "Fold-80 base penalty (uniformity)", None, None, "f2"),
     ("PCT_TARGET_BASES_100X", "Target bases at >= 100x", "review_pct_100x", "min", "pct"),
-    ("PCT_TARGET_BASES_250X", "Target bases at >= 250x", None, None, "pct"),
+    ("PCT_TARGET_BASES_250X", "Target bases at >= 250x", "review_pct_250x", "min", "pct"),
     ("PCT_TARGET_BASES_500X", "Target bases at >= 500x", None, None, "pct"),
     ("ZERO_CVG_TARGETS_PCT", "Targets with zero coverage", None, None, "pct"),
     ("AT_DROPOUT", "AT dropout", None, None, "f2"),
@@ -209,6 +210,15 @@ def verdict(coverage, hsmetrics):
     low_genes = (coverage or {}).get("low_genes", []) if coverage else []
     have_cov = bool(coverage and coverage.get("summary"))
     have_hs = bool(m)
+    # DASH_QC_V1c: floor on the reported coverage (mosdepth median of per-exon coverage, duplicates included)
+    if have_cov:
+        med = float(coverage["summary"]["median_of_per_exon"])
+        floor = QC_THRESHOLDS["review_median_mosdepth"]
+        ok = med >= floor
+        if not ok:
+            review.append("Median per-exon coverage (mosdepth, dup-inclusive) %s (limit >= %s)" % (_fmt(med, "x"), _fmt(floor, "x")))
+        run_rows.insert(0, {"key": "MOSDEPTH_MEDIAN_EXON", "label": "Median per-exon coverage (mosdepth, dup-inclusive)",
+                            "value": med, "display": _fmt(med, "x"), "range": ">= " + _fmt(floor, "x"), "ok": ok})
     # driver genes with a healthy median but at least one exon below the exon threshold:
     # the gene is not "low", yet that exon is not reportable
     low_set = set(g["gene"] for g in low_genes)
