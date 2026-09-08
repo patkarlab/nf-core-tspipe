@@ -430,11 +430,20 @@ def _csq_severity(consequence):
 def _pick_csq(csq_blocks, csq_fields):
     """Choose ONE CSQ block from a variant's list of blocks.
 
-    Selection order (gene-agnostic):
-      1. most severe consequence (lowest _csq_severity)
-      2. tie -> MANE Select transcript present
+    CSQ_MANE_V1 (2026-09-08): the clinical table reports on the MANE Select
+    transcript. Selection order:
+      1. if any block carries MANE_SELECT, consider ONLY those blocks
+         (an overlapping neighbour's MANE block is still outranked by severity,
+         so CSF3R T618I is not masked by MRPS15 upstream_gene_variant)
+      2. most severe consequence (lowest _csq_severity)
       3. tie -> VEP's own PICK flag (=='1') if a PICK field exists
       4. tie -> first block (input order)
+    Blocks without MANE_SELECT are used only when no MANE block exists for the
+    variant (genes without a MANE transcript, backbone tiles, intergenic).
+
+    Before this change severity came first and MANE was a tie-breaker, so a
+    missense on an alternative isoform outranked a synonymous call on MANE
+    (SF1, UBTF, PAX5, IRF1 in run8), reported with ENSP accessions.
 
     csq_blocks : list of dicts (field_name -> value)
     csq_fields : list of CSQ subfield names (for PICK/MANE_SELECT presence)
@@ -442,16 +451,20 @@ def _pick_csq(csq_blocks, csq_fields):
     has_pick = "PICK" in csq_fields
     has_mane = "MANE_SELECT" in csq_fields
 
+    def is_mane(block):
+        return has_mane and bool(str(block.get("MANE_SELECT", "")).strip())
+
     def sort_key(idx_block):
         idx, block = idx_block
         sev = _csq_severity(block.get("Consequence", ""))
-        mane = 0 if (has_mane and str(block.get("MANE_SELECT", "")).strip()) else 1
         pick = 0 if (has_pick and str(block.get("PICK", "")).strip() == "1") else 1
-        return (sev, mane, pick, idx)
+        return (sev, pick, idx)
 
     indexed = list(enumerate(csq_blocks))
-    indexed.sort(key=sort_key)
-    return indexed[0][1]
+    mane_blocks = [ib for ib in indexed if is_mane(ib[1])]   # CSQ_MANE_V1
+    candidates = mane_blocks if mane_blocks else indexed
+    candidates.sort(key=sort_key)
+    return candidates[0][1]
 
 
 def parse_vep_csq(vep_vcf):
