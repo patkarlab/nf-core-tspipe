@@ -48,6 +48,7 @@ process VARIANT_FILTER {
         # ln -sf is idempotent across retries in the same work dir.
         ln -sf ${annotated_tsv} ${meta.id}.somaticseq.annotated.tsv
 
+        # variant_filter.py FILTER_D14_D15_A19_V1: synonymous reportable + Variant_Class, CLINVAR_BENIGN (bash comment; busts the task cache)
         variant_filter.py \\
             --sample ${meta.id} \\
             --outdir . \\

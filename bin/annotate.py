@@ -577,6 +577,22 @@ def parse_annovar_txt(annovar_txt):
     return variants
 
 
+def _cosmic_id(annovar_val, existing_variation):
+    """A19 (FILTER_D14_D15_A19_V1): COSMIC identifier(s) for the merged row.
+
+    The ANNOVAR cosmic103 table in use carries occurrence counts ('1', '10'), not
+    identifiers, so the ANNOVAR value is used only when it looks like one. VEP's
+    Existing_variation lists COSV/COSM identifiers alongside rsIDs; those are
+    taken, joined by '&'. Returns '-1' when nothing is found.
+    """
+    a = str(annovar_val or "").strip()
+    if a.upper().startswith(("COSV", "COSM", "COSN")):
+        return a
+    ids = [t for t in str(existing_variation or "").replace(",", "&").split("&")
+           if t.strip().upper().startswith(("COSV", "COSM", "COSN"))]
+    return "&".join(t.strip() for t in ids) if ids else "-1"
+
+
 def _clean(val):
     """Replace empty strings and '.' (VCF/ANNOVAR null) with '-1'.
 
@@ -653,7 +669,7 @@ def merge_annotations(vcf_fields, vep_variants, annovar_variants,
             "ALT_COUNT": _clean(vcf.get("alt_count", -1)),
             "VAF_pct": _clean(vcf.get("vaf_pct", -1)),
             "SomaticSeq_Verdict": _clean(vcf.get("filter", "")),
-            "COSMIC_ID": _clean(ann.get("cosmic103", "")),
+            "COSMIC_ID": _cosmic_id(ann.get("cosmic103", ""), vep.get("Existing_variation", "")),   # A19
             "ClinVar": _clean(ann.get("CLNSIG", ann.get("clinvar_20220320", ""))),
             "SIFT": _clean(vep.get("SIFT", "")),
             "PolyPhen": _clean(vep.get("PolyPhen", "")),

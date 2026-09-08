@@ -422,7 +422,15 @@ REPORTABLE_CONSEQUENCES = {
     "protein_altering_variant", "coding_sequence_variant",
     "incomplete_terminal_codon_variant", "transcript_ablation",
     "splice_acceptor_variant", "splice_donor_variant",
+    "synonymous_variant",   # D14 (FILTER_D14_D15_A19_V1): coding synonymous are reportable, tagged in Variant_Class
 }
+
+NONSYNONYMOUS_TERMS = {   # D14: terms that make a row "nonsynonymous" for Variant_Class
+    "missense_variant", "stop_gained", "stop_lost", "start_lost", "frameshift_variant",
+    "inframe_insertion", "inframe_deletion", "protein_altering_variant",
+    "incomplete_terminal_codon_variant", "transcript_ablation",
+}
+SPLICE_TERMS = {"splice_acceptor_variant", "splice_donor_variant"}
 
 _HOTSPOT_CACHE = {"loaded": False, "table": {}}
 
@@ -510,6 +518,28 @@ def is_clinvar_pathogenic(clinvar):
     return True
 
 
+def is_clinvar_benign(clinvar):
+    """D15: True for ClinVar Benign / Likely_benign / Benign/Likely_benign only."""
+    s = str(clinvar or "").strip().lower()
+    if not s or s in ("-1", "nan", "."):
+        return False
+    if "conflicting" in s or "pathogenic" in s or "uncertain" in s:
+        return False
+    return "benign" in s
+
+
+def variant_class(consequence):
+    """D14: nonsynonymous | splice | synonymous | other, from the VEP consequence terms."""
+    terms = set(t.strip() for t in str(consequence or "").lower().split("&"))
+    if terms & NONSYNONYMOUS_TERMS:
+        return "nonsynonymous"
+    if terms & SPLICE_TERMS:
+        return "splice"
+    if "synonymous_variant" in terms:
+        return "synonymous"
+    return "other"
+
+
 def is_reportable_consequence(consequence):
     terms = set(t.strip() for t in str(consequence or "").lower().split("&"))
     return bool(terms & REPORTABLE_CONSEQUENCES)
@@ -522,9 +552,10 @@ def apply_filters(df):
       BLACKLIST:           Blacklist_Reason is non-empty (known recurrent artifact)
       COMMON_POLYMORPHISM: Max_AF > 0.01
       LOW_IMPACT:          IMPACT == "MODIFIER" and not in splice region
+      CLINVAR_BENIGN:      ClinVar Benign / Likely_benign, unless a hotspot residue (D15)
       NON_REPORTABLE_CONSEQUENCE:
-                           no coding non-synonymous or canonical-splice term
-                           (synonymous, intron-only, UTR, non-coding transcript),
+                           no coding term (non-synonymous, synonymous since D14) and no
+                           canonical-splice term (intron-only, UTR, non-coding transcript),
                            unless ClinVar P/LP or a hotspot residue (MARKER consequence_filter)
       LOW_CALLERS:         VariantCaller_Count < 2
       LOW_DEPTH:           ALT_COUNT < 10
@@ -544,6 +575,7 @@ def apply_filters(df):
     df["_alt_count"] = df["ALT_COUNT"].apply(safe_int)
     df["_impact"] = df["IMPACT"].astype(str).str.strip()
     df["_consequence"] = df["Consequence"].astype(str).str.strip()
+    df["Variant_Class"] = df["_consequence"].map(variant_class)   # D14 (FILTER_D14_D15_A19_V1)
 
     # Ensure Blacklist_Reason exists (zero-impact if apply_snv_blacklist already ran)
     if "Blacklist_Reason" not in df.columns:
@@ -578,6 +610,11 @@ def apply_filters(df):
 
         # Priority 2b (MARKER consequence_filter): reportable consequence only,
         # unless ClinVar P/LP or a hotspot residue
+        # Priority 2a (D15 CLINVAR_BENIGN): ClinVar Benign / Likely_benign demotes, unless a hotspot residue
+        if is_clinvar_benign(row.get("ClinVar", "")) and not is_hotspot_residue(row.get("Gene", ""), row.get("HGVSp", "")):
+            filters.append("CLINVAR_BENIGN")
+            continue
+
         if not is_reportable_consequence(row["_consequence"]):
             if not (is_clinvar_pathogenic(row.get("ClinVar", ""))
                     or is_hotspot_residue(row.get("Gene", ""), row.get("HGVSp", ""))):
@@ -614,7 +651,7 @@ def apply_filters(df):
     # Report filter counts
     counts = df["Filter"].value_counts()
     log.info("Filter results:")
-    for filt in ["PASS", "BLACKLIST", "COMMON_POLYMORPHISM", "LOW_IMPACT", "NON_REPORTABLE_CONSEQUENCE",
+    for filt in ["PASS", "BLACKLIST", "COMMON_POLYMORPHISM", "LOW_IMPACT", "CLINVAR_BENIGN", "NON_REPORTABLE_CONSEQUENCE",
                  "LOW_CALLERS", "LOW_DEPTH", "NO_CALLER_INFO"]:
         n = counts.get(filt, 0)
         log.info("  %-25s %d", filt, n)
@@ -851,7 +888,7 @@ def main():
     log.info("=" * 70)
     log.info("Total input:         %d", pd.read_csv(input_path, sep="\t").shape[0])
     log.info("After dedup:         %d", len(df))
-    for filt in ["PASS", "BLACKLIST", "COMMON_POLYMORPHISM", "LOW_IMPACT", "NON_REPORTABLE_CONSEQUENCE",
+    for filt in ["PASS", "BLACKLIST", "COMMON_POLYMORPHISM", "LOW_IMPACT", "CLINVAR_BENIGN", "NON_REPORTABLE_CONSEQUENCE",
                  "LOW_CALLERS", "LOW_DEPTH", "NO_CALLER_INFO"]:
         n = (df["Filter"] == filt).sum()
         if n > 0:
