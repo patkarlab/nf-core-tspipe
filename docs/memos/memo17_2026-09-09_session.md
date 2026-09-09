@@ -55,7 +55,7 @@ hardening set (710f80f); this memo covers the rest of the day. Patchers under
 - Resumes: 98/352 (HARDEN), 58/392 (ANNOT_TRANSCRIPTS; only Consequence tie order moved),
   26/… renders (DASH_LAYOUT, SEXCHECK: SEX_CHECK rows byte-identical), 26 (IGV_V2B), 50/400
   (PON_V2: clinical sets lost exactly the seven rows above, nothing gained), 34/416 (BAF_V2 after
-  hotfix1), 42/408 (CNV_TABS), GENOME_V2 pending at time of writing.
+  hotfix1), 42/408 (CNV_TABS), 18/432 (GENOME_V2, completed 18:44).
 - Offline: `check_annovar_fatal.py` A/B/C/D pass on `work/cd/a39e70a6…`; `compare_annotated.py`
   attributes the VEP nondeterminism; BAF_V2 synthetic planted 17p cnLOH / chr8 trisomy / 7q loss
   all called, diploid sample zero calls; blacklist builder synthetic cohort covers every tier.
