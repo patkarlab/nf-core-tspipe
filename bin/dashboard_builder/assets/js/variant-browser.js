@@ -754,6 +754,11 @@
               hgvsC:    bestHGVSc(row),
               exon:     row.EXON_REPORT || row.EXON || "",
               cosmic:   window.tspipeReporting.extractCosmicIds(row.Existing_variation),
+              cavaTx:   (row.CAVA_Transcript && row.CAVA_Transcript !== "-1") ? row.CAVA_Transcript : "",   // DASH_REPORTING_CAVA_V1
+              cavaC:    (row.CAVA_HGVSc && row.CAVA_HGVSc !== "-1") ? row.CAVA_HGVSc : "",
+              cavaP:    (row.CAVA_HGVSp && row.CAVA_HGVSp !== "-1") ? row.CAVA_HGVSp : "",
+              cavaAlt:  (row.CAVA_AltAnn && row.CAVA_AltAnn !== "-1") ? row.CAVA_AltAnn : "",
+              cavaMatch: row.CAVA_HGVSp_Match || "",
               vaf:      row.VAF_pct || "",
               chr:      row.Chr || "",
               pos:      row.Start || "",
