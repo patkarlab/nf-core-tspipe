@@ -21,6 +21,33 @@ body { background: #fff; }
 .tspipe-sidebar .nav-link { color: #343a40; }
 .tspipe-sidebar .nav-link.active { background-color: #0d6efd; color: #fff; }
 
+/* MARKER DASH_LAYOUT_V1 (D1): the sidebar is a flex child of the page row and was stretched to
+   the full content height (align-items: stretch), so position: sticky had no room to move.
+   Pin it to the viewport instead. */
+.tspipe-sidebar {
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* DASH_LAYOUT_V1 (D5, D12): long insertions, COSMIC lists and caller lists must wrap inside
+   their cell instead of widening the page. A flex child defaults to min-width: auto, which
+   stops it shrinking below its content width. */
+.vb-card-compact > .flex-grow-1 { min-width: 0; }
+.vb-card-compact .font-monospace,
+.vb-card-detail dd { overflow-wrap: anywhere; word-break: break-word; }
+.vb-cava-line { color: #495057; margin-top: 0.15rem; }
+
+#reporting-table, #reporting-excluded-table { table-layout: fixed; width: 100%; }
+#reporting-table td, #reporting-excluded-table td { overflow-wrap: anywhere; vertical-align: top; }
+#reporting-table td.reporting-cosmic { overflow-wrap: anywhere; }   /* full list wraps; also in the tooltip */
+.reporting-tier-input {            /* D4: grows with its text (see autosizeTier in the template) */
+  resize: none;
+  overflow: hidden;
+  min-height: calc(1.5em + 0.5rem + 2px);
+  line-height: 1.4;
+}
+
 .tspipe-main {
   padding: 1.5rem 2rem;
   max-width: calc(100vw - var(--tspipe-sidebar-width));

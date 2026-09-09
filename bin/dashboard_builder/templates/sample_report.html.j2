@@ -693,15 +693,16 @@
             <table class="table table-sm table-hover align-middle" id="reporting-table">
               <thead class="table-light">
                 <tr>
+                  {# DASH_LAYOUT_V1 (D4, D5): fixed column widths so the page never widens; every cell wraps #}
                   <th scope="col" style="width:72px"></th>
-                  <th scope="col">Gene</th>
-                  <th scope="col">Genomic variant</th>
-                  <th scope="col">Protein variant</th>
-                  <th scope="col">Transcript Variant</th>
-                  <th scope="col">Exon</th>
-                  <th scope="col">COSMIC database reference</th>
-                  <th scope="col">VAF (%)</th>
-                  <th scope="col" style="width:160px">AMP/ASCO/CAP Tier (somatic)</th>
+                  <th scope="col" style="width:90px">Gene</th>
+                  <th scope="col" style="width:20%">Genomic variant</th>
+                  <th scope="col" style="width:17%">Protein variant</th>
+                  <th scope="col" style="width:17%">Transcript Variant</th>
+                  <th scope="col" style="width:60px">Exon</th>
+                  <th scope="col" style="width:16%">COSMIC database reference</th>
+                  <th scope="col" style="width:64px">VAF (%)</th>
+                  <th scope="col" style="width:170px">AMP/ASCO/CAP Tier (somatic)</th>
                 </tr>
               </thead>
               <tbody id="reporting-tbody"></tbody>
@@ -1161,14 +1162,15 @@
                  '<td class="font-monospace small">' + escapeHtml(s.hgvsP) + '</td>' +
                  '<td class="font-monospace small">' + escapeHtml(s.hgvsC) + '</td>' +
                  '<td>' + escapeHtml(s.exon || "") + '</td>' +
-                 '<td class="font-monospace small">' + escapeHtml(s.cosmic) + '</td>' +
+                 '<td class="font-monospace small reporting-cosmic" title="' + escapeHtml(s.cosmic) + '">' + escapeHtml(s.cosmic) + '</td>' +   // DASH_LAYOUT_V1 (D5)
                  '<td>' + escapeHtml(vaf) + '</td>' +
-                 '<td><input type="text" class="form-control form-control-sm reporting-tier-input" ' +
+                 '<td><textarea rows="1" class="form-control form-control-sm reporting-tier-input" ' +   // DASH_LAYOUT_V1 (D4): grows with the text
                        'data-vb-key="' + escapeHtml(it.id) + '" ' +
-                       'placeholder="-" value="' + tier + '" maxlength="16"></td>' +
+                       'placeholder="-">' + tier + '</textarea></td>' +
                '</tr>';
       }).join("");
       tbody.innerHTML = html;
+      autosizeAllTiers();   // DASH_LAYOUT_V1 (D4)
     }
 
     function renderExcluded(excluded) {
@@ -1362,11 +1364,28 @@
     }
 
     // ACMG/AMP Tier inline edits -- persist on input
+    // DASH_LAYOUT_V1 (D4): the tier field is a textarea that grows with its text (wraps onto
+    // further lines instead of scrolling out of view); Enter commits instead of inserting a
+    // newline, and any newline is collapsed so the copied TSV stays one row per variant.
+    function autosizeTier(el) {
+      el.style.height = "auto";
+      el.style.height = (el.scrollHeight + 2) + "px";
+    }
+    function autosizeAllTiers() {
+      tbody.querySelectorAll(".reporting-tier-input").forEach(autosizeTier);
+    }
     tbody.addEventListener("input", function (ev) {
       const inp = ev.target.closest(".reporting-tier-input");
       if (!inp) return;
+      autosizeTier(inp);
       const key = inp.getAttribute("data-vb-key");
-      window.tspipeReporting.setTier(key, inp.value.trim());
+      window.tspipeReporting.setTier(key, inp.value.replace(/\s+/g, " ").trim());
+    });
+    tbody.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" && ev.target.closest(".reporting-tier-input")) {
+        ev.preventDefault();
+        ev.target.blur();
+      }
     });
 
     // Up/down reorder of included variants. Mutating the store fires the

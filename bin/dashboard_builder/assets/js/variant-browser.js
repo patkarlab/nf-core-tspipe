@@ -409,6 +409,7 @@
       ["HGVSg", "HGVSg"],
       ["MANE_SELECT", "MANE Select"],
       ["Canonical", "Canonical"],
+      ["MNV_Note", "MNV note"],   // DASH_LAYOUT_V1 (D17a)
     ]],
     // CAVA_V1c (N3): CAVA 2.0.15 on the MANE 1.5 RefSeq catalog
     ["CAVA (MANE 1.5 RefSeq)", [
@@ -750,8 +751,8 @@
             const snapshot = {
               gene:     row.Gene || "",
               hgvsG:    row.VV_HGVSg || row.HGVSg || "",
-              hgvsP:    row.VV_HGVSp || row.HGVSp || "",
-              hgvsC:    row.VV_HGVSc || row.HGVSc || "",
+              hgvsP:    bestHGVSp(row),   // DASH_LAYOUT_V1: VV -> CAVA -> VEP, as on the cards (D3b)
+              hgvsC:    bestHGVSc(row),
               exon:     row.EXON_REPORT || row.EXON || "",
               cosmic:   window.tspipeReporting.extractCosmicIds(row.Existing_variation),
               vaf:      row.VAF_pct || "",
@@ -929,6 +930,24 @@
                       escapeHtml(r.CAVA_AltAnn) + '">alt alignment</span>';
       }
 
+      // DASH_LAYOUT_V1 (D17a): MNV badge when MNV_MERGE re-joined or tagged this record.
+      let mnvBadge = "";
+      if (r.MNV_Note && r.MNV_Note !== "-1") {
+        mnvBadge = '<span class="badge bg-info text-dark" title="' + escapeHtml(r.MNV_Note) + '">MNV</span>';
+      }
+      // DASH_LAYOUT_V1: CAVA (MANE 1.5 RefSeq) shown on every card, not only when it differs.
+      const cavaTx = (r.CAVA_Transcript && r.CAVA_Transcript !== "-1") ? r.CAVA_Transcript : "";
+      const cavaC  = (r.CAVA_HGVSc && r.CAVA_HGVSc !== "-1") ? r.CAVA_HGVSc : "";
+      const cavaP  = (r.CAVA_HGVSp && r.CAVA_HGVSp !== "-1") ? r.CAVA_HGVSp : "";
+      let cavaLine;
+      if (cavaTx || cavaC || cavaP || cavaCsn) {
+        cavaLine = '<span class="text-muted" title="CAVA 2.0.15, MANE 1.5 RefSeq catalog' +
+                   (cavaCsn ? '; CSN ' + escapeHtml(cavaCsn) : "") + '">CAVA</span> ' +
+                   escapeHtml([cavaTx, cavaC, cavaP].filter(Boolean).join(" "));
+      } else {
+        cavaLine = '<span class="text-muted">CAVA: no annotation</span>';
+      }
+
       // IGV chip on the compact view — visible without expanding the card.
       let igvChip = "";
       if (hasIGV) {
@@ -972,6 +991,7 @@
               '<span class="text-muted small">' + escapeHtml(conseq) + "</span>" +
               (r.IMPACT ? '<span class="badge bg-light text-dark border">' + escapeHtml(r.IMPACT) + "</span>" : "") +
               cavaBadges +   // CAVA_V1c
+              mnvBadge +     // DASH_LAYOUT_V1 (D17a)
               igvChip +
             "</div>" +
             '<div class="small font-monospace text-muted mt-1">' +
@@ -980,6 +1000,7 @@
               escapeHtml(r.Chr || "") + ":" + escapeHtml(r.Start || "") + " " +
               escapeHtml(r.Ref || "") + "&gt;" + escapeHtml(r.Alt || "") +
             "</div>" +
+            '<div class="small font-monospace vb-cava-line">' + cavaLine + "</div>" +   // DASH_LAYOUT_V1
           "</div>" +
           '<div class="text-end small">' +
             verdictBadge + filterLabel +
@@ -1012,7 +1033,7 @@
                field === "HGVSp" || field === "VV_HGVSp" ||
                field === "CAVA_CSN" || field === "CAVA_HGVSc" || field === "CAVA_HGVSp" || field === "CAVA_AltAnn"   // CAVA_V1c
                ? ' font-monospace' : '') +
-            '">' + emptyVal(v) + "</dd>"
+            '">' + (field === "Callers" ? emptyVal(v).replace(/,/g, ", ") : emptyVal(v)) + "</dd>"   // DASH_LAYOUT_V1 (D12)
           );
         }
         if (rowsHtml.length === 0) continue;
