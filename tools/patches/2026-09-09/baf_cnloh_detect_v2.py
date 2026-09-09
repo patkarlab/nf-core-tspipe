@@ -320,35 +320,61 @@ def main():
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         chroms = [c for c in CHROM_ORDER if any(r["chrom"] == c for r in ordered)]
-        offsets, x0 = {}, 0.0
-        spans = {}
+        offsets, spans, x0 = {}, {}, 0.0
         for c in chroms:
-            hi = max(r["site_hi"] for r in ordered if r["chrom"] == c)
+            hi = max([r["site_hi"] for r in ordered if r["chrom"] == c] +
+                     [e for cc, s_, e, l in bins if cc == c])
             offsets[c] = x0
             spans[c] = hi / 1e6
             x0 += hi / 1e6 + 5.0
-        fig, ax = plt.subplots(figsize=(18, 4))
+        fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(18, 7), sharex=True,
+                                       gridspec_kw={"height_ratios": [1, 1.2], "hspace": 0.08})
+        # depth track: denoised log2 copy ratio per bin, arm medians
+        for c, s_, e, l in bins:
+            if c in offsets:
+                ax0.scatter(offsets[c] + (s_ + e) / 2e6, l, s=3, c="#8c8c8c", linewidths=0)
+        for r in ordered:
+            if r["cr_med"] == r["cr_med"]:
+                x_lo = offsets[r["chrom"]] + r["arm_lo"] / 1e6
+                x_hi = offsets[r["chrom"]] + min(r["arm_hi"], spans[r["chrom"]] * 1e6) / 1e6
+                col = "#c0392b" if r["cr_med"] <= args.cr_del else ("#1e8449" if r["cr_med"] >= args.cr_gain else "#333333")
+                ax0.plot([x_lo, x_hi], [r["cr_med"], r["cr_med"]], color=col, lw=1.8)
+        ax0.axhline(0.0, color="#555555", lw=0.6)
+        ax0.set_ylim(-1.5, 1.5)
+        ax0.set_ylabel("denoised log2 copy ratio")
+        # BAF track
         for contig, pos, depth, af, af_adj, d, mad, is_het, arm in all_rows:
             if contig not in offsets:
                 continue
             v = results[(contig, arm)]["verdict"]
-            ax.scatter(offsets[contig] + pos / 1e6, af, s=6, linewidths=0,
-                       c=VERDICT_COLOUR.get(v, "#9e9e9e") if is_het else "#e0e0e0")
+            ax1.scatter(offsets[contig] + pos / 1e6, af, s=6, linewidths=0,
+                        c=VERDICT_COLOUR.get(v, "#9e9e9e") if is_het else "#e0e0e0")
         for c in chroms:
-            ax.axvline(offsets[c] - 2.5, color="#bbbbbb", lw=0.5)
-            ax.text(offsets[c] + spans[c] / 2, 1.03, c.replace("chr", ""), ha="center", va="bottom", fontsize=7)
-            cs, ce = cen[c]
-            ax.axvspan(offsets[c] + cs / 1e6, offsets[c] + ce / 1e6, color="#f2f2f2", lw=0)
-        ax.axhline(0.5, color="#555555", lw=0.6)
-        ax.set_ylim(0, 1)
-        ax.set_xlim(-3, x0)
-        ax.set_xticks([])
-        ax.set_ylabel("ALT allele fraction")
-        ax.set_title("{0} -- BAF by arm: {1}".format(
-            args.sample, ", ".join("{0}{1} {2}".format(r["chrom"].replace("chr", ""), r["arm"], r["verdict"]) for r in called) or "no call"),
-            fontsize=10)
-        fig.tight_layout()
-        fig.savefig(args.out_prefix + ".png", dpi=130)
+            for ax in (ax0, ax1):
+                ax.axvline(offsets[c] - 2.5, color="#bbbbbb", lw=0.5)
+                cs, ce = cen[c]
+                ax.axvspan(offsets[c] + cs / 1e6, offsets[c] + ce / 1e6, color="#f2f2f2", lw=0)
+        ax1.axhline(0.5, color="#555555", lw=0.6)
+        ax1.set_ylim(0, 1)
+        ax1.set_xlim(-3, x0)
+        ax1.set_xticks([offsets[c] + spans[c] / 2 for c in chroms])
+        ax1.set_xticklabels([c.replace("chr", "") for c in chroms], fontsize=8)
+        ax1.tick_params(axis="x", length=0)
+        ax1.set_xlabel("chromosome")
+        ax1.set_ylabel("ALT allele fraction")
+        from matplotlib.lines import Line2D
+        handles = [Line2D([0], [0], marker="o", color="w", markerfacecolor=col, markersize=6, label=lab) for lab, col in [
+            ("DEL", VERDICT_COLOUR["DEL"]), ("CNLOH", VERDICT_COLOUR["CNLOH"]), ("GAIN", VERDICT_COLOUR["GAIN"]),
+            ("imbalance", VERDICT_COLOUR["IMBALANCE"]), ("balanced het", "#9e9e9e"), ("homozygous", "#e0e0e0")]]
+        ax1.legend(handles=handles, loc="upper right", ncol=6, fontsize=7, frameon=True, framealpha=0.9,
+                   bbox_to_anchor=(1.0, 1.0), borderaxespad=0.3)
+        ax0.set_title("{0} -- depth and BAF by arm: {1}".format(
+            args.sample,
+            ", ".join("{0}{1} {2}{3} f={4}".format(r["chrom"].replace("chr", ""), r["arm"], r["verdict"],
+                                                  "?" if r["confidence"] == "LOW" else "", fmt(r["f_est"], 2))
+                      for r in called) or "no call"),
+            fontsize=10, pad=14)
+        fig.savefig(args.out_prefix + ".png", dpi=130, bbox_inches="tight")
         print("[ok] {0}: plot -> {1}.png".format(args.sample, args.out_prefix))
     except Exception as exc:
         sys.stderr.write("[warn] plot generation failed (non-fatal): {0}\n".format(exc))

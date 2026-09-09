@@ -531,6 +531,18 @@
           </div>
         {% endif %}
 
+        {# DASH_CNV_TABS_V1: five sub-tabs; each source shown once #}
+        <ul class="nav nav-tabs mb-3" id="cnv-subtabs" role="tablist">
+          <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cnv-sub-consensus" type="button" role="tab">Consensus CNV calls</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cnv-sub-baf" type="button" role="tab">BAF by arm{% if ctx.cnv.baf_calls %} <span class="badge bg-warning text-dark">{{ ctx.cnv.baf_calls|length }}</span>{% endif %}</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cnv-sub-genome" type="button" role="tab">Genome-wide</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cnv-sub-reconcnv" type="button" role="tab">reconCNV</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cnv-sub-chrom" type="button" role="tab">Chromosome pages{% if ctx.cnv.chrom_pages %} ({{ ctx.cnv.chrom_pages|length }}){% endif %}</button></li>
+        </ul>
+        <div class="tab-content" id="cnv-subpanes">
+
+          {# ---- Consensus ---- #}
+          <div class="tab-pane fade show active" id="cnv-sub-consensus" role="tabpanel">
         {% if ctx.cnv.consensus_table and ctx.cnv.consensus_table.rows %}
           <h5 class="mt-2">Consensus CNV calls (K CNVkit, G GATK, B BAF, P PureCN, E DECoN, H PURPLE)</h5>
           <p class="text-muted small mb-2">
@@ -569,39 +581,12 @@
             <button type="button" class="btn btn-outline-secondary" data-tiers="">All</button>
           </div>
           {{ macros.render_datatable('cnv-consensus-table', ctx.cnv.consensus_table.columns, ctx.cnv.consensus_table.rows) }}
-
-          {# BAF_V2: per-arm allelic state #}
-          {% if ctx.cnv.baf_arms %}
-          <h6 class="mt-4">BAF by chromosome arm
-            {% if ctx.cnv.baf_calls %}<span class="badge bg-warning text-dark ms-1">{{ ctx.cnv.baf_calls|length }} arm(s) with a call</span>
-            {% else %}<span class="badge bg-success ms-1">all arms balanced</span>{% endif %}
-          </h6>
-          <p class="text-muted small mb-2">Mirrored B-allele deviation over the sample's heterozygous catalog sites, per arm; the noise floor is the sample's own balanced arms. DEL / GAIN use the arm's denoised copy ratio; CNLOH is a shift at neutral copy number; INDETERMINATE means too few heterozygous sites (acrocentric p arms, chrX in males). A call marked ? is LOW confidence (fewer than 20 heterozygous sites or a deviation under 1.5 x the noise floor) and casts no vote in the consensus.</p>
-          <div class="table-responsive" style="max-width: 900px;">
-            <table class="table table-sm table-striped small mb-0">
-              <thead class="table-light"><tr><th>Arm</th><th>Het sites</th><th>Clonal fraction</th><th>Copy ratio (log2)</th><th>Verdict</th><th>Confidence</th><th>Scope</th></tr></thead>
-              <tbody>
-              {% for a in ctx.cnv.baf_arms %}
-                <tr{% if a.verdict in ('DEL','CNLOH','GAIN','IMBALANCE') and a.confidence == 'HIGH' %} class="table-warning"{% endif %}>
-                  <td>{{ a.arm }}</td><td>{{ a.n_het }}</td><td>{{ a.f }}</td><td>{{ a.cr }}</td>
-                  <td><strong>{{ a.verdict }}{% if a.confidence == 'LOW' %}?{% endif %}</strong></td><td>{{ a.confidence }}</td><td>{{ a.scope }}</td>
-                </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% if ctx.cnv.baf_plot %}   {# BAF_V2B: two-track figure #}
-          <div class="row g-3 mt-1">
-            {{ macros.render_cnv_plot_card('baf_genome::1', 'Depth and BAF by arm (genome-wide)', ctx.cnv.baf_plot, 'col-12') }}
-          </div>
-          {% endif %}
-          {% endif %}
         {% elif ctx.cnv.consensus_tiers is defined %}
           <div class="tspipe-empty">No non-neutral consensus CNV calls.</div>
         {% endif %}
-
         {% if ctx.cnv.decon_table and ctx.cnv.decon_table.rows %}
-          <h5 class="mt-4">DECoN exon-level calls</h5>
+          <details class="mt-4">
+            <summary class="h6">DECoN exon-level calls <span class="badge bg-secondary">{{ ctx.cnv.decon_table.rows|length }}</span> <span class="text-muted small">(arm E evidence)</span></summary>
           {# DASH_DECON_V1: BF explanation and column key; DASH_DECON_V1b: vocabulary corrected #}
           <p class="text-muted small mb-2">
             Exon-level calls from DECoN, listed at Bayes factor (BF) &ge; 5; sub-threshold calls carry
@@ -625,24 +610,88 @@
             </table>
           </details>
           {{ macros.render_datatable('cnv-decon-table', ctx.cnv.decon_table.columns, ctx.cnv.decon_table.rows) }}
+          </details>
         {% endif %}
+          </div>
 
-        {# ---- genome overview (arm medians) + reconCNV (MARKER VIZ_V1b) ---- #}
+          {# ---- BAF by arm (BAF_V2 / BAF_V2B) ---- #}
+          <div class="tab-pane fade" id="cnv-sub-baf" role="tabpanel">
+        {% if ctx.cnv.baf_arms %}
+          {% set _baf_called = ctx.cnv.baf_arms | rejectattr('verdict', 'in', ['NEUTRAL', 'INDETERMINATE', '']) | list %}
+          <h5 class="mt-2">BAF by chromosome arm
+            {% if ctx.cnv.baf_calls %}<span class="badge bg-warning text-dark ms-1">{{ ctx.cnv.baf_calls|length }} arm(s) with a call</span>
+            {% else %}<span class="badge bg-success ms-1">all arms balanced</span>{% endif %}
+          </h5>
+          <p class="text-muted small mb-2">Mirrored B-allele deviation over the sample's heterozygous catalog sites (CNV backbone plus the 17p windows), per arm; the noise floor is the sample's own balanced arms. DEL / GAIN use the arm's denoised copy ratio; CNLOH is a shift at neutral copy number; INDETERMINATE means too few heterozygous sites (acrocentric p arms, chrX in males). A call marked ? is LOW confidence (fewer than 20 heterozygous sites or a deviation under 1.5 x the noise floor) and casts no vote in the consensus.</p>
+          {% if _baf_called %}
+          <div class="table-responsive" style="max-width: 900px;">
+            <table class="table table-sm small mb-2">
+              <thead class="table-light"><tr><th>Arm</th><th>Het sites</th><th>Clonal fraction</th><th>Copy ratio (log2)</th><th>Verdict</th><th>Confidence</th><th>Scope</th></tr></thead>
+              <tbody>
+              {% for a in _baf_called %}
+                <tr class="{% if a.confidence == 'HIGH' %}table-warning{% else %}table-light{% endif %}">
+                  <td><strong>{{ a.arm }}</strong></td><td>{{ a.n_het }}</td><td>{{ a.f }}</td><td>{{ a.cr }}</td>
+                  <td><strong>{{ a.verdict }}{% if a.confidence == 'LOW' %}?{% endif %}</strong></td><td>{{ a.confidence }}</td><td>{{ a.scope }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="tspipe-empty mb-2">No arm with an allelic imbalance.</div>
+          {% endif %}
+          <details class="small mb-3">
+            <summary class="text-muted">Show all {{ ctx.cnv.baf_arms|length }} arms</summary>
+            <div class="table-responsive mt-2" style="max-width: 900px;">
+              <table class="table table-sm table-striped small mb-0">
+                <thead class="table-light"><tr><th>Arm</th><th>Het sites</th><th>Clonal fraction</th><th>Copy ratio (log2)</th><th>Verdict</th><th>Confidence</th><th>Scope</th></tr></thead>
+                <tbody>
+                {% for a in ctx.cnv.baf_arms %}
+                  <tr{% if a.verdict in ('DEL','CNLOH','GAIN','IMBALANCE') and a.confidence == 'HIGH' %} class="table-warning"{% endif %}>
+                    <td>{{ a.arm }}</td><td>{{ a.n_het }}</td><td>{{ a.f }}</td><td>{{ a.cr }}</td>
+                    <td>{{ a.verdict }}{% if a.confidence == 'LOW' %}?{% endif %}</td><td>{{ a.confidence }}</td><td>{{ a.scope }}</td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </details>
+          {% if ctx.cnv.baf_plot %}
+          <div class="row g-3">
+            {{ macros.render_cnv_plot_card('baf_genome::1', 'Depth and BAF by arm (genome-wide)', ctx.cnv.baf_plot, 'col-12') }}
+          </div>
+          {% endif %}
+        {% else %}
+          <div class="tspipe-empty">BAF per-arm summary not available for this sample.</div>
+        {% endif %}
+          </div>
+
+          {# ---- Genome-wide ---- #}
+          <div class="tab-pane fade" id="cnv-sub-genome" role="tabpanel">
         {% if ctx.cnv.genome_overview %}
-          <h5 class="mt-4">Genome-wide</h5>
+          <h5 class="mt-2">Genome-wide overview (arm medians)</h5>
           <p class="text-muted small mb-2">Per-bin log2 with one median line per chromosome arm (red below -0.25, green above +0.20), BAF (grey balanced, green deviated), PURPLE copy number. Arm medians are printed under the chromosome labels.</p>
           <div class="row g-3">
             {{ macros.render_cnv_plot_card('genome_overview::1', 'Genome-wide overview', ctx.cnv.genome_overview, 'col-12') }}
           </div>
         {% endif %}
+        {% if not ctx.cnv.genome_overview %}<div class="tspipe-empty">Genome overview not available.</div>{% endif %}
+          </div>
+
+          {# ---- reconCNV ---- #}
+          <div class="tab-pane fade" id="cnv-sub-reconcnv" role="tabpanel">
         {% if ctx.cnv.reconcnv %}
-          <h5 class="mt-4">reconCNV (interactive)</h5>
+          <h5 class="mt-2">reconCNV (interactive)</h5>
           <p class="text-muted small mb-2">Bokeh view of the CNVkit ratio, segments and het SNPs. <a href="{{ ctx.cnv.reconcnv }}" target="_blank">Open in a new tab</a>.</p>
           <div class="ratio" style="--bs-aspect-ratio: 60%;"><iframe src="{{ ctx.cnv.reconcnv }}" loading="lazy" style="border:1px solid #dee2e6;"></iframe></div>
         {% endif %}
+        {% if not ctx.cnv.reconcnv %}<div class="tspipe-empty">reconCNV view not available.</div>{% endif %}
+          </div>
 
+          {# ---- Chromosome pages + exon figures ---- #}
+          <div class="tab-pane fade" id="cnv-sub-chrom" role="tabpanel">
         {% if ctx.cnv.chrom_pages %}
-          <h5 class="mt-4">Chromosome pages ({{ ctx.cnv.chrom_pages|length }})</h5>
+          <h5 class="mt-2">Chromosome pages ({{ ctx.cnv.chrom_pages|length }})</h5>
           <p class="text-muted small mb-2">
             Target space, genomic order: depth per exon/backbone/SNP window (green neutral, red loss, blue gain),
             BAF from the panel's het catalog (grey balanced, green deviated), PURPLE copy number, and one exon
@@ -666,7 +715,6 @@
             {% endfor %}
           </div>
         {% endif %}
-
         {% if ctx.cnv.exon_plots %}
           <h5 class="mt-4">Exon-level figures ({{ ctx.cnv.exon_plots|length }})</h5>
           <p class="text-muted small mb-2">Chromosomes with a consensus call, a DECoN call at BF &ge; 5, or a focal-CNV gene.</p>
@@ -676,7 +724,17 @@
             {% endfor %}
           </div>
         {% endif %}
+          </div>
+        </div>
 
+        <script>
+          // DASH_CNV_TABS_V1: DataTables laid out while hidden need a column adjust once visible
+          document.addEventListener("DOMContentLoaded", function () {
+            function adjust() { if (window.jQuery && jQuery.fn.dataTable) { jQuery.fn.dataTable.tables({ visible: true, api: true }).columns.adjust(); } }
+            document.querySelectorAll('#cnv-subtabs button[data-bs-toggle="tab"]').forEach(function (b) { b.addEventListener("shown.bs.tab", adjust); });
+            document.querySelectorAll("#tab-cnv details").forEach(function (d) { d.addEventListener("toggle", adjust); });
+          });
+        </script>
 
         {# legacy CNV views removed: MARKER DASH_CNV_V1a #}
       </div>
