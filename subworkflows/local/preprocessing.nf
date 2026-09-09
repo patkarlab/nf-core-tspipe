@@ -105,7 +105,9 @@ workflow PREPROCESSING {
             .splitCsv(header: true, sep: '\t', elem: 1)
             .map { meta, row ->
                 if( sex_check_logged.add(meta.id) ) {
-                    if( row.status == 'MISMATCH' )
+                    if( row.status == 'ERROR' )   // SEXCHECK_POLICY_V1
+                        log.warn "[SEX_CHECK] ${meta.id}: sex check failed (${row.flags}); continuing with samplesheet sex '${row.resolved_sex}'; QC verdict will be REVIEW"
+                    else if( row.status == 'MISMATCH' )
                         log.warn "[SEX_CHECK] ${meta.id}: samplesheet sex=${row.sheet_sex} but data infers ${row.inferred_sex} (X/A=${row.x_auto_ratio}); keeping the samplesheet value"
                     else if( row.sheet_sex == 'unknown' )
                         log.info "[SEX_CHECK] ${meta.id}: samplesheet sex unknown; using inferred ${row.resolved_sex} (method=${row.method}, X het=${row.x_het_frac}, X/A=${row.x_auto_ratio}, status=${row.status})"

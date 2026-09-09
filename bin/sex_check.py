@@ -24,6 +24,10 @@ X_DEPTH_CONFLICT is flagged.
 resolved_sex is what the workflow may write into meta.sex: the
 samplesheet value when it is male/female, otherwise the inference.
 A MISMATCH between sheet and inference never overrides the sheet.
+SEXCHECK_POLICY_V1: an exception inside run() writes status ERROR (flags
+ERROR:<message>, traceback on stderr) and still exits 0; the QC verdict
+turns ERROR, INDETERMINATE and MISMATCH into REVIEW. The run never stops
+on the sex check.
 
 Output is a one-row TSV: the sixteen SEX_CHECK_V1 columns unchanged,
 then method, het_inferred_sex, depth_inferred_sex, x_het_frac,
@@ -37,6 +41,7 @@ import gzip
 import json
 import re
 import sys
+import traceback   # SEXCHECK_POLICY_V1
 
 AUTOSOMES = set("chr%d" % i for i in range(1, 23))
 PAR_HG38 = {
@@ -374,7 +379,7 @@ def error_row(args, exc):
     row = dict((c, "NA") for c in COLUMNS)
     row.update({
         "sample": args.sample, "sheet_sex": sheet, "inferred_sex": "indeterminate",
-        "resolved_sex": sheet, "status": "INDETERMINATE",
+        "resolved_sex": sheet, "status": "ERROR",   # SEXCHECK_POLICY_V1: distinct from a data-driven INDETERMINATE
         "n_auto": "0", "n_x": "0", "n_y": "0", "n_par_excluded": "0",
         "n_noncanonical_skipped": "0", "method": "none",
         "n_x_het_sites": "0", "n_auto_het_sites": "0",
@@ -420,9 +425,11 @@ def main():
     args = ap.parse_args()
     try:
         rc = run(args)
-    except Exception as exc:  # never fail the sample: emit an indeterminate row
+    except Exception as exc:  # SEXCHECK_POLICY_V1: never fail the sample; status ERROR forces QC REVIEW
         error_row(args, exc)
-        sys.stderr.write("[sex_check] ERROR %s: %s (wrote indeterminate row)\n" % (args.sample, exc))
+        traceback.print_exc(file=sys.stderr)
+        sys.stderr.write("[sex_check] ERROR %s: %s (wrote status=ERROR row; QC verdict will be REVIEW)\n"
+                         % (args.sample, exc))
         rc = 0
     sys.exit(rc)
 

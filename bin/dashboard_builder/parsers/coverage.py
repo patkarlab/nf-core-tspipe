@@ -375,8 +375,20 @@ def verdict(coverage, hsmetrics, fastp=None, sex_check=None):   # DASH_QC_V2: fa
             ("Sex used by the pipeline", res or "NA"),
             ("Sex-check status", ("%s %s" % (status_sx, flags)).strip()),
         ]
-        if sheet in ("male", "female") and het in ("male", "female") and sheet != het:
-            review.append("Sex mismatch: samplesheet %s, chrX heterozygosity %s (possible sample swap)" % (sheet, het))
+        # SEXCHECK_POLICY_V1 (audit Q1/Q2, decision 9 Sep 2026): the run never stops on the sex
+        # check; a failed check, an indeterminate inference or a sheet/inference mismatch forces
+        # REVIEW so sample identity is confirmed before sign-out. MISMATCH is taken from the
+        # status column so the depth-only (no het catalog) case counts too.
+        inf = (sx.get("inferred_sex") or "").strip().lower()
+        method = (sx.get("method") or "").strip()
+        if status_sx == "ERROR" or flags.startswith("ERROR:"):
+            review.append("Sex check failed to run (%s); sample identity not verified" % (flags or "no detail"))
+        elif status_sx == "MISMATCH" or (sheet in ("male", "female") and inf in ("male", "female") and sheet != inf):
+            review.append("Sex mismatch: samplesheet %s, data infers %s by %s (possible sample swap); samplesheet value kept"
+                          % (sheet, inf or het or "unknown", method or "unknown method"))
+        elif status_sx == "INDETERMINATE" or inf == "indeterminate":
+            review.append("Sex could not be inferred from the data (%s); sample identity not verified"
+                          % (flags or method or "insufficient sites"))
         elif sheet not in ("male", "female"):
             findings.append("Sex not given on the samplesheet; %s inferred from chrX heterozygosity" % (het or res or "unknown"))
         if "X_DEPTH_CONFLICT" in flags:
