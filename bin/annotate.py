@@ -88,6 +88,9 @@ COLUMNS = [
     # existing column positions are unchanged. '-1' when CAVA produced no annotation.
     "CAVA_CSN", "CAVA_HGVSc", "CAVA_HGVSp", "CAVA_Transcript", "CAVA_Class",
     "CAVA_SO", "CAVA_Impact", "CAVA_AltAnn", "CAVA_HGVSp_Match",
+    # ANNOT_TRANSCRIPTS_V1: every transcript block VEP emitted (see _all_transcripts).
+    # Appended last so existing column positions are unchanged.
+    "VEP_Transcripts",
 ]
 
 
@@ -190,6 +193,10 @@ def run_vep(vcf_in, vcf_out, reference, vep_cache, fork):
     )
     for _v in ("PERL5LIB", "PERL_LOCAL_LIB_ROOT", "PERL_MM_OPT", "PERL_MB_OPT"):
         vep_env.pop(_v, None)
+    # Q7 (memo 16): VEP orders equal-rank consequence terms by Perl hash iteration, which
+    # is randomised per process; fix the seed so two runs of one input are byte-identical.
+    vep_env["PERL_HASH_SEED"] = "0"
+    vep_env["PERL_PERTURB_KEYS"] = "0"
     return run(cmd, desc="Running VEP on " + os.path.basename(vcf_in),
                env=vep_env)
 
@@ -437,6 +444,35 @@ def _csq_severity(consequence):
     return best
 
 
+def _all_transcripts(blocks, picked):
+    """ANNOT_TRANSCRIPTS_V1: every transcript consequence VEP emitted for the variant.
+
+    Returns 'Feature|BIOTYPE|Consequence|HGVSc|HGVSp|flags' entries joined by ';'.
+    flags is a '+'-joined subset of REPORTED (the block the clinical columns were
+    taken from), MANE:<RefSeq accession>, CANONICAL and PICK. Regulatory and motif
+    features are skipped. Field separators inside values are replaced so the
+    string stays parseable. Empty when no transcript block exists.
+    """
+    out = []
+    for b in blocks:
+        if str(b.get("Feature_type", "Transcript")) != "Transcript":
+            continue
+        flags = []
+        if b is picked:
+            flags.append("REPORTED")
+        mane = str(b.get("MANE_SELECT", "")).strip()
+        if mane:
+            flags.append("MANE:" + mane)
+        if str(b.get("CANONICAL", "")).strip() == "YES":
+            flags.append("CANONICAL")
+        if str(b.get("PICK", "")).strip() == "1":
+            flags.append("PICK")
+        vals = [str(b.get(k, "")).replace("|", "/").replace(";", ",")
+                for k in ("Feature", "BIOTYPE", "Consequence", "HGVSc", "HGVSp")]
+        out.append("|".join(vals) + "|" + "+".join(flags))
+    return ";".join(out)
+
+
 def _pick_csq(csq_blocks, csq_fields):
     """Choose ONE CSQ block from a variant's list of blocks.
 
@@ -530,6 +566,7 @@ def parse_vep_csq(vep_vcf):
                         blocks.append(d)
                     if blocks:
                         csq_data = _pick_csq(blocks, csq_fields)
+                        csq_data["__all_transcripts"] = _all_transcripts(blocks, csq_data)   # ANNOT_TRANSCRIPTS_V1
                     break
 
             key = "{0}:{1}:{2}:{3}".format(chrom, pos, ref, alt)
@@ -903,6 +940,7 @@ def merge_annotations(vcf_fields, vep_variants, annovar_variants,
             "HGVSg": _clean(vep.get("HGVSg", "")),
             "Existing_variation": _clean(vep.get("Existing_variation", "")),
             "MNV_Note": _clean(vcf.get("mnv_note", "")),   # MNV_MERGE_V1 (N2)
+            "VEP_Transcripts": _clean(vep.get("__all_transcripts", "")),   # ANNOT_TRANSCRIPTS_V1
         }
         row.update(_cava_columns(cava_variants.get(key), vep))   # CAVA_V1b (N3)
         _cava_match_counts[row["CAVA_HGVSp_Match"]] = _cava_match_counts.get(row["CAVA_HGVSp_Match"], 0) + 1

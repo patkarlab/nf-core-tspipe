@@ -907,6 +907,7 @@
         ? '<span class="badge ' + verdictBadgeClass(verdict) + '">' + escapeHtml(verdict) + "</span>"
         : "";
       const hgvsp = bestHGVSp(r);
+      const geneLabel = (r.Gene && r.Gene !== "-1") ? r.Gene : "\u2014";   // ANNOT_TRANSCRIPTS_V1: no '-1' as a gene name
       const conseq = r.Consequence || "";
       const callerCount = r.VariantCaller_Count || "";
       const refCount = r.REF_COUNT || "0";
@@ -987,7 +988,7 @@
           selectCheckbox +
           '<div class="flex-grow-1">' +
             '<div class="d-flex align-items-baseline gap-2 flex-wrap">' +
-              '<span class="vb-gene">' + escapeHtml(r.Gene || "?") + "</span>" +
+              '<span class="vb-gene">' + escapeHtml(geneLabel) + "</span>" +   // ANNOT_TRANSCRIPTS_V1
               '<span class="text-muted small">' + escapeHtml(conseq) + "</span>" +
               (r.IMPACT ? '<span class="badge bg-light text-dark border">' + escapeHtml(r.IMPACT) + "</span>" : "") +
               cavaBadges +   // CAVA_V1c
@@ -1043,6 +1044,44 @@
             '<dl class="row mb-0">' + rowsHtml.join("") + "</dl>" +
           "</div>"
         );
+      }
+
+      // ANNOT_TRANSCRIPTS_V1: every transcript VEP annotated for this variant, collapsed by
+      // default; the reported (MANE-first) block leads and is highlighted.
+      let txBlock = "";
+      if (r.VEP_Transcripts && r.VEP_Transcripts !== "-1") {
+        const txEntries = String(r.VEP_Transcripts).split(";").map(function (e) {
+          const p = e.split("|");
+          return { feature: p[0] || "", biotype: p[1] || "", csq: p[2] || "",
+                   c: p[3] || "", p: p[4] || "", flags: (p[5] || "").split("+").filter(Boolean) };
+        });
+        txEntries.sort(function (a, b) {
+          return (b.flags.indexOf("REPORTED") !== -1 ? 1 : 0) - (a.flags.indexOf("REPORTED") !== -1 ? 1 : 0);
+        });
+        const txRows = txEntries.map(function (t) {
+          const isRep = t.flags.indexOf("REPORTED") !== -1;
+          const mane = t.flags.filter(function (f) { return f.indexOf("MANE:") === 0; })
+                              .map(function (f) { return f.slice(5); })[0] || "";
+          const acc = (t.c.indexOf(":") !== -1) ? t.c.split(":")[0] : t.feature;   // versioned accession when HGVSc has it
+          const flagHtml =
+            (isRep ? '<span class="badge bg-primary">reported</span> ' : "") +
+            (mane ? '<span class="badge bg-light text-dark border">MANE ' + escapeHtml(mane) + "</span> " : "") +
+            (t.flags.indexOf("CANONICAL") !== -1 ? '<span class="badge bg-light text-dark border">canonical</span>' : "");
+          return "<tr" + (isRep ? ' class="table-primary"' : "") + ">" +
+                 '<td class="font-monospace">' + escapeHtml(acc) + "</td>" +
+                 "<td>" + escapeHtml(t.biotype.replace(/_/g, " ")) + "</td>" +
+                 "<td>" + escapeHtml(t.csq.replace(/&/g, ", ")) + "</td>" +
+                 '<td class="font-monospace">' + escapeHtml(t.c.replace(/^[^:]+:/, "")) + "</td>" +
+                 '<td class="font-monospace">' + escapeHtml(t.p.replace(/^[^:]+:/, "")) + "</td>" +
+                 "<td>" + flagHtml + "</td></tr>";
+        }).join("");
+        txBlock =
+          '<details class="vb-transcripts mt-3">' +
+            '<summary class="text-uppercase text-muted small">All transcripts (VEP, Ensembl): ' + txEntries.length + "</summary>" +
+            '<div class="table-responsive mt-2"><table class="table table-sm small mb-0">' +
+              "<thead><tr><th>Transcript</th><th>Biotype</th><th>Consequence</th><th>HGVSc</th><th>HGVSp</th><th></th></tr></thead>" +
+              "<tbody>" + txRows + "</tbody></table></div>" +
+          "</details>";
       }
 
       // External-link buttons (always visible)
@@ -1152,6 +1191,7 @@
 
       return '<div class="vb-card-detail mt-3 pt-3 border-top">' +
                '<div class="row g-3">' + groups.join("") + "</div>" +
+               txBlock +   // ANNOT_TRANSCRIPTS_V1
                genebeBlock +
                cancervarBlock +
                oncokbBlock +
