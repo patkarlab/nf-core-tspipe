@@ -656,11 +656,7 @@
               </table>
             </div>
           </details>
-          {% if ctx.cnv.baf_plot %}
-          <div class="row g-3">
-            {{ macros.render_cnv_plot_card('baf_genome::1', 'Depth and BAF by arm (genome-wide)', ctx.cnv.baf_plot, 'col-12') }}
-          </div>
-          {% endif %}
+          {# GENOME_V2: the genome-wide figure lives on the Genome-wide sub-tab #}
         {% else %}
           <div class="tspipe-empty">BAF per-arm summary not available for this sample.</div>
         {% endif %}
@@ -670,7 +666,8 @@
           <div class="tab-pane fade" id="cnv-sub-genome" role="tabpanel">
         {% if ctx.cnv.genome_overview %}
           <h5 class="mt-2">Genome-wide overview (arm medians)</h5>
-          <p class="text-muted small mb-2">Per-bin log2 with one median line per chromosome arm (red below -0.25, green above +0.20), BAF (grey balanced, green deviated), PURPLE copy number. Arm medians are printed under the chromosome labels.</p>
+          {# GENOME_V2 #}
+          <p class="text-muted small mb-2">Three tracks on one genomic axis. Depth: denoised log2 copy ratio per bin with one median line per chromosome arm (red at or below -0.15, green at or above +0.15). BAF: every catalog site, heterozygous sites coloured by the arm's BAF verdict (red DEL, blue CNLOH, green GAIN, purple imbalance, grey balanced). PURPLE: total (blue) and minor-allele (orange) copy number per segment; copy-neutral LOH shows as the minor allele dropping to 0 while the total stays at 2. Centromeres shaded.</p>
           <div class="row g-3">
             {{ macros.render_cnv_plot_card('genome_overview::1', 'Genome-wide overview', ctx.cnv.genome_overview, 'col-12') }}
           </div>
