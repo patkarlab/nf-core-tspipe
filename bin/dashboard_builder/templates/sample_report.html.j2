@@ -460,14 +460,27 @@
                 <strong>Event {{ loop.index }}</strong>
                 &middot; status: <code>{{ r.status }}</code>
                 &middot; {{ r.n_tools }} tools
+                {# IGV_V2A (D11): nearest IGV-report row to the ITD position, within 300 bp #}
+                {% set ns = namespace(uid=none, best=301) %}
+                {% for k, u in (ctx.igv.lookup if ctx.igv else {}).items() %}
+                  {% set parts = k.split(':') %}
+                  {% if parts[0] == 'chr13' and parts[1] and ((parts[1]|int) - (r.pos_hg38|int))|abs < ns.best %}
+                    {% set ns.best = ((parts[1]|int) - (r.pos_hg38|int))|abs %}{% set ns.uid = u %}
+                  {% endif %}
+                {% endfor %}
+                {% if ctx.files.igv_report and ns.uid is not none %}
+                  <span class="vb-igv-chip vb-igv-chip-ok flt3-igv-chip ms-2" data-igv-uid="{{ ns.uid }}" title="Open the ITD locus in IGV">IGV &rarr;</span>
+                {% elif ctx.files.igv_report %}
+                  <span class="vb-igv-chip vb-igv-chip-missing ms-2" title="No variant row within 300 bp of the ITD in the IGV report">no IGV</span>
+                {% endif %}
               </div>
               <div class="card-body">
                 <dl class="row mb-0">
                   <dt class="col-sm-3">Length</dt>            <dd class="col-sm-9">{{ r.length_bp }} bp ({{ r.length_range }})</dd>
-                  <dt class="col-sm-3">Position (hg38)</dt>   <dd class="col-sm-9"><code>{{ r.pos_hg38 }}</code></dd>
+                  <dt class="col-sm-3">Position (hg38)</dt>   <dd class="col-sm-9"><code>chr13:{{ r.pos_hg38|int }}</code></dd>   {# IGV_V2A: integer, was the consensus mean #}
                   <dt class="col-sm-3">VAF range</dt>         <dd class="col-sm-9">{{ r.vaf_pct_min }}% &ndash; {{ r.vaf_pct_max }}% (mean {{ r.vaf_pct_mean }}%)</dd>
                   <dt class="col-sm-3">Allelic ratio</dt>     <dd class="col-sm-9">{{ r.ar_min }} &ndash; {{ r.ar_max }} (mean {{ r.ar_mean }})</dd>
-                  <dt class="col-sm-3">Domain</dt>            <dd class="col-sm-9">{{ r.domain }}</dd>
+                  <dt class="col-sm-3">Domain</dt>            <dd class="col-sm-9">{{ r.domain or r.domain_derived or "—" }}</dd>   {# IGV_V2A: derived from HGVSp when the tools give none #}
                   <dt class="col-sm-3">HGVSc / HGVSp</dt>     <dd class="col-sm-9"><code>{{ r.hgvsc }}</code> &middot; <code>{{ r.hgvsp }}</code></dd>
                   <dt class="col-sm-3">Tools</dt>             <dd class="col-sm-9">{{ r.tools }}</dd>
                 </dl>
@@ -941,6 +954,25 @@
           iframe.src = iframe.getAttribute('data-src');
           iframe.removeAttribute('data-src');
         });
+      });
+    });
+
+    // IGV_V2A (D11): FLT3 tab chip -> IGV report row (same navigation as the card chips:
+    // activate the IGV tab, then set the iframe src to "<report>#row_<uid>"; the router
+    // injected into the report clicks the row).
+    document.querySelectorAll(".flt3-igv-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        const uid = chip.getAttribute("data-igv-uid");
+        const frame = document.getElementById("igv-frame");
+        if (uid === null || !frame) return;
+        const trigger = document.querySelector('button[data-bs-target="#tab-igv"]');
+        if (trigger && window.bootstrap && window.bootstrap.Tab) {
+          window.bootstrap.Tab.getOrCreateInstance(trigger).show();
+        }
+        const baseSrc = frame.getAttribute("data-src") || (frame.src || "").replace(/#.*$/, "");
+        if (!baseSrc) return;
+        frame.src = baseSrc + "#row_" + uid;
+        frame.removeAttribute("data-src");
       });
     });
 

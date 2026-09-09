@@ -214,8 +214,7 @@
       if (!existingVariation || existingVariation === "-1") return "";
       return String(existingVariation).split("&")
         .filter(function (s) { return /^COS[VMN]/.test(s); })
-        .map(function (s) { return "ID=" + s; })
-        .join(";");
+        .join(", ");   // IGV_V2A: plain 'COSV…, COSV…' (was 'ID=COSV…;ID=COSV…')
     }
 
     // [triage-share export/import]

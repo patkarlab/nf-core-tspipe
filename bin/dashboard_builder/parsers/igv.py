@@ -106,6 +106,34 @@ _HASH_ROUTER_SCRIPT = """
     startPolling();
   }
   window.addEventListener("hashchange", startPolling);
+
+  // IGV_V2A (D12b): let the Callers column wrap. igv-reports renders the caller list as one
+  // comma-joined token with no break opportunity, so a six-caller list forces the whole
+  // variant table to scroll sideways. Insert a space after each comma and allow wrapping.
+  function fixCallers() {
+    var headers = document.querySelectorAll("th");
+    var idx = -1;
+    for (var i = 0; i < headers.length; i++) {
+      if ((headers[i].textContent || "").trim() === "Callers") { idx = i; break; }
+    }
+    if (idx < 0) return;
+    var style = document.createElement("style");
+    style.textContent = "td:nth-child(" + (idx + 1) + "), th:nth-child(" + (idx + 1) + ")" +
+                        " { white-space: normal !important; max-width: 240px; overflow-wrap: anywhere; }";
+    document.head.appendChild(style);
+    var rows = document.querySelectorAll("tr[id^='row_']");
+    for (var r = 0; r < rows.length; r++) {
+      var cell = rows[r].children[idx];
+      if (cell && cell.textContent.indexOf(",") !== -1 && cell.textContent.indexOf(", ") === -1) {
+        cell.textContent = cell.textContent.replace(/,/g, ", ");
+      }
+    }
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", fixCallers);
+  } else {
+    fixCallers();
+  }
 })();
 </script>
 """
