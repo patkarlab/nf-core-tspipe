@@ -61,6 +61,15 @@ def parse_args():
                         help="Output HTML")
     parser.add_argument("--flanking", type=int, default=500,
                         help="Flanking region in bp (default: 500, matches production)")
+    # IGV_V2B
+    parser.add_argument("--flt3-consensus", default=None,
+                        help="<sample>_flt3_consensus.tsv; one report row per FLT3-ITD consensus event (IGV_V2B)")
+    parser.add_argument("--gene-track", default=None,
+                        help="annotation file (BED/GTF) drawn under the reads (IGV_V2B)")
+    parser.add_argument("--gene-track-name", default="Exons (panel)",
+                        help="display name of --gene-track (default: 'Exons (panel)')")
+    parser.add_argument("--color-by", default="strand",
+                        help="igv.js colorBy for the alignment track: strand (default), none, ...")
     return parser.parse_args()
 
 
@@ -91,6 +100,75 @@ def _clean(value):
     return "." if v in ("-1", "", "nan") else v
 
 
+# IGV_V2B: FLT3-ITD consensus events as report rows. The ITD pathway (FLT3_ITD_EXT, filt3r,
+# getITD, Pindel ensemble) is separate from SomaticSeq; a low-VAF ITD is often REJECT/LOW_CALLERS
+# in the variant tables and would otherwise never get an IGV view.
+FLT3_CHROM = "chr13"
+FLT3_NEGATIVE = {"", "negative", "no_itd", "no-itd"}
+
+
+def flt3_consensus_rows(path, fasta_path, sample):
+    """Rows shaped like read_clinical_tsv() output, one per positive consensus event."""
+    rows = []
+    with open(path) as fh:
+        reader = csv.DictReader(fh, delimiter="\t")
+        events = list(reader)
+    if not events:
+        return rows
+    fasta = pysam.FastaFile(fasta_path)
+    try:
+        for ev in events:
+            status = (ev.get("status") or "").strip().lower()
+            if status in FLT3_NEGATIVE:
+                continue
+            try:
+                pos = int(round(float(ev.get("pos_hg38") or "")))
+            except ValueError:
+                log.warning("IGV_V2B: FLT3 consensus event without a usable pos_hg38, skipped: %s", ev)
+                continue
+            ref = fasta.fetch(FLT3_CHROM, pos - 1, pos).upper()
+            ins = (ev.get("inserted_seq") or "").strip().upper()
+            try:
+                length = int(round(float(ev.get("length_bp") or "0")))
+            except ValueError:
+                length = len(ins)
+            row = {
+                "Chr": FLT3_CHROM, "Start": str(pos), "Ref": ref,
+                "Alt": (ref + ins) if ins else "<DUP>",
+                "Gene": "FLT3",
+                "Consequence": "FLT3-ITD_%dbp" % (length or len(ins)),
+                "HGVSp": ev.get("hgvsp") or "",
+                "VAF_pct": ev.get("vaf_pct_mean") or "",
+                "Callers": ev.get("tools") or "",
+                "rsID": "", "Filter": "PASS",
+                "_flt3_end": str(pos + (length or len(ins))) if not ins else "",
+            }
+            rows.append(row)
+    finally:
+        fasta.close()
+    log.info("IGV_V2B: %d FLT3-ITD consensus event(s) from %s", len(rows), path)
+    return rows
+
+
+def write_track_config(path, sample, vcf_path, bam_path, gene_track, gene_track_name, color_by):
+    """igv-reports --track-config: every key other than url/format/type is passed to igv.js."""
+    import json
+    tracks_cfg = [
+        {"url": os.path.abspath(vcf_path), "format": "vcf", "type": "variant",
+         "name": os.path.basename(vcf_path).replace(".gz", "")},
+        {"url": os.path.abspath(bam_path), "format": "bam", "type": "alignment",
+         "name": os.path.basename(bam_path).replace(".bam", "")},
+    ]
+    if color_by and color_by.lower() != "none":
+        tracks_cfg[1]["colorBy"] = color_by
+    if gene_track:
+        tracks_cfg.append({"url": os.path.abspath(gene_track), "type": "annotation",
+                           "name": gene_track_name, "displayMode": "EXPANDED", "height": 70})
+    with open(path, "w") as fh:
+        json.dump(tracks_cfg, fh, indent=2)
+    return path
+
+
 def tsv_to_vcf(rows, vcf_gz_path):
     """Write the clinical rows as a bgzipped + tabix-indexed VCF at vcf_gz_path.
 
@@ -113,6 +191,9 @@ def tsv_to_vcf(rows, vcf_gz_path):
         '##INFO=<ID=HGVSp,Number=1,Type=String,Description="Protein HGVS">',
         '##INFO=<ID=VAF_pct,Number=1,Type=Float,Description="Variant allele frequency (%)">',
         '##INFO=<ID=Callers,Number=1,Type=String,Description="Variant callers">',
+        '##INFO=<ID=END,Number=1,Type=Integer,Description="End position (IGV_V2B: FLT3-ITD without inserted sequence)">',
+        '##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Structural variant type">',
+        '##ALT=<ID=DUP,Description="Duplication">',
         "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
     ]
 
@@ -141,6 +222,8 @@ def tsv_to_vcf(rows, vcf_gz_path):
                     # Mirror production: replace ';' with ',' since ';' is the
                     # INFO field separator.
                     info_parts.append(f"{key}={val.replace(';', ',')}")
+            if row.get("_flt3_end"):   # IGV_V2B: symbolic <DUP> needs END
+                info_parts.append(f"END={row['_flt3_end']};SVTYPE=DUP")
             info = ";".join(info_parts) if info_parts else "."
 
             fh.write(f"{chrom}\t{pos}\t{rsid}\t{ref}\t{alt}\t.\t{filt}\t{info}\n")
@@ -202,6 +285,18 @@ def main():
         log.info("SPIKEIN_V1d: added %d spike-in region call(s) from %s (%d regions)",
                  len(extra), args.extra_input, len(regions))
 
+    # IGV_V2B (D11): FLT3-ITD consensus events, de-duplicated against rows already present
+    if args.flt3_consensus and os.path.isfile(args.flt3_consensus):
+        have = {(r["Chr"], r["Start"], r["Ref"], r["Alt"]) for r in rows}
+        added = 0
+        for r in flt3_consensus_rows(args.flt3_consensus, args.fasta, args.sample):
+            key = (r["Chr"], r["Start"], r["Ref"], r["Alt"])
+            if key not in have:
+                have.add(key)
+                rows.append(r)
+                added += 1
+        log.info("IGV_V2B: added %d FLT3-ITD row(s)", added)
+
     if not rows:
         log.warning("No variants found -- skipping report generation")
         # Touch an empty output so downstream channels do not break.
@@ -217,11 +312,14 @@ def main():
     # Build create_report invocation. Match production's args exactly,
     # except --genome (production cloud-fetched hg38; we provide a local FASTA).
     import subprocess
+    # IGV_V2B: tracks via --track-config so igv.js options (colorBy, annotation track) pass through
+    track_cfg = write_track_config(os.path.join(outdir, f"{args.sample}.igv_tracks.json"), args.sample,
+                                   vcf_path, args.bam, args.gene_track, args.gene_track_name, args.color_by)
     cmd = [
         "create_report",
         vcf_path,
         "--fasta", args.fasta,
-        "--tracks", vcf_path, args.bam,
+        "--track-config", track_cfg,
         "--info-columns", "Gene", "Consequence", "HGVSp", "VAF_pct", "Callers",
         "--flanking", str(args.flanking),
         "--title", f"{args.sample} Clinical Variant Review",

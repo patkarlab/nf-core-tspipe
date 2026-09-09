@@ -34,9 +34,10 @@ process IGV_REPORTS {
     container  'quay.io/biocontainers/igv-reports:1.12.0--pyh7cba7a3_0'
 
     input:
-        tuple val(meta), path(clinical_tsv), path(bam), path(bai), path(filtered_tsv)   // SPIKEIN_V1d
+        tuple val(meta), path(clinical_tsv), path(bam), path(bai), path(filtered_tsv), path(flt3_consensus)   // SPIKEIN_V1d; IGV_V2B adds the FLT3 consensus
         tuple path(fasta), path(fai), path(dict)
         path spikein_asset   // SPIKEIN_V1d: assets/<panel>/spikein_regions.tsv, or [] when the panel has none
+        path gene_track      // IGV_V2B: annotation track under the reads (params.igv_gene_track or the exonwise BED), or []
 
     output:
         tuple val(meta), path("${meta.id}_igv_report.html"), emit: html
@@ -54,6 +55,7 @@ process IGV_REPORTS {
 
     script:
         def spikein_args = spikein_asset ? "--extra-input ${filtered_tsv} --spikein-regions ${spikein_asset}" : ''   // SPIKEIN_V1d
+        def gene_track_args = gene_track ? "--gene-track ${gene_track}" : ''   // IGV_V2B
         """
         igv_reports.py \\
             --sample  ${meta.id} \\
@@ -61,6 +63,8 @@ process IGV_REPORTS {
             --bam     ${bam} \\
             --fasta   ${fasta} \\
             --output  ${meta.id}_igv_report.html \\
+            --flt3-consensus ${flt3_consensus} \\
+            ${gene_track_args} \\
             ${spikein_args}
 
         cat <<-END_VERSIONS > versions.yml

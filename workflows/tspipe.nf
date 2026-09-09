@@ -434,10 +434,16 @@ workflow TSPIPE {
     ch_igv_spikein = Channel.value( igv_spikein_file.exists() ? igv_spikein_file : [] )
 
     // ----- 6b. IGV_REPORTS: per-sample HTML for clinical review (D2) -----
+    // IGV_V2B: FLT3 consensus rows in the report (the ITD pathway is separate from SomaticSeq) and an
+    // annotation track under the reads: params.igv_gene_track, or the exonwise BED when unset.
+    def igv_gene_track_path = params.igv_gene_track ?: params.exonwise_bed
+    ch_igv_gene_track = Channel.value( igv_gene_track_path ? file(igv_gene_track_path, checkIfExists: true) : [] )
     IGV_REPORTS(
-        ANNOTATION.out.clinical_tsv.join(PREPROCESSING.out.final_bam).join(ANNOTATION.out.filtered_tsv),   // SPIKEIN_V1d
+        ANNOTATION.out.clinical_tsv.join(PREPROCESSING.out.final_bam).join(ANNOTATION.out.filtered_tsv)   // SPIKEIN_V1d
+            .join(ch_flt3_consensus),   // IGV_V2B
         ch_reference,
-        ch_igv_spikein
+        ch_igv_spikein,
+        ch_igv_gene_track
     )
 
     // ----- 7. ORGANIZE_OUTPUT: build clinical/ deliverable tree --------
