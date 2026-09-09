@@ -103,6 +103,30 @@ def parse(sample_dir, sample):
                              "ploidy": _round(r.get("ploidy")), "gender": r.get("gender", ""), "trusted": r.get("trusted", ""),
                              "comment": r.get("comment", "")}
 
+    # ---- BAF by arm (BAF_V2; BAF_V2B: clinical/cnv/baf/, consensus-JSON fallback, figure) ----
+    baf_rows = None
+    for cand in (v2 / "baf" / ("%s.baf.summary.tsv" % sample), v2 / ("%s.baf.summary.tsv" % sample)):
+        if cand.exists():
+            baf_rows = _read_tsv(cand)
+            break
+    if baf_rows is None:
+        cj = v2 / "consensus" / ("%s.cnv_consensus4.json" % sample)
+        if cj.exists():
+            try:
+                import json
+                with open(cj) as fh:
+                    baf_rows = json.load(fh).get("baf_arms") or None
+            except (OSError, ValueError):
+                baf_rows = None
+    if baf_rows:
+        out["baf_arms"] = [{"arm": r.get("arm", ""), "n_het": r.get("n_het", ""), "f": r.get("f_estimate", ""),
+                            "cr": r.get("cr_median_log2", ""), "verdict": r.get("verdict", ""),
+                            "confidence": r.get("confidence", ""), "scope": r.get("scope", "")} for r in baf_rows]
+        out["baf_calls"] = [r for r in out["baf_arms"] if r["verdict"] not in ("NEUTRAL", "INDETERMINATE", "") and r["confidence"] == "HIGH"]
+    bp = v2 / "baf" / ("%s.baf.png" % sample)
+    if bp.exists():
+        out["baf_plot"] = _rel(bp, sample_dir)
+
     # ---- sex check ----
     sx = v2 / "sex_check" / ("%s.sex_check.tsv" % sample)
     if sx.exists():

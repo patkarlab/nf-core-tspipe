@@ -467,6 +467,7 @@ workflow TSPIPE {
 
     def no_u2af1_report = file("${projectDir}/assets/NO_FILE_u2af1_pileup_report.txt", checkIfExists: true)
     def no_u2af1_rescue = file("${projectDir}/assets/NO_FILE_u2af1_rescue.tsv",        checkIfExists: true)
+    def no_baf_plot     = file("${projectDir}/assets/NO_FILE_baf_plot.png",              checkIfExists: true)   // BAF_V2B
 
     ch_u2af1_report = ch_meta_driver
         .join(VARIANT_CALLING.out.u2af1_report, remainder: true)
@@ -475,6 +476,11 @@ workflow TSPIPE {
     ch_u2af1_rescue = ch_meta_driver
         .join(VARIANT_CALLING.out.u2af1_tsv,    remainder: true)
         .map { meta, f -> [meta, f ?: no_u2af1_rescue] }
+
+    // BAF_V2B: the two-track figure is an optional output of CNV_BAF_CNLOH
+    ch_baf_plot = ch_meta_driver
+        .join(GATK_CNV_CALLING.out.baf_plot,    remainder: true)
+        .map { meta, f -> [meta, f ?: no_baf_plot] }
 
     ch_organize = PREPROCESSING.out.final_bam                                // tuple(meta, bam, bai)
         .join(ANNOTATION.out.clinical_tsv)                                   // + clinical_tsv
@@ -501,6 +507,8 @@ workflow TSPIPE {
         .join(PREPROCESSING.out.sex_check)                                   // + sex_check
         .join(RECONCNV.out.dir)                                              // + reconcnv_dir
         .join(PREPROCESSING.out.spikein)                                     // + spikein (SPIKEIN_V1)
+        .join(GATK_CNV_CALLING.out.baf_summary)                              // + baf_summary (BAF_V2B)
+        .join(ch_baf_plot)                                                   // + baf_plot (sentinel when absent)
 
     ORGANIZE_OUTPUT(ch_organize)
 

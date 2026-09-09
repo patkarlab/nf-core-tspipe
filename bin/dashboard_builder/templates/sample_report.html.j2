@@ -549,7 +549,7 @@
                 <tr><td class="text-nowrap"><code>flags</code></td><td>letters of the arms that voted: K G B P E H</td></tr>
                 <tr><td class="text-nowrap"><code>k_call, k_cn, k_log2</code></td><td>K = CNVkit (read depth vs the sex-matched panel of normals): call, integer copy number, segment log2 ratio</td></tr>
                 <tr><td class="text-nowrap"><code>g_call, g_seg_log2</code></td><td>G = GATK ModelSegments (read depth, same PoN): call, segment log2 ratio</td></tr>
-                <tr><td class="text-nowrap"><code>b_call</code></td><td>B = B-allele frequency / cnLOH (17p region in the current version): LOSS, CNLOH or NEUTRAL</td></tr>
+                <tr><td class="text-nowrap"><code>b_call</code></td><td>B = B-allele frequency per chromosome arm (BAF_V2): LOSS, CNLOH, GAIN or NEUTRAL from the arm the gene lies on; <code>allelic_state</code> gives arm, verdict and clonal fraction</td></tr>
                 <tr><td class="text-nowrap"><code>p_call, p_C</code></td><td>P = PureCN: call and absolute copy number; advisory only when the purity fit is flagged</td></tr>
                 <tr><td class="text-nowrap"><code>e_call, e_bf</code></td><td>E = DECoN (exon-level, multi-exon deletions): call and Bayes factor</td></tr>
                 <tr><td class="text-nowrap"><code>h_call, h_cn_min, h_cn_max, h_loh</code></td><td>H = PURPLE (hmftools, purity/ploidy adjusted): call, minimum and maximum copy number over the gene, LOH flag; advisory on low purity</td></tr>
@@ -569,6 +569,33 @@
             <button type="button" class="btn btn-outline-secondary" data-tiers="">All</button>
           </div>
           {{ macros.render_datatable('cnv-consensus-table', ctx.cnv.consensus_table.columns, ctx.cnv.consensus_table.rows) }}
+
+          {# BAF_V2: per-arm allelic state #}
+          {% if ctx.cnv.baf_arms %}
+          <h6 class="mt-4">BAF by chromosome arm
+            {% if ctx.cnv.baf_calls %}<span class="badge bg-warning text-dark ms-1">{{ ctx.cnv.baf_calls|length }} arm(s) with a call</span>
+            {% else %}<span class="badge bg-success ms-1">all arms balanced</span>{% endif %}
+          </h6>
+          <p class="text-muted small mb-2">Mirrored B-allele deviation over the sample's heterozygous catalog sites, per arm; the noise floor is the sample's own balanced arms. DEL / GAIN use the arm's denoised copy ratio; CNLOH is a shift at neutral copy number; INDETERMINATE means too few heterozygous sites (acrocentric p arms, chrX in males). A call marked ? is LOW confidence (fewer than 20 heterozygous sites or a deviation under 1.5 x the noise floor) and casts no vote in the consensus.</p>
+          <div class="table-responsive" style="max-width: 900px;">
+            <table class="table table-sm table-striped small mb-0">
+              <thead class="table-light"><tr><th>Arm</th><th>Het sites</th><th>Clonal fraction</th><th>Copy ratio (log2)</th><th>Verdict</th><th>Confidence</th><th>Scope</th></tr></thead>
+              <tbody>
+              {% for a in ctx.cnv.baf_arms %}
+                <tr{% if a.verdict in ('DEL','CNLOH','GAIN','IMBALANCE') and a.confidence == 'HIGH' %} class="table-warning"{% endif %}>
+                  <td>{{ a.arm }}</td><td>{{ a.n_het }}</td><td>{{ a.f }}</td><td>{{ a.cr }}</td>
+                  <td><strong>{{ a.verdict }}{% if a.confidence == 'LOW' %}?{% endif %}</strong></td><td>{{ a.confidence }}</td><td>{{ a.scope }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if ctx.cnv.baf_plot %}   {# BAF_V2B: two-track figure #}
+          <div class="row g-3 mt-1">
+            {{ macros.render_cnv_plot_card('baf_genome::1', 'Depth and BAF by arm (genome-wide)', ctx.cnv.baf_plot, 'col-12') }}
+          </div>
+          {% endif %}
+          {% endif %}
         {% elif ctx.cnv.consensus_tiers is defined %}
           <div class="tspipe-empty">No non-neutral consensus CNV calls.</div>
         {% endif %}

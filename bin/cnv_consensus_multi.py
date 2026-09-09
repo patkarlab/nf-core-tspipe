@@ -15,9 +15,10 @@ Arms merged at gene level:
                     majority when multiple segments overlap).
     G  GATK      -- gene projection table (seg_call +/-/0).
   independent:
-    B  BAF       -- sample-level 17p verdict (BAF_V1): genes inside the
-                    17p test region get b_call LOSS for DEL_17P, CNLOH for
-                    CNLOH_17P; allelic_state carries the verdict text.
+    B  BAF       -- per-arm verdict (BAF_V2; V1 was 17p only): a gene takes
+                    the verdict of the chromosome arm it lies on -- b_call LOSS
+                    for DEL, CNLOH for CNLOH, GAIN for GAIN; allelic_state carries
+                    '<arm>:<verdict> f=<clonal fraction>'.
     P  PureCN    -- p_call GAIN/LOSS when the fit is trusted (status OK,
                     not flagged); p_C == 2 with p_loh true is cnLOH support.
     E  DECoN     -- optional --decon-genes TSV (gene, e_call, e_bf); the
@@ -452,14 +453,27 @@ def main():
         if "gene" in r and "fp_any_rate" in r:
             loo_fp[r["gene"]] = r["fp_any_rate"]
 
-    # ---- BAF summary
+    # ---- BAF summary (BAF_V2: one row per chromosome arm; the V1 single-row 17p file is read the same way)
     baf_hdr, baf_rows = read_tsv(args.baf_summary, comment="#")
-    baf = baf_rows[0] if baf_rows else {}
-    baf_region = baf.get("region", "chr17:0-0")
-    m = re.match(r"(chr\w+):(\d+)-(\d+)", baf_region)
-    baf_chrom, baf_lo, baf_hi = (m.group(1), int(m.group(2)), int(m.group(3))) \
-        if m else ("chr17", 0, 0)
-    baf_verdict = baf.get("verdict", "NA")
+    baf_arms = []
+    for r in baf_rows:
+        m = re.match(r"(chr\w+):(\d+)-(\d+)", r.get("region", ""))
+        if m:
+            baf_arms.append((m.group(1), int(m.group(2)), int(m.group(3)), r))
+    baf = next((r for c, lo, hi, r in baf_arms if r.get("arm") == "17p"), baf_rows[0] if baf_rows else {})
+
+    def baf_for_gene(chrom, start, end):
+        best = None
+        for c, lo, hi, r in baf_arms:
+            if c != chrom:
+                continue
+            o = overlap(start, end, lo, hi)
+            if o > 0 and (best is None or o > best[0]):
+                best = (o, r)
+        return best[1] if best else None
+    print("[ok] BAF arm B: %d arm row(s); calls: %s" % (
+        len(baf_arms), ", ".join("%s %s" % (r.get("arm"), r.get("verdict")) for _, _, _, r in baf_arms
+                                 if r.get("verdict") not in ("NEUTRAL", "INDETERMINATE", None)) or "none"))
 
     # ---- PureCN (PCN_V1; optional, FAILED-tolerant)
     purecn = {}
@@ -522,13 +536,22 @@ def main():
         h_call = hr.get("h_call", "NA")
         h_loh = str(hr.get("h_loh", "")).strip().upper() == "TRUE"
         h_cnloh = h_trusted and h_loh and h_call == "NEUTRAL"
-        in_baf_region = g["chrom"] == baf_chrom and overlap(
-            g["start"], g["end"], baf_lo, baf_hi) > 0
-        b_call = "NA"
-        if in_baf_region:
-            b_call = {"DEL_17P": "LOSS", "CNLOH_17P": "CNLOH",
-                      "NEUTRAL": "NEUTRAL"}.get(baf_verdict, "NA")
-        allelic = baf_verdict if in_baf_region else "NA"
+        br = baf_for_gene(g["chrom"], g["start"], g["end"])   # BAF_V2: the arm row overlapping the gene
+        bv = br.get("verdict", "NA") if br else "NA"
+        b_low = bool(br) and br.get("confidence", "") == "LOW"   # BAF_V2: a LOW-confidence arm casts no B vote
+        b_call = {"DEL_17P": "LOSS", "CNLOH_17P": "CNLOH", "DEL": "LOSS", "CNLOH": "CNLOH",
+                  "GAIN": "GAIN", "NEUTRAL": "NEUTRAL"}.get(bv, "NA")
+        if b_low:
+            b_call = "NA"
+        if br is None:
+            allelic = "NA"
+        elif bv == "INDETERMINATE":
+            allelic = "%s:INDETERMINATE (n_het %s)" % (br.get("arm", "?"), br.get("n_het", "?"))
+        elif bv in ("NEUTRAL", "NA"):
+            allelic = "%s:%s" % (br.get("arm", "?"), bv)
+        else:
+            allelic = "%s:%s%s f=%s%s" % (br.get("arm", "?"), bv, "?" if b_low else "", br.get("f_estimate", "NA"),
+                                          " (low confidence, no vote)" if b_low else "")
 
         depth = {"K": k_call if k_call in ("GAIN", "LOSS") else None,
                  "G": g["g_call"] if g["g_call"] in ("GAIN", "LOSS") else None}
@@ -662,6 +685,7 @@ def main():
         "sample": args.sample,
         "panel": "twist_myeloid",
         "baf17p": baf,
+        "baf_arms": [r for _, _, _, r in baf_arms],   # BAF_V2
         "genes": [dict((k, v) for k, v in g.items() if k != "legacy")
                   for g in genes],
         "segments": {
@@ -682,7 +706,8 @@ def main():
     print("[ok] {0}: {1} genes, {2} TIER_1/TIER_2 consensus calls, "
           "{3} discordant, {4} intersected segments, baf17p={5}, tiers={6}".format(
               args.sample, len(genes), n_consensus, n_disc,
-              len(intersect), baf_verdict,
+              len(intersect), "%s|%d arm call(s)" % (baf.get("verdict", "NA"),
+                  sum(1 for _, _, _, r in baf_arms if r.get("verdict") not in ("NEUTRAL", "INDETERMINATE", None))),   # BAF_V2_HOTFIX1
               ",".join("{0}:{1}".format(k, tier_counts[k]) for k in sorted(tier_counts))))
 
 

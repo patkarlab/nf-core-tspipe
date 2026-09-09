@@ -26,7 +26,8 @@ process ORGANIZE_OUTPUT {
               path(purple_summary), path(purple_genes), path(purple_dir),
               path(sex_check),
               path(reconcnv_dir),   // MARKER VIZ_V1 (MARKER VIZ_V1b: styled_scatter_dir removed)
-              path(spikein)   // MARKER SPIKEIN_V1: SPIKEIN_SITES genotype table
+              path(spikein),   // MARKER SPIKEIN_V1: SPIKEIN_SITES genotype table
+              path(baf_summary), path(baf_plot)   // BAF_V2B: per-arm BAF summary + two-track figure (sentinel when absent)
 
     output:
         tuple val(meta), path("clinical/"), emit: clinical
@@ -47,6 +48,7 @@ process ORGANIZE_OUTPUT {
         def sex_check_arg = sex_check ? "--sex-check ${sex_check}" : ''
         def reconcnv_dir_arg = reconcnv_dir ? "--reconcnv-dir ${reconcnv_dir}" : ''
         def spikein_arg = spikein ? "--spikein-snps ${spikein}" : ''   // SPIKEIN_V1
+        def baf_args = "--baf-summary ${baf_summary} --baf-plot ${baf_plot}"   // BAF_V2B
         """
         organize_output.py \\
             --sample              ${meta.id} \\
@@ -76,7 +78,8 @@ process ORGANIZE_OUTPUT {
             ${purple_dir_arg} \\
             ${sex_check_arg} \\
             ${reconcnv_dir_arg} \\
-            ${spikein_arg}
+            ${spikein_arg} \\
+            ${baf_args}
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

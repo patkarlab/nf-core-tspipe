@@ -1,7 +1,7 @@
 /*
- * modules/local/cnv_baf_cnloh.nf  (BAF_V1)
+ * modules/local/cnv_baf_cnloh.nf  (BAF_V1 17p; BAF_V2 genome-wide per arm, 2026-09-09)
  *
- * 17p BAF-shift / cnLOH detector. Corrects per-site sample allele
+ * Per-arm BAF-shift / cnLOH / allelic-imbalance detector. V1 text follows for the method. Corrects per-site sample allele
  * fractions against the male-cohort background (baf_background.tsv,
  * informative sites), computes the mirrored-BAF deviation across
  * sample-het sites, estimates the clonal fraction from the shift, and
@@ -20,13 +20,13 @@ process CNV_BAF_CNLOH {
         path background
 
     output:
-        tuple val(meta), path("${meta.id}.baf17p.summary.tsv"), emit: summary
-        tuple val(meta), path("${meta.id}.baf17p.sites.tsv"),   emit: sites
-        tuple val(meta), path("${meta.id}.baf17p.png"),         emit: plot, optional: true
+        tuple val(meta), path("${meta.id}.baf.summary.tsv"), emit: summary   // BAF_V2: one row per arm
+        tuple val(meta), path("${meta.id}.baf.sites.tsv"),   emit: sites
+        tuple val(meta), path("${meta.id}.baf.png"),         emit: plot, optional: true
 
     stub:
         """
-        touch ${meta.id}.baf17p.summary.tsv ${meta.id}.baf17p.sites.tsv ${meta.id}.baf17p.png
+        touch ${meta.id}.baf.summary.tsv ${meta.id}.baf.sites.tsv ${meta.id}.baf.png
         """
 
     script:
@@ -41,6 +41,7 @@ process CNV_BAF_CNLOH {
             --min-het-sites ${params.baf_min_het_sites} \\
             --f-min ${params.baf_f_min} \\
             --cr-del ${params.baf_cr_del} \\
-            --out-prefix ${meta.id}.baf17p
+            --cr-gain ${params.baf_cr_gain} \\
+            --out-prefix ${meta.id}.baf
         """
 }

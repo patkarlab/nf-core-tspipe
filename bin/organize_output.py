@@ -143,6 +143,8 @@ def main():
     parser.add_argument("--styled-scatter-dir", default=None, help="unused since MARKER VIZ_V1b; accepted for compatibility")
     parser.add_argument("--reconcnv-dir", default=None, help="RECONCNV directory (optional; VIZ_V1)")
     parser.add_argument("--spikein-snps", default=None, help="SPIKEIN_SITES genotype table (optional; SPIKEIN_V1)")
+    parser.add_argument("--baf-summary", default=None, help="BAF_V2 per-arm summary (optional; BAF_V2B)")
+    parser.add_argument("--baf-plot", default=None, help="BAF_V2 two-track figure (optional; BAF_V2B)")
     # Optional inputs (may be sentinels)
     parser.add_argument("--u2af1-report", required=True,
                         help="Optional; sentinel allowed")
@@ -222,7 +224,9 @@ def main():
             (args.decon_genes,            "decon",     "DECoN per-gene table"),
             (args.purple_summary,         "purple",    "PURPLE arm H summary"),
             (args.purple_genes,           "purple",    "PURPLE arm H gene table"),
-            (args.sex_check,              "sex_check", "SEX_CHECK table")):
+            (args.sex_check,              "sex_check", "SEX_CHECK table"),
+            (args.baf_summary,            "baf",       "BAF per-arm summary (BAF_V2B)"),
+            (args.baf_plot,               "baf",       "BAF two-track figure (BAF_V2B)")):
         if present(src):
             hardlink(src, cnv2 / sub / Path(src).name, desc)
         else:
