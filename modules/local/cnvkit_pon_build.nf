@@ -50,7 +50,7 @@ process CNVKIT_PON_BUILD {
     script:
         """
         # Collect BAMs (skip .bai files)
-        BAMS=\$(ls *.final.bam 2>/dev/null | sort | tr '\\n' ' ')
+        BAMS=\$(ls *.final.bam 2>/dev/null | sort | tr '\\n' ' ' || true)
 
         cnvkit.py batch \\
             --normal \$BAMS \\

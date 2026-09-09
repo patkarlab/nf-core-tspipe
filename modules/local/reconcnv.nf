@@ -34,11 +34,11 @@ process RECONCNV {
         prep_reconcnv_inputs.py --cnr ${cnr} --cns ${cns} --vcf ${vcf} --fai ${fai} \\
             --template ${template} --outdir recon_in --sex ${sex} > ${meta.id}.reconcnv.log 2>&1
         rc=\$?
-        RATIO=\$(ls recon_in/*ratio* 2>/dev/null | head -1)
-        GENOME=\$(ls recon_in/*genome* 2>/dev/null | head -1)
-        SEG=\$(ls recon_in/*seg* 2>/dev/null | head -1)
-        HETVCF=\$(ls recon_in/*.vcf recon_in/*.vcf.gz 2>/dev/null | head -1)
-        CONF=\$(ls recon_in/*.json 2>/dev/null | head -1)
+        RATIO=\$(ls recon_in/*ratio* 2>/dev/null | head -1 || true)
+        GENOME=\$(ls recon_in/*genome* 2>/dev/null | head -1 || true)
+        SEG=\$(ls recon_in/*seg* 2>/dev/null | head -1 || true)
+        HETVCF=\$(ls recon_in/*.vcf recon_in/*.vcf.gz 2>/dev/null | head -1 || true)
+        CONF=\$(ls recon_in/*.json 2>/dev/null | head -1 || true)
         if [ "\$rc" -eq 0 ] && [ -n "\$RATIO" ] && [ -n "\$GENOME" ] && [ -n "\$CONF" ]; then
             SEG_ARG=""; [ -n "\$SEG" ] && SEG_ARG="-s \$SEG"
             VCF_ARG=""; [ -n "\$HETVCF" ] && VCF_ARG="-v \$HETVCF"

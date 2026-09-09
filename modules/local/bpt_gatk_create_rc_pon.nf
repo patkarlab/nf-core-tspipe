@@ -30,7 +30,7 @@ process BPT_GATK_CREATE_RC_PON {
         def xmx       = task.memory ? Math.max(4, task.memory.toGiga() - 2) : 16
         def extra     = task.ext.args ?: ''
         """
-        n=\$(ls *.counts.hdf5 2>/dev/null | wc -l)
+        n=\$(ls *.counts.hdf5 2>/dev/null | wc -l || true)
         echo "[ok] stratum=${stratum}: \$n read-count files (gc_correction=${params.pon_gc_correction})"
         if [ "\$n" -lt 2 ]; then
             echo "[error] stratum=${stratum}: need >= 2 read-count files, found \$n" >&2

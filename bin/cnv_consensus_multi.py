@@ -168,10 +168,10 @@ def cnvkit_gene_call(segs, chrom, gs, ge, exp=2):
     if not hits:
         return "NA", None, None
     if exp is None:
-        top = max(hits)[1]
+        top = max(hits, key=lambda h: h[0])[1]   # HARDEN_Q6_V1: key on overlap; segment dicts are not orderable (TypeError on ties)
         return "NA", top["cn"], top["log2"]
     call = max(w, key=lambda k: w[k])
-    top = max(hits)[1]
+    top = max(hits, key=lambda h: h[0])[1]   # HARDEN_Q6_V1: key on overlap; segment dicts are not orderable (TypeError on ties)
     return call, top["cn"], top["log2"]
 
 

@@ -49,7 +49,7 @@ process BPT_CNV_LOO_QC {
     script:
         def yflag = (stratum == 'male') ? '-y' : ''
         """
-        n_t=\$(ls *.targetcoverage.cnn 2>/dev/null | wc -l)
+        n_t=\$(ls *.targetcoverage.cnn 2>/dev/null | wc -l || true)
         echo "[ok] LOO stratum=${stratum}: \$n_t coverage files staged"
         if [ "\$n_t" -lt 3 ]; then
             echo "[error] LOO stratum=${stratum}: need >= 3 coverage files for leave-one-out, found \$n_t" >&2

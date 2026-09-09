@@ -36,8 +36,8 @@ process BPT_CNVKIT_REFERENCE {
         // fp_loss_rate 0.916 -- systematic offset, not variance.
         def yflag = (stratum == 'male') ? '-y' : ''
         """
-        n_t=\$(ls *.targetcoverage.cnn 2>/dev/null | wc -l)
-        n_a=\$(ls *.antitargetcoverage.cnn 2>/dev/null | wc -l)
+        n_t=\$(ls *.targetcoverage.cnn 2>/dev/null | wc -l || true)
+        n_a=\$(ls *.antitargetcoverage.cnn 2>/dev/null | wc -l || true)
         echo "[ok] stratum=${stratum}: \$n_t target / \$n_a antitarget coverage files"
         if [ "\$n_t" -lt 2 ]; then
             echo "[error] stratum=${stratum}: need >= 2 target coverage files, found \$n_t" >&2

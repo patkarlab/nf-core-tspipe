@@ -120,6 +120,9 @@ def parse_args():
     ap.add_argument("--vep-fork", type=int, default=4,
                     help="VEP parallel forks (default: 4). The Nextflow "
                          "module passes task.cpus here.")
+    ap.add_argument("--annovar-allow-missing-db", action="store_true",   # HARDEN_Q5_V1
+                    help="Skip ANNOVAR databases that are missing from --annovar-db instead of "
+                         "aborting (default: a missing database is fatal).")
     ap.add_argument("--cava-vcf", default=None,   # CAVA_V1b (N3)
                     help="CAVA-annotated copy of the same input VCF (output of the "
                          "CAVA module). Optional; CAVA_* columns are -1 without it.")
@@ -191,14 +194,15 @@ def run_vep(vcf_in, vcf_out, reference, vep_cache, fork):
                env=vep_env)
 
 
-def run_annovar(vcf_in, out_prefix, annovar_script, annovar_db):
+def run_annovar(vcf_in, out_prefix, annovar_script, annovar_db, allow_missing_db=False):
     """Run ANNOVAR table_annovar.pl with the five hg38 databases.
 
     Each database is probed before being added to the -protocol list.
-    Missing databases are skipped with a warning, not fatal -- this is
-    intentional so the pipeline keeps working if a database gets renamed
-    or removed during a future upgrade.
+    HARDEN_Q5_V1 (audit Q5): a missing database is fatal (return 1) unless
+    allow_missing_db is set -- a silently absent ClinVar table would switch
+    the CLINVAR_BENIGN demotion off without any visible failure.
     """
+    missing = []
     protocols = []
     operations = []
     db_checks = [
@@ -214,8 +218,14 @@ def run_annovar(vcf_in, out_prefix, annovar_script, annovar_db):
             protocols.append(db)
             operations.append(op)
         else:
-            log.warning("ANNOVAR database not found, skipping: %s", db)
+            missing.append(db)
+            log.warning("ANNOVAR database not found: %s (%s)", db, db_file)
 
+    if missing and not allow_missing_db:   # HARDEN_Q5_V1
+        log.error("ANNOVAR database(s) missing under %s: %s -- fatal; pass "
+                  "--annovar-allow-missing-db to continue without them",
+                  annovar_db, ", ".join(missing))
+        return 1
     if not protocols:
         log.error("No ANNOVAR databases available")
         return 1
@@ -965,13 +975,18 @@ def main():
         log.error("VEP failed for %s", sample)
         sys.exit(1)
 
-    # Step 3: run ANNOVAR. Non-fatal -- on failure we continue with
-    # VEP-only annotations. COSMIC IDs and ClinVar significance will
-    # be -1 in the output, but the variant rows still come through.
+    # Step 3: run ANNOVAR. HARDEN_Q5_V1 (audit Q5): fatal on failure. Continuing
+    # with VEP only would leave ClinVar/COSMIC/gnomAD/avsnp at -1 and silently
+    # switch the CLINVAR_BENIGN demotion off in VARIANT_FILTER.
     rc = run_annovar(args.somaticseq_vcf, annovar_prefix,
-                     args.annovar_script, args.annovar_db)
+                     args.annovar_script, args.annovar_db,
+                     allow_missing_db=args.annovar_allow_missing_db)
     if rc != 0:
-        log.warning("ANNOVAR failed; continuing with VEP only")
+        log.error("ANNOVAR failed for %s (exit %d) -- aborting", sample, rc)
+        sys.exit(1)
+    if not os.path.isfile(annovar_txt) or os.path.getsize(annovar_txt) == 0:
+        log.error("ANNOVAR exited 0 but %s is missing or empty -- aborting", annovar_txt)
+        sys.exit(1)
 
     # Step 4: parse and merge.
     vep_variants, _ = parse_vep_csq(vep_vcf)

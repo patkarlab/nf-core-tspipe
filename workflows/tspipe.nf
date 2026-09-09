@@ -23,6 +23,7 @@
  */
 
 include { PREPROCESSING       } from '../subworkflows/local/preprocessing'
+include { BAM_QUICKCHECK      } from '../modules/local/bam_quickcheck'   // MARKER HARDEN_Q4_V1
 include { VARIANT_CALLING     } from '../subworkflows/local/variant_calling'
 include { SOMATICSEQ_ENSEMBLE } from '../modules/local/somaticseq'
 include { SOMATICSEQ_POSTPROCESS } from '../modules/local/somaticseq_postprocess'
@@ -46,6 +47,56 @@ include { ORGANIZE_OUTPUT     } from '../modules/local/organize_output'
 include { DASHBOARD           } from '../modules/local/dashboard'
 include { REPORT_BUNDLE       } from '../modules/local/report_bundle'
 
+// MARKER HARDEN_Q3_V1: samplesheet preflight (audit Q3). Mirrors assets/schema_input.json
+// without the nf-schema plugin. Every problem is collected and reported at once, before any
+// channel is built or task submitted. The channel code below is unchanged (meta/hashes stable).
+def validateSamplesheet(String path) {
+    def required = ['sample', 'fastq_1', 'fastq_2']
+    def allowedSex = ['male', 'female', 'unknown', '']
+    def rows = file(path, checkIfExists: true).splitCsv(header: true)
+    if( !rows ) {
+        error "[PREFLIGHT] samplesheet ${path} has no data rows"
+    }
+    def header = rows[0].keySet() as List
+    def missing = required - header
+    if( missing ) {
+        error "[PREFLIGHT] samplesheet ${path} is missing column(s): ${missing.join(', ')} (found: ${header.join(', ')})"
+    }
+    def problems = []
+    def seen = [:]
+    rows.eachWithIndex { row, i ->
+        def line = i + 2
+        def id = (row.sample ?: '').toString().trim()
+        if( !id ) {
+            problems << "line ${line}: empty sample id"
+        } else if( !(id ==~ /^\S+$/) ) {
+            problems << "line ${line}: sample id '${id}' contains whitespace"
+        } else if( seen.containsKey(id) ) {
+            problems << "line ${line}: duplicate sample id '${id}' (first seen on line ${seen[id]})"
+        } else {
+            seen[id] = line
+        }
+        ['fastq_1', 'fastq_2'].each { col ->
+            def v = (row[col] ?: '').toString().trim()
+            if( !v ) {
+                problems << "line ${line}: ${col} is empty"
+            } else if( !(v ==~ /^\S+\.f(ast)?q\.gz$/) ) {
+                problems << "line ${line}: ${col} '${v}' does not end in .fq.gz or .fastq.gz"
+            } else if( !file(v).exists() ) {
+                problems << "line ${line}: ${col} not found: ${v}"
+            }
+        }
+        def sex = (row.sex ?: '').toString().trim()
+        if( !(sex in allowedSex) ) {
+            problems << "line ${line}: sex '${sex}' is not one of male/female/unknown (or empty)"
+        }
+    }
+    if( problems ) {
+        error "[PREFLIGHT] samplesheet ${path} failed validation (${problems.size()} problem(s)):\n  " + problems.join('\n  ')
+    }
+    log.info "[PREFLIGHT] samplesheet ${path}: ${rows.size()} sample(s) validated"
+}
+
 workflow TSPIPE {
 
     // ----- Validate required params -------------------------------------
@@ -53,6 +104,7 @@ workflow TSPIPE {
     if (!params.reference) { error "Missing --reference (hg38 FASTA)"  }
     if (!params.bed)       { error "Missing --bed (panel BED)"         }
     if (!params.exonwise_bed) { error "Missing --exonwise_bed (Exonwise hg38 BED for per-exon coverage)" }
+    validateSamplesheet(params.input)   // MARKER HARDEN_Q3_V1: fail before any task is submitted
 
     // Channels for fixed references shared across processes.
     ch_reference = Channel.value([
@@ -144,6 +196,10 @@ workflow TSPIPE {
     ch_final_bam     = PREPROCESSING.out.final_bam      // [meta, bam, bai]
     ch_hsmetrics     = PREPROCESSING.out.hsmetrics       // [meta, hs_metrics.txt]
     ch_exon_coverage = PREPROCESSING.out.exon_coverage   // [meta, exon_coverage.tsv]
+
+    // MARKER HARDEN_Q4_V1: samtools quickcheck on the final BAM (audit Q4). A separate process so
+    // that no cached task is invalidated; a truncated or unreadable BAM fails the run here.
+    BAM_QUICKCHECK(ch_final_bam)
 
     // ----- 2. Variant calling: 8 callers + U2AF1 rescue ----------------
     VARIANT_CALLING(ch_final_bam, ch_reference, ch_bed, ch_pindel_bed, ch_gnomad, ch_gnomad_tbi)
