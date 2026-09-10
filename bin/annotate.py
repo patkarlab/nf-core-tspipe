@@ -161,8 +161,19 @@ def run_vep(vcf_in, vcf_out, reference, vep_cache, fork):
     Bio::EnsEMBL::DBSQL modules to resolve. `conda run` handles activation
     for the duration of one command.
     """
-    cmd = [
-        "conda", "run", "-n", "vep", "vep",
+    # MARKER RUN_VEP_PATHFIRST_V1: inside local/tspipe-host the vep env is unpacked at
+    # $TSPIPE_ENV_ROOT/vep and TSPIPE_VEP_BIN points at its vep script; call it directly with
+    # its own bin first on PATH (set below). Without those variables (host conda on gandalf)
+    # the historical `conda run -n vep` launcher is used.
+    vep_bin = os.environ.get("TSPIPE_VEP_BIN")
+    if not vep_bin and os.environ.get("TSPIPE_ENV_ROOT"):
+        vep_bin = os.path.join(os.environ["TSPIPE_ENV_ROOT"], "vep", "bin", "vep")
+    if vep_bin and os.path.isfile(vep_bin):
+        launcher = [vep_bin]
+    else:
+        vep_bin = None
+        launcher = ["conda", "run", "-n", "vep", "vep"]
+    cmd = launcher + [
         "--input_file", vcf_in,
         "--output_file", vcf_out,
         "--vcf",
@@ -191,6 +202,8 @@ def run_vep(vcf_in, vcf_out, reference, vep_cache, fork):
         p for p in vep_env.get("PATH", "").split(os.pathsep)
         if "envs/targeted-seq/bin" not in p
     )
+    if vep_bin:   # MARKER RUN_VEP_PATHFIRST_V1
+        vep_env["PATH"] = os.path.dirname(vep_bin) + os.pathsep + vep_env["PATH"]
     for _v in ("PERL5LIB", "PERL_LOCAL_LIB_ROOT", "PERL_MM_OPT", "PERL_MB_OPT"):
         vep_env.pop(_v, None)
     # Q7 (memo 16): VEP orders equal-rank consequence terms by Perl hash iteration, which

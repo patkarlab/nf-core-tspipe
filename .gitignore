@@ -60,3 +60,4 @@ resume.log
 work/
 test_run/
 tspipe_samplesheets/
+containers/tspipe-host/src/

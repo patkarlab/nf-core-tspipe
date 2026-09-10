@@ -289,7 +289,10 @@ def scan_modules(repo):
 
 def parse_config(path):
     text = read_text(path)
-    result = {"params": OrderedDict(), "general": OrderedDict(), "withName": [], "withLabel": [], "misc": OrderedDict()}
+    result = {"params": OrderedDict(), "general": OrderedDict(), "withName": [], "withLabel": [], "misc": OrderedDict(), "defs": OrderedDict()}
+    # top-level `def name = 'literal'` variables (v1.2), so `container = some_var` resolves
+    for m in re.finditer(r"^\s*def\s+(\w+)\s*=\s*(['\"][^'\"\n]*['\"])\s*$", text, re.M):
+        result["defs"][m.group(1)] = strip_quotes(m.group(2))
     # profile bodies are applied only when selected; the selected profile's file is passed in --configs
     for m, body, hl, o, c in list(find_blocks(text, re.compile(r"^\s*profiles\s*(?=\{)", re.M))):
         text = text[:o + 1] + re.sub(r"[^\n]", " ", text[o + 1:c]) + text[c:]
@@ -370,9 +373,13 @@ def resolve_runtime(procs, chain):
                     for k, v in blk["assign"].items():
                         if k in eff:
                             levels[2].append((k, v, "%s withName '%s' L%d" % (fname, blk["pattern"], blk["line"])))
+        all_defs = {}
+        for fname, cfg in chain:
+            all_defs.update(cfg.get("defs", {}))
         for lvl in levels:
             for k, v, src in lvl:
-                eff[k] = strip_quotes(v)
+                v = strip_quotes(v)
+                eff[k] = all_defs.get(v, v)
                 prov[k] = src
         info["effective"] = eff
         info["provenance"] = prov

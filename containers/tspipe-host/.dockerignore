@@ -1,0 +1,5 @@
+# containers/tspipe-host/.dockerignore -- only src/ enters the build context
+*
+!src/
+src/.partial/
+src/CHECKSUMS.md5
