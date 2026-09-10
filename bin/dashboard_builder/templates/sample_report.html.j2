@@ -531,6 +531,81 @@
           </div>
         {% endif %}
 
+        {# MARKER TP53_OBS_V1: TP53 / 17p observation block -- observations only; the interpretation wording comes from assets/<panel>/tp53_interpretation_rules.tsv #}
+        {% if ctx.tp53 %}
+        {% set _t = ctx.tp53 %}
+        <div class="card mb-3" id="tp53-observation-card">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="fw-medium">TP53 / 17p observation</span>
+            <span class="small text-muted">variant table &middot; CNV consensus &middot; BAF_V2 &middot; PURPLE &middot; PureCN, side by side; interpretation wording from <code>{{ _t.rules.name or 'no rule table' }}</code> ({{ _t.rules.n }} rule{{ '' if _t.rules.n == 1 else 's' }})</span>
+          </div>
+          <div class="card-body py-2">
+            <div class="row g-3">
+              <div class="col-lg-6">
+                <h6 class="mb-1">TP53 variants in the clinical table <span class="badge {{ 'bg-warning text-dark' if _t.n_variants else 'bg-secondary' }}">{{ _t.n_variants }}</span></h6>
+                {% if _t.variants %}
+                <div class="table-responsive">
+                <table class="table table-sm small mb-1">
+                  <thead class="table-light"><tr><th>Variant</th><th>Transcript / exon</th><th>VAF %</th><th>Callers</th><th>Verdict</th><th>ClinVar</th><th>OncoVI</th></tr></thead>
+                  <tbody>
+                  {% for v in _t.variants %}
+                  <tr>
+                    <td><code>{{ v.hgvsc | e }}</code>{% if v.hgvsp %}<br><code>{{ v.hgvsp | e }}</code>{% endif %}<div class="text-muted">{{ v.key | e }}{% if v.hgvs_source %} &middot; {{ v.hgvs_source }}{% endif %}{% if v.variant_class %} &middot; {{ v.variant_class | e }}{% endif %}{% if v.mnv_note %} &middot; {{ v.mnv_note | e }}{% endif %}</div></td>
+                    <td>{{ v.transcript | e }}{% if v.exon %}<br>exon {{ v.exon | e }}{% endif %}</td>
+                    <td>{{ v.vaf_str }}{% if v.alt_count %}<div class="text-muted">{{ v.alt_count }}/{{ v.ref_count }}</div>{% endif %}</td>
+                    <td>{{ v.n_callers }}<div class="text-muted" style="max-width:160px">{{ v.callers | e }}</div></td>
+                    <td><span class="badge {{ 'bg-success' if v.verdict == 'PASS' else ('bg-warning text-dark' if v.verdict == 'LowQual' else 'bg-secondary') }}">{{ v.verdict or '?' }}</span></td>
+                    <td>{{ v.clinvar | e }}</td>
+                    <td>{{ v.oncovi | e }}{% if v.oncovi_score %} <span class="text-muted">({{ v.oncovi_score }})</span>{% endif %}</td>
+                  </tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
+                </div>
+                {% if _t.n_variants > 1 %}<div class="small text-muted">More than one TP53 row is itself an observation.</div>{% endif %}
+                {% else %}
+                <div class="tspipe-empty">No reportable TP53 variant in the clinical table.</div>
+                {% endif %}
+              </div>
+              <div class="col-lg-6">
+                <h6 class="mb-1">17p allelic evidence at TP53</h6>
+                <table class="table table-sm tspipe-kv-table mb-1"><tbody>
+                  {% if _t.cnv %}
+                  <tr><td class="label">Consensus (arms {{ _t.cnv.flags or '-' }})</td><td class="value">{{ _t.cnv.consensus_call }}{% if _t.cnv.tier and _t.cnv.tier != 'NA' %} &middot; {{ _t.cnv.tier }}{% endif %}{% if _t.cnv.cytoband %} &middot; {{ _t.cnv.cytoband }}{% endif %}</td></tr>
+                  <tr><td class="label">Allelic state (BAF_V2 at the gene)</td><td class="value">{{ _t.cnv.allelic_state or '-' }}</td></tr>
+                  <tr><td class="label">CNVkit (K)</td><td class="value">{{ _t.cnv.k_call or '-' }}{% if _t.cnv.k_cn %} &middot; cn {{ _t.cnv.k_cn }}{% endif %}{% if _t.cnv.k_log2 %} &middot; log2 {{ _t.cnv.k_log2 }}{% endif %}</td></tr>
+                  <tr><td class="label">GATK (G)</td><td class="value">{{ _t.cnv.g_call or '-' }}{% if _t.cnv.g_seg_log2 %} &middot; log2 {{ _t.cnv.g_seg_log2 }}{% endif %}</td></tr>
+                  {% endif %}
+                  {% if _t.baf %}
+                  <tr><td class="label">BAF_V2 17p arm (B)</td><td class="value">{{ _t.baf.verdict or '-' }}{% if _t.baf.f %} &middot; f {{ _t.baf.f }}{% endif %} &middot; {{ _t.baf.n_het or '?' }} het sites &middot; {{ _t.baf.confidence }} &middot; scope {{ _t.baf.scope or '?' }}{% if _t.baf.cr %} &middot; copy ratio {{ _t.baf.cr }}{% endif %}</td></tr>
+                  {% else %}
+                  <tr><td class="label">BAF_V2 17p arm (B)</td><td class="value">not available</td></tr>
+                  {% endif %}
+                  {% if _t.cnv %}
+                  <tr><td class="label">PURPLE at TP53 (H)</td><td class="value">{{ _t.cnv.h_call or '-' }}{% if _t.cnv.h_cn_min %} &middot; total {{ _t.cnv.h_cn_min }}{% if _t.cnv.h_cn_max and _t.cnv.h_cn_max != _t.cnv.h_cn_min %}&ndash;{{ _t.cnv.h_cn_max }}{% endif %}{% endif %}{% if _t.cnv.h_macn_min %} &middot; minor {{ _t.cnv.h_macn_min }}{% endif %} &middot; LOH {{ _t.cnv.h_loh or '?' }}</td></tr>
+                  <tr><td class="label">PureCN at TP53 (P)</td><td class="value">{{ _t.cnv.p_call or '-' }}{% if _t.cnv.p_C %} &middot; C {{ _t.cnv.p_C }}{% endif %} &middot; LOH {{ _t.cnv.p_loh or '?' }}</td></tr>
+                  {% endif %}
+                  <tr><td class="label">Purity</td><td class="value">{% if _t.purity.purple %}PURPLE {{ _t.purity.purple }} ({{ _t.purity.purple_status | e }}{% if _t.purity.purple_trusted != 'TRUE' %}, advisory{% endif %}){% endif %}{% if _t.purity.purecn %}{% if _t.purity.purple %} &middot; {% endif %}PureCN {{ _t.purity.purecn }}{% if _t.purity.purecn_comment %} ({{ _t.purity.purecn_comment | e }}){% endif %}{% endif %}{% if not _t.purity.purple and not _t.purity.purecn %}-{% endif %}</td></tr>
+                </tbody></table>
+              </div>
+            </div>
+            <div class="alert alert-light border py-2 mt-2 mb-1">
+              <strong>Interpretation:</strong> {{ _t.interpretation.wording | e }}
+              <span class="small text-muted">
+                {% if _t.interpretation.source == 'rule' %}(rule at line {{ _t.interpretation.line }}: <code>{{ _t.interpretation.condition | e }}</code>){% else %}(no matching rule; wording is the reporting pathologist's){% endif %}
+              </span>
+              {% if _t.rules.errors %}<div class="small text-danger mt-1">Rule table problems: {{ _t.rules.errors | join('; ') | e }}</div>{% endif %}
+            </div>
+            <details class="small">
+              <summary class="text-muted">Fields available to the rule table (this sample's values)</summary>
+              <div class="mt-1" style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">
+                {% for k, v in _t.facts.items() %}{{ k }}={{ (v if v is not none else '') | e }}{% if not loop.last %} &nbsp; {% endif %}{% endfor %}
+              </div>
+            </details>
+          </div>
+        </div>
+        {% endif %}
+
         {# DASH_CNV_TABS_V1: five sub-tabs; each source shown once #}
         <ul class="nav nav-tabs mb-3" id="cnv-subtabs" role="tablist">
           <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cnv-sub-consensus" type="button" role="tab">Consensus CNV calls</button></li>
@@ -771,6 +846,14 @@
             <span id="reporting-copied-toast" class="vb-copied-toast">Copied!</span>
           </div>
         </div>
+
+        {# MARKER TP53_OBS_V1: one-line mirror of the TP53 / 17p observation block (CNV tab) #}
+        {% if ctx.tp53 %}
+        <div class="alert alert-light border small mb-3" id="reporting-tp53-line">
+          <strong>TP53 / 17p:</strong> {{ ctx.tp53.observations | join(' ') | e }}
+          <strong>Interpretation:</strong> {{ ctx.tp53.interpretation.wording | e }}
+        </div>
+        {% endif %}
 
         <div id="reporting-empty" class="tspipe-empty">
           Nothing triaged yet. Open the "Variants &mdash; Clinical" tab and mark a

@@ -77,6 +77,8 @@ process DASHBOARD {
         def known_low_arg = known_low.exists() ? "--known-low-exons ${known_low}" : ''
         def spikein_asset = file("${projectDir}/assets/${params.panel}/spikein_regions.tsv")   // SPIKEIN_V1
         def spikein_arg   = spikein_asset.exists() ? "--spikein-regions ${spikein_asset}" : ''
+        def tp53_rules    = file("${projectDir}/assets/${params.panel}/tp53_interpretation_rules.tsv")   // TP53_OBS_V1
+        def tp53_arg      = tp53_rules.exists() ? "--tp53-rules ${tp53_rules}" : ''
         def sample_ids_sh = sample_ids.collect { "'${it}'" }.join(' ')
         """
         set -euo pipefail
@@ -124,6 +126,7 @@ process DASHBOARD {
             ${ params.oncokb_enabled && params.oncokb_token ? "--oncokb-token '" + params.oncokb_token + "'" : "" } \\
             ${known_low_arg} \\
             ${spikein_arg} \\
+            ${tp53_arg} \\
             ${task.ext.args ?: ''}
 
         # ----------------------------------------------------------------

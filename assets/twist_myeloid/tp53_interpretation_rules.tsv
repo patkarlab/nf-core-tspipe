@@ -1,0 +1,44 @@
+# tp53_interpretation_rules.tsv - interpretation line of the TP53 / 17p observation block (TP53_OBS_V1)
+#
+# Owned by the reporting pathologist. The dashboard shows the TP53 variant(s) and the 17p
+# allelic evidence as observations and looks up the interpretation wording here; it never
+# classifies on its own. With no active rule the block shows "per reporting pathologist".
+#
+# Format: tab-separated, three columns, header row "condition<TAB>wording<TAB>note".
+# Lines starting with # and blank lines are ignored. Rules are tried top to bottom; the
+# first matching rule is shown, so put the most specific rules first and a 'default' last.
+#
+# condition   clauses separated by ';' (all must hold); each clause is  field op value
+#             ops:  ==  !=  >=  <=  >  <   in   notin      (in/notin: comma list, no spaces)
+#             'default' or '*' matches every sample.
+#             Numbers compare numerically, everything else as case-insensitive text.
+# wording     free text shown as the interpretation line (WHO-HAEM5 / ICC wording is yours).
+# note        optional, for the rule author; not shown on the dashboard.
+#
+# fields (values as they appear in the observation block; 'facts' are listed on the card):
+#   n_variants        TP53 rows in the clinical table (the reportable set)
+#   n_variants_pass   of those, SomaticSeq_Verdict == PASS
+#   max_vaf, min_vaf  VAF in percent over the TP53 rows (empty when none)
+#   cnv_call          TP53 consensus_call: GAIN | LOSS | CNLOH | DISCORDANT | NEUTRAL | BLACKLISTED
+#   cnv_tier          TIER_1 | TIER_2 | TIER_3 | NA
+#   cnv_flags         arm letters of the consensus (e.g. BGHKP)
+#   allelic_state     e.g. 17p:GAIN f=0.256
+#   k_call k_cn k_log2      CNVkit call, integer copy number, log2
+#   g_call g_seg_log2       GATK call, segment log2
+#   b_call                  BAF_V2 vote at the gene (GAIN | LOSS | CNLOH | NEUTRAL | NA)
+#   p_call p_C p_loh        PureCN call, integer copy number, LOH (true | false)
+#   e_call                  DECoN call
+#   h_call h_cn_min h_cn_max h_macn_min h_loh   PURPLE call, total CN range, minor-allele CN, LOH (true | false)
+#   baf_verdict       BAF_V2 17p arm verdict: NEUTRAL | DEL | CNLOH | GAIN | IMBALANCE | INDETERMINATE
+#   baf_confidence    HIGH | LOW | NA
+#   baf_f baf_n_het baf_scope baf_cr           clonal fraction, het sites, arm | chromosome, copy ratio log2
+#   purity            PURPLE purity;  purple_status (PASS | WARN_LOW_PURITY | FAIL_NO_TUMOR ...);  purple_trusted (TRUE | FALSE)
+#   purecn_purity     PureCN purity
+#
+# Examples of the syntax (commented out; wording is a placeholder, not a recommendation):
+#   n_variants>=2	<wording>	two or more TP53 variants
+#   n_variants>=1;baf_verdict in DEL,CNLOH;baf_confidence==HIGH	<wording>	variant with allelic loss of 17p
+#   n_variants>=1;max_vaf>=50	<wording>	variant with VAF at or above 50 %
+#   n_variants==0;cnv_call==NEUTRAL;baf_verdict==NEUTRAL	<wording>	nothing observed
+#   default	<wording>	fallback
+condition	wording	note

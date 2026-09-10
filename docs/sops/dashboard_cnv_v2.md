@@ -56,3 +56,42 @@ folders (register N9, standalone report). Patchers in `tools/patches/2026-09-07/
 (`patch_dash_annot_cols_v1.py`) and `tools/patches/2026-09-08/`
 (`patch_dash_tier_filter_v1.py`, `patch_dash_cnv_glossary_v1.py`,
 `patch_dash_decon_desc_v1.py`, `patch_dash_decon_desc_v1b.py`).
+
+## Addendum 2026-09-10 — TP53 / 17p observation block (TP53_OBS_V1)
+
+What. One card at the top of the CNV tab (`#tp53-observation-card`, above the sub-tabs)
+and a one-line mirror at the top of the Reporting tab (`#reporting-tp53-line`). The card
+puts, side by side, every TP53 row of the clinical table (HGVS by VariantValidator →
+CAVA → VEP, transcript from the same source, VAF with alt/ref counts, callers,
+SomaticSeq verdict, ClinVar, OncoVI) and the 17p allelic evidence at TP53 (consensus
+call/tier/arm letters/cytoband, allelic_state, CNVkit, GATK, the BAF_V2 17p arm row,
+PURPLE total/minor CN and LOH, PureCN C and LOH, PURPLE and PureCN purity with the
+PURPLE status shown as is — WARN_LOW_PURITY / FAIL_NO_TUMOR carry an "advisory" tag).
+More than one TP53 row is itself flagged as an observation. The block classifies
+nothing: it never derives "multi-hit" or any WHO-HAEM5 / ICC category.
+
+Interpretation line. Looked up in `assets/<panel>/tp53_interpretation_rules.tsv`
+(columns `condition`, `wording`, `note`; `#` comments). Rules are tried top to bottom and
+the first match is shown with its line number and condition; with no match (or no
+rules) the line reads "per reporting pathologist". A condition is `;`-separated clauses
+`field op value` (`== != >= <= > < in notin`; `default` / `*` matches everything); the
+field vocabulary is listed in the asset header and every sample's values are shown under
+"Fields available to the rule table" on the card, so a rule can be checked against a real
+sample before it is saved. A malformed clause or an unknown field is reported in red on
+the card instead of silently never matching. Changing the wording or the rules needs no
+code change and no resume beyond DASHBOARD / REPORT_BUNDLE.
+
+Files. `bin/dashboard_builder/parsers/tp53.py` (stdlib; reads the clinical rows already
+parsed by `parsers/variants.py`, `cnv/consensus/<S>.cnv_consensus4.{genes.tsv,json}`,
+`cnv/baf/<S>.baf.summary.tsv` with the consensus-JSON `baf_arms` as fallback,
+`cnv/purple/<S>.purple.h_summary.tsv`); `build.py` (`--tp53-rules`, `ctx["tp53"]`,
+builder 0.5.2-tp53); `sample_report.html.j2` (card + mirror); `modules/local/dashboard.nf`
+passes the asset when it exists. Patcher `tools/patches/2026-09-10/patch_tp53_obs_v1.py`;
+offline check `tools/patches/2026-09-10/check_tp53_block.sh` (renders 26CGH1250 as
+published and a copy of 26CGH60 with two synthetic TP53 rows in a scratch view, zips the
+reports to `~/inbox/from_claude/`). Run8 carries no real TP53 variant; the variant half
+was exercised on the synthetic rows only.
+
+Re-rendering. `dashboard.nf` changed, so a plain resume re-executes DASHBOARD and the
+eight REPORT_BUNDLE tasks; later edits to the parser, the template or the rule asset are
+unhashed and need `-c /tmp/dash_nocache.config` as before.

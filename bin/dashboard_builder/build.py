@@ -45,6 +45,7 @@ from parsers import coverage as p_coverage
 from parsers import cnv_v2 as p_cnv_v2   # MARKER DASH_CNV_V1
 from parsers import fastp as p_fastp   # DASH_QC_V2
 from parsers import spikein as p_spikein   # SPIKEIN_V1
+from parsers import tp53 as p_tp53   # TP53_OBS_V1
 from parsers import igv as p_igv
 from parsers import genebe as p_genebe
 from parsers import mobidetails as p_mobidetails
@@ -52,7 +53,7 @@ from parsers import oncokb as p_oncokb
 from parsers import cancervar as p_cancervar
 
 
-BUILDER_VERSION = "0.5.1-layout+cava"   # DASH_LAYOUT_V1
+BUILDER_VERSION = "0.5.2-tp53"   # TP53_OBS_V1 (was 0.5.1-layout+cava, DASH_LAYOUT_V1)
 
 # Directories under a run dir that are NOT samples.
 NON_SAMPLE_DIRS = {"pipeline_info", "assets"}
@@ -226,6 +227,7 @@ def collect_sample_context(sample_dir, build_time, subdir="",
         "qc_verdict": None,   # DASH_QC_V1
         "fastp": None,   # DASH_QC_V2
         "cnv": None,
+        "tp53": None,   # TP53_OBS_V1
         "igv": None,
         "genebe": {},        # chr:pos:ref:alt -> annotation dict (empty unless --annotate-genebe)
         "mobidetails": {},   # chr:pos:ref:alt -> {url, mobidetails_id, ...} (empty unless --annotate-mobidetails)
@@ -314,6 +316,11 @@ def collect_sample_context(sample_dir, build_time, subdir="",
     except Exception as exc:  # noqa: BLE001
         logging.warning("[%s] cnv v2 parse failed: %s", sample, exc)
         ctx["cnv"] = {}
+    try:   # TP53_OBS_V1: TP53 variant(s) and 17p allelic evidence side by side; wording from the rule asset
+        ctx["tp53"] = p_tp53.parse(effective_dir, sample, clinical=ctx.get("clinical"))
+    except Exception as exc:  # noqa: BLE001
+        logging.warning("[%s] tp53 observation parse failed: %s", sample, exc)
+        ctx["tp53"] = None
     try:   # DASH_QC_V2: verdict after coverage, hsmetrics, fastp and the sex check are all parsed
         ctx["qc_verdict"] = p_coverage.verdict(ctx.get("coverage"), ctx.get("hsmetrics"),
                                                fastp=ctx.get("fastp"),
@@ -624,9 +631,16 @@ def main():
         help="spikein_regions.tsv for the panel: non-exonic spike-in regions and germline "
              "SNP sites shown on the Spike-in tab. Optional."   # SPIKEIN_V1
     )
+    parser.add_argument(
+        "--tp53-rules", dest="tp53_rules", default=None,
+        help="tp53_interpretation_rules.tsv for the panel: condition -> wording table that "
+             "supplies the interpretation line of the TP53 / 17p observation block. "
+             "Optional; without it the line reads 'per reporting pathologist'."   # TP53_OBS_V1
+    )
     args = parser.parse_args()
     p_coverage.KNOWN_LOW_EXONS_PATH = args.known_low_exons   # DASH_QC_V1d
     p_spikein.ASSET_PATH = args.spikein_regions   # SPIKEIN_V1
+    p_tp53.RULES_PATH = args.tp53_rules   # TP53_OBS_V1
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
