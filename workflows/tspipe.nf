@@ -6,7 +6,7 @@
  * Step ordering matches the original runner:
  *     PREPROCESSING -> VARIANT_CALLING -> SOMATICSEQ_ENSEMBLE -> FLT3_ITD
  *                   -> CNV_CALLING -> ANNOTATION
- *                   -> IGV_REPORTS -> ORGANIZE_OUTPUT -> DASHBOARD -> REPORT_BUNDLE
+ *                   -> IGV_REPORTS -> ORGANIZE_OUTPUT -> DASHBOARD -> REPORT_BUNDLE + RUN_BUNDLE
  *
  * NOTE: SV_CALLING and REPORTING are intentionally not wired into the active
  * DAG. SV calling is disabled (no SV deliverable on this panel yet); final
@@ -46,6 +46,7 @@ include { IGV_REPORTS         } from '../modules/local/igv_reports'
 include { ORGANIZE_OUTPUT     } from '../modules/local/organize_output'
 include { DASHBOARD           } from '../modules/local/dashboard'
 include { REPORT_BUNDLE       } from '../modules/local/report_bundle'
+include { RUN_BUNDLE          } from '../modules/local/run_bundle'   // RUN_BUNDLE_V1
 
 // MARKER HARDEN_Q3_V1: samplesheet preflight (audit Q3). Mirrors assets/schema_input.json
 // without the nf-schema plugin. Every problem is collected and reported at once, before any
@@ -532,5 +533,14 @@ workflow TSPIPE {
     REPORT_BUNDLE(
         DASHBOARD.out.clinical_dirs,
         DASHBOARD.out.assets,
+    )
+
+    // ----- 10. RUN_BUNDLE: one zip for the whole run (RUN_BUNDLE_V1) -
+    // <outdir>/<run>_reports.zip: cohort index, assets once, one folder
+    // per sample. Reads DASHBOARD outputs directly, beside REPORT_BUNDLE.
+    RUN_BUNDLE(
+        DASHBOARD.out.clinical_dirs,
+        DASHBOARD.out.assets,
+        DASHBOARD.out.cohort_html,
     )
 }
