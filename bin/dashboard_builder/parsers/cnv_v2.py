@@ -176,6 +176,9 @@ def parse(sample_dir, sample):
     go = v2 / "chrom_pages" / ("%s.genome.png" % sample)
     if go.exists():
         out["genome_overview"] = _rel(go, sample_dir)
+    a17 = v2 / "chrom_pages" / ("%s.17p.png" % sample)   # ARM17P_V1: dedicated 17p figure
+    if a17.exists():
+        out["arm17p_figure"] = _rel(a17, sample_dir)
     rc = v2 / "reconcnv" / ("%s.reconcnv.html" % sample)
     if rc.exists():
         out["reconcnv"] = _rel(rc, sample_dir)

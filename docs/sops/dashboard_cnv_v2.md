@@ -95,3 +95,23 @@ was exercised on the synthetic rows only.
 Re-rendering. `dashboard.nf` changed, so a plain resume re-executes DASHBOARD and the
 eight REPORT_BUNDLE tasks; later edits to the parser, the template or the rule asset are
 unhashed and need `-c /tmp/dash_nocache.config` as before.
+
+## Addendum 2026-09-10 — dedicated 17p figure (ARM17P_V1)
+
+`bin/plot_arm_17p.py` runs in CHROM_PAGES after the genome overview and writes
+`chrom_pages/<S>.17p.png` (GATK container, Python 3.6 / matplotlib 3.2). Four tracks along 17p
+in genomic coordinates: denoised log2 copy ratio bins with CNVkit segments and the arm median
+(depth bins exist only at PRPF8, TP53 and KDM6B; the 17p SNP windows carry no depth bin, which
+the track states); raw ALT fraction of every catalog site, heterozygous sites coloured by the
+BAF_V2 arm verdict (circles = SNP windows, triangles = backbone sites) with the 0.5 ± f/2 band;
+PURPLE total and minor-allele copy number; gene strip in consensus colours with the centromere
+shaded. Title: TP53 consensus row, PURPLE at TP53, purity. Panel genes come from the consensus
+JSON, PURPLE segments from `--purple-dir`, site class from the BED interval width
+(`snp_sites.baf.base.bed` is 120-bp windows only, so anything outside a window is a backbone
+site). The dashboard (`parsers/cnv_v2.py`, `ctx.cnv.arm17p_figure`) shows it inside the TP53 /
+17p observation card as a report-selectable plot (`arm17p::1`), so it can be ticked into the
+Reporting tab and travels in the bundle with the rest of `cnv/`. An optional `--clinical`
+argument overlays the TP53 variant VAF(s); not used in the pipeline because the clinical table
+does not exist at CHROM_PAGES time (the dashboard python, targeted-seq env, has matplotlib 3.10,
+so a dashboard-time overlay is possible). Changing the figure re-executes CHROM_PAGES for every
+sample (plus ORGANIZE, DASHBOARD, bundles). Patcher `tools/patches/2026-09-10/patch_arm17p_v1.py`.

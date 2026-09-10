@@ -596,6 +596,12 @@
               </span>
               {% if _t.rules.errors %}<div class="small text-danger mt-1">Rule table problems: {{ _t.rules.errors | join('; ') | e }}</div>{% endif %}
             </div>
+            {# MARKER ARM17P_V1: dedicated 17p figure, report-selectable like any CNV plot #}
+            {% if ctx.cnv and ctx.cnv.arm17p_figure %}
+            <div class="row g-3 mt-1 mb-2">
+              {{ macros.render_cnv_plot_card('arm17p::1', '17p: depth bins and CNVkit segments, BAF per catalog site with the BAF_V2 band, PURPLE total / minor copy number, panel genes (TP53 in bold)', ctx.cnv.arm17p_figure, 'col-12') }}
+            </div>
+            {% endif %}
             <details class="small">
               <summary class="text-muted">Fields available to the rule table (this sample's values)</summary>
               <div class="mt-1" style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">

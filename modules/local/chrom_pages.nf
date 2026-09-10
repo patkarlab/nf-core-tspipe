@@ -1,5 +1,5 @@
 /*
- * modules/local/chrom_pages.nf  (CHROM_PAGES_V1; MARKER VIZ_V1b: genome overview)
+ * modules/local/chrom_pages.nf  (CHROM_PAGES_V1; MARKER VIZ_V1b: genome overview; MARKER ARM17P_V1: 17p figure)
  *
  * Per-sample, per-chromosome CNV pages in target space (bin/plot_targets_trio.py):
  * depth per exon/backbone/SNP window (TITAN colours), BAF from the v2-catalog
@@ -39,6 +39,7 @@ process CHROM_PAGES {
         def snp_arg    = snp_base_bed   ? "--targets ${snp_base_bed}" : ''
         def bg_arg     = baf_background ? "--background ${baf_background}" : ''
         def ideo_arg   = cytoband       ? "--cytoband ${cytoband}" : ''   // IDEO_V1
+        def snp17_arg  = snp_base_bed   ? "--snp-bed ${snp_base_bed}" : ''   // ARM17P_V1
         """
         export MPLCONFIGDIR=\$PWD/.mpl
         export XDG_CACHE_HOME=\$PWD/.cache
@@ -59,5 +60,10 @@ process CHROM_PAGES {
             # genome overview with arm medians (VIZ_V1b)
             plot_genome_overview.py --sample ${meta.id} --consensus-json ${consensus_json} --allelic ${allelic} \\
                 ${purple_arg} --out chrom_pages/${meta.id}.genome.png
+
+            # dedicated 17p figure: depth bins + CNVkit segments, BAF per catalog site with the BAF_V2 band,
+            # PURPLE total/minor CN, panel genes (ARM17P_V1)
+            plot_arm_17p.py --sample ${meta.id} --consensus-json ${consensus_json} ${purple_arg} ${snp17_arg} \\
+                --out chrom_pages/${meta.id}.17p.png
         """
 }
