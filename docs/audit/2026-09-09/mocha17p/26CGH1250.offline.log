@@ -1,0 +1,24 @@
+[1] bgzip + tabix (INFO/AC,AN added: SHAPEIT5 requires them in the target VCF)
+    sites: 1234  sample: 26CGH1250-TwistMyVal
+[2] SHAPEIT5 phase_common (reference = 1000G chr17, threads 8)
+    phased sites: 1234
+      + Variants [#sites=1234 / region=chr17]
+         - 2072390 sites removed in reference panel [not in main panel]
+  * HMM parameters [Ne=15000 / Error=0.0001 / #rare=484]
+[3] restore AD/DP/RAD onto the phased genotypes
+    149 phased hets, 0 records without AD
+[4] INFO/GC from the reference
+MOCHATOOLS_VERSION 2025-08-19 http://github.com/freeseek/mocha BCFtools 1.20 HTSlib 1.20
+[5] bcftools +mocha -g GRCh38 --LRR-weight 0
+Estimated 1 sample(s) of unknown gender, 0 male(s), and 0 female(s)
+Using 1234 out of 1234 read variants from contig chr17
+Written 1234 variants for contig chr17
+[calls] /tmp/mocha17/26CGH1250-TwistMyVal/26CGH1250-TwistMyVal.chr17.mocha.calls.tsv
+sample_id	computed_gender	chrom	beg_GRCh38	end_GRCh38	length	p_arm	q_arm	n_sites	n_hets	n50_hets	bdev	bdev_se	rel_cov	rel_cov_se	lod_lrr_baf	lod_baf_phase	n_flips	baf_conc	lod_baf_conc	type	cf
+[stats]
+sample_id	computed_gender	call_rate	cov_median	cov_sd	cov_auto	baf_corr	baf_conc	baf_auto	n_sites	n_hets	x_nonpar_n_hets	par1_n_hets	xtr_n_hets
+26CGH1250-TwistMyVal	U	1.0000	1368.9998	744.1722	0.0555	0.0528	0.5000	-0.0013	417	71	0	0	0
+[6] phased BAF per arm (pBAF = BAF-0.5 for 0|1, 0.5-BAF for 1|0)
+    17p: 115 phased hets, mean pBAF = -0.0210, mean |pBAF| = 0.1242
+    17q: 34 phased hets, mean pBAF = +0.0279, mean |pBAF| = 0.0918
+[done] /tmp/mocha17/26CGH1250-TwistMyVal

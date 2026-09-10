@@ -1,0 +1,2 @@
+sample_id	computed_gender	call_rate	cov_median	cov_sd	cov_auto	baf_corr	baf_conc	baf_auto	n_sites	n_hets	x_nonpar_n_hets	par1_n_hets	xtr_n_hets	par2_n_hets	x_nonpar_baf_corr	x_nonpar_cov_median	y_nonpar_cov_median	mt_cov_median	lrr_gc_rel_ess	lrr_gc_0	lrr_gc_1	lrr_gc_2
+26CGH1250-TwistMyVal	U	1.0000	1368.9998	744.1722	0.0555	0.0528	0.5000	-0.0013	417	71	0	0	0	0	0.0000	nan	nan	nan	0.0693	4.8589	9.6200	-9.3766
