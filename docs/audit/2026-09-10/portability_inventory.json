@@ -1,0 +1,5775 @@
+{
+ "generated": "2026-09-10",
+ "chain": [
+  "nextflow.config",
+  "conf/base.config",
+  "conf/modules.config",
+  "conf/gandalf.config",
+  "conf/twist_apply.config"
+ ],
+ "processes": {
+  "ABRA2": {
+   "directives": {},
+   "labels": [
+    "process_high"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "abra2",
+    "samtools"
+   ],
+   "header_line": 11,
+   "file": "modules/local/abra2.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.args": [
+     "--mer 0.025 --mad 5000",
+     "conf/modules.config"
+    ]
+   },
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "BAM_QUICKCHECK": {
+   "directives": {
+    "container": "quay.io/biocontainers/samtools:1.18--h50ea8bc_1"
+   },
+   "labels": [],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [],
+   "header_line": 9,
+   "file": "modules/local/bam_quickcheck.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/samtools:1.18--h50ea8bc_1",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/samtools:1.18--h50ea8bc_1",
+   "entry": "tspipe"
+  },
+  "BAM_TO_FLT3_FASTQ": {
+   "directives": {
+    "conda": "bioconda::samtools=1.18",
+    "container": "quay.io/biocontainers/samtools:1.18--h50ea8bc_1"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "samtools"
+   ],
+   "header_line": 9,
+   "file": "modules/local/bam_to_flt3_fastq.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/samtools:1.18--h50ea8bc_1",
+    "conda": "bioconda::samtools=1.18",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/samtools:1.18--h50ea8bc_1",
+   "entry": "tspipe"
+  },
+  "BPT_AGGREGATE_BAF": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "pon_baf_cohort",
+    "pon_baf_min_depth",
+    "pon_baf_min_het"
+   ],
+   "scripts": [
+    "aggregate_baf_background.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "aggregate_baf_background.py"
+   ],
+   "header_line": 10,
+   "file": "modules/local/bpt_aggregate_baf.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_CHECK_SAMPLESHEET": {
+   "directives": {},
+   "labels": [
+    "process_single"
+   ],
+   "params": [],
+   "scripts": [
+    "bpt_check_samplesheet.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "bpt_check_samplesheet.py"
+   ],
+   "header_line": 12,
+   "file": "modules/local/bpt_check_samplesheet.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_CNV_LOO_QC": {
+   "directives": {},
+   "labels": [
+    "process_high",
+    "process_long"
+   ],
+   "params": [
+    "pon_panel"
+   ],
+   "scripts": [
+    "cnv_loo_qc.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "cnv_loo_qc.py",
+    "loo_qc/plots/loo_summary_heatmap.png"
+   ],
+   "header_line": 22,
+   "file": "modules/local/bpt_cnv_loo_qc.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_CNVKIT_COVERAGE": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [
+    "cnvkit.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "cnvkit.py"
+   ],
+   "header_line": 13,
+   "file": "modules/local/bpt_cnvkit_coverage.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_CNVKIT_PREP": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "pon_antitarget"
+   ],
+   "scripts": [
+    "cnvkit.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "cnvkit.py"
+   ],
+   "header_line": 13,
+   "file": "modules/local/bpt_cnvkit_prep.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_CNVKIT_REFERENCE": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [
+    "cnvkit.py",
+    "cnvkit_wrapper.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "cnvkit.py"
+   ],
+   "header_line": 9,
+   "file": "modules/local/bpt_cnvkit_reference.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_CONFORMITY_REPORT": {
+   "directives": {},
+   "labels": [
+    "process_single"
+   ],
+   "params": [
+    "pon_insert_min",
+    "pon_jak2_min",
+    "pon_npm1_min"
+   ],
+   "scripts": [
+    "capture_conformity_gate.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "capture_conformity_gate.py"
+   ],
+   "header_line": 10,
+   "file": "modules/local/bpt_conformity_report.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_CONFORMITY_SAMPLE": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [
+    "capture_conformity_gate.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "capture_conformity_gate.py"
+   ],
+   "header_line": 13,
+   "file": "modules/local/bpt_conformity_sample.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_DISCOVER_HETS": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "pon_het_mapq"
+   ],
+   "scripts": [
+    "discover_hets.sh"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "discover_hets.sh"
+   ],
+   "header_line": 9,
+   "file": "modules/local/bpt_discover_hets.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_GATK_ANNOTATE_INTERVALS": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "pon_gc_correction"
+   ],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 8,
+   "file": "modules/local/bpt_gatk_annotate_intervals.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_GATK_COLLECT_ALLELIC_COUNTS": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 10,
+   "file": "modules/local/bpt_gatk_collect_allelic_counts.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_GATK_COLLECT_READ_COUNTS": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 8,
+   "file": "modules/local/bpt_gatk_collect_read_counts.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_GATK_CREATE_RC_PON": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "pon_gc_correction"
+   ],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 8,
+   "file": "modules/local/bpt_gatk_create_rc_pon.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_GATK_PREPROCESS_INTERVALS": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 8,
+   "file": "modules/local/bpt_gatk_preprocess_intervals.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_MERGE_HET_SITES": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "pon_het_af_hi",
+    "pon_het_af_lo",
+    "pon_het_min_depth",
+    "pon_het_min_samples"
+   ],
+   "scripts": [
+    "merge_het_sites.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "merge_het_sites.py"
+   ],
+   "header_line": 9,
+   "file": "modules/local/bpt_merge_het_sites.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "BPT_TOOL_VERSIONS": {
+   "directives": {},
+   "labels": [
+    "process_single"
+   ],
+   "params": [],
+   "scripts": [
+    "cnvkit.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 10,
+   "file": "modules/local/bpt_tool_versions.nf",
+   "effective": {
+    "container": "null",
+    "conda": "params.legacy_python_env",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: params.legacy_python_env",
+   "entry": "build_pon_twist"
+  },
+  "GATK4_BQSR": {
+   "directives": {
+    "container": "broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 11,
+   "file": "modules/local/bqsr.nf",
+   "effective": {
+    "container": "broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "BUILD_SEX_PON": {
+   "directives": {
+    "conda": "bioconda::cnvkit=0.9.10 conda-forge::pandas=2.1.4",
+    "container": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "chrx_threshold",
+    "male_reference"
+   ],
+   "scripts": [
+    "build_sex_pon.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "build_sex_pon.py"
+   ],
+   "header_line": 14,
+   "file": "modules/local/build_sex_pon.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0",
+    "conda": "bioconda::cnvkit=0.9.10 conda-forge::pandas=2.1.4",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0",
+   "entry": "build_pon"
+  },
+  "BWA_MEM": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "bwa-mem2"
+   ],
+   "header_line": 13,
+   "file": "modules/local/bwa_mem.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.args": [
+     "-M",
+     "conf/modules.config"
+    ]
+   },
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "CAVA": {
+   "directives": {
+    "container": "local/cava:v2.0.15"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "cava"
+   ],
+   "header_line": 33,
+   "file": "modules/local/cava.nf",
+   "effective": {
+    "container": "local/cava:v2.0.15",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "LOCAL_IMAGE",
+   "class_detail": "local/cava:v2.0.15",
+   "entry": "tspipe"
+  },
+  "CHROM_PAGES": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "exon_plot_min_bf"
+   ],
+   "scripts": [
+    "plot_arm_17p.py",
+    "plot_genome_overview.py",
+    "plot_targets_trio.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "plot_arm_17p.py",
+    "plot_genome_overview.py",
+    "plot_targets_trio.py"
+   ],
+   "header_line": 12,
+   "file": "modules/local/chrom_pages.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "CNV_BAF_CNLOH": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "baf_cr_del",
+    "baf_cr_gain",
+    "baf_f_min",
+    "baf_min_depth",
+    "baf_min_het_sites"
+   ],
+   "scripts": [
+    "baf_cnloh_detect.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "baf_cnloh_detect.py"
+   ],
+   "header_line": 12,
+   "file": "modules/local/cnv_baf_cnloh.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "CNV_CONSENSUS_MULTI": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "cnv_sex_fallback"
+   ],
+   "scripts": [
+    "cnv_consensus_multi.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "cnv_consensus_multi.py"
+   ],
+   "header_line": 15,
+   "file": "modules/local/cnv_consensus_multi.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "CNV_LOO_QC": {
+   "directives": {
+    "conda": "bioconda::cnvkit=0.9.10 conda-forge::matplotlib=3.8.2 conda-forge::pandas=2.1.4 conda-forge::numpy=1.26",
+    "container": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0"
+   },
+   "labels": [
+    "process_high",
+    "process_long"
+   ],
+   "params": [
+    "male_reference",
+    "panel"
+   ],
+   "scripts": [
+    "cnv_loo_qc.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "cnv_loo_qc.py"
+   ],
+   "header_line": 17,
+   "file": "modules/local/cnv_loo_qc.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0",
+    "conda": "bioconda::cnvkit=0.9.10 conda-forge::matplotlib=3.8.2 conda-forge::pandas=2.1.4 conda-forge::numpy=1.26",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0",
+   "entry": "build_pon"
+  },
+  "CNVKIT": {
+   "directives": {
+    "conda": "bioconda::cnvkit=0.9.10 conda-forge::pandas=2.1.4 conda-forge::numpy=1.26",
+    "container": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "cnv_sex_fallback"
+   ],
+   "scripts": [
+    "bin/cnvkit.py",
+    "cnvkit.py",
+    "cnvkit_wrapper.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "cnvkit_wrapper.py"
+   ],
+   "header_line": 27,
+   "file": "modules/local/cnvkit.nf",
+   "effective": {
+    "container": "null",
+    "conda": "bioconda::cnvkit=0.9.10 conda-forge::pandas=2.1.4 conda-forge::numpy=1.26",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.args": [
+     "--panel-gene-chroms ${projectDir}/assets/twist_myeloid/panel_gene_chroms.tsv",
+     "conf/twist_apply.config"
+    ]
+   },
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: bioconda::cnvkit=0.9.10 conda-forge::pandas=2.1.4 conda-forge::numpy=1.26",
+   "entry": "tspipe"
+  },
+  "CNVKIT_PON_BUILD": {
+   "directives": {
+    "conda": "bioconda::cnvkit=0.9.10",
+    "container": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0"
+   },
+   "labels": [
+    "process_high",
+    "process_long"
+   ],
+   "params": [],
+   "scripts": [
+    "cnvkit.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "cnvkit.py"
+   ],
+   "header_line": 18,
+   "file": "modules/local/cnvkit_pon_build.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0",
+    "conda": "bioconda::cnvkit=0.9.10",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0",
+   "entry": "build_pon"
+  },
+  "DASHBOARD": {
+   "directives": {
+    "executor": "local"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "dashboard_python",
+    "genebe_enabled",
+    "genebe_key",
+    "genebe_user",
+    "legacy_python_env",
+    "mobidetails_enabled",
+    "oncokb_enabled",
+    "oncokb_token",
+    "outdir",
+    "panel"
+   ],
+   "scripts": [
+    "/build.py"
+   ],
+   "projectdir_refs": [
+    "${projectDir}/assets/${params.panel",
+    "${projectDir}/bin/dashboard_builder"
+   ],
+   "literals": [],
+   "tools": [
+    "dashboard_view"
+   ],
+   "header_line": 38,
+   "file": "modules/local/dashboard.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.args": [
+     "params.bed ? \"--panel-bed ${params.bed}\" : ''",
+     "conf/modules.config"
+    ]
+   },
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "DECON": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "cnv_sex_fallback",
+    "decon_bf",
+    "decon_del_multi_bf",
+    "decon_min_corr",
+    "decon_min_cov",
+    "decon_trans_prob"
+   ],
+   "scripts": [
+    "/bin/decon_ReadInBams.R",
+    "/bin/decon_call_sample.R",
+    "/bin/decon_gene_table.py",
+    "/bin/filter_decon_calls.py"
+   ],
+   "projectdir_refs": [
+    "${projectDir}/bin/decon_ReadInBams.R",
+    "${projectDir}/bin/decon_call_sample.R",
+    "${projectDir}/bin/decon_gene_table.py",
+    "${projectDir}/bin/filter_decon_calls.py"
+   ],
+   "literals": [],
+   "tools": [
+    "Rscript",
+    "python3"
+   ],
+   "header_line": 20,
+   "file": "modules/local/decon.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/decon/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "decon, targeted-seq",
+   "entry": "tspipe"
+  },
+  "DEEPSOMATIC": {
+   "directives": {
+    "container": "docker://google/deepsomatic:1.10.0"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "run_deepsomatic",
+    "tabix"
+   ],
+   "header_line": 29,
+   "file": "modules/local/deepsomatic.nf",
+   "effective": {
+    "container": "docker://google/deepsomatic:1.10.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "google/deepsomatic:1.10.0",
+   "entry": "tspipe"
+  },
+  "EXON_PLOTS": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "exon_plot_min_bf"
+   ],
+   "scripts": [
+    "plot_exon_ratio_batch.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "plot_exon_ratio_batch.py"
+   ],
+   "header_line": 11,
+   "file": "modules/local/exon_plots.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "FASTP": {
+   "directives": {
+    "conda": "bioconda::fastp=0.23.4",
+    "container": "quay.io/biocontainers/fastp:0.23.4--h5f740d0_0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "adapters"
+   ],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "fastp"
+   ],
+   "header_line": 8,
+   "file": "modules/local/fastp.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/fastp:0.23.4--h5f740d0_0",
+    "conda": "bioconda::fastp=0.23.4",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.args": [
+     "--detect_adapter_for_pe",
+     "conf/modules.config"
+    ]
+   },
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/fastp:0.23.4--h5f740d0_0",
+   "entry": "tspipe"
+  },
+  "FILT3R": {
+   "directives": {
+    "container": "local/filt3r:v0.1"
+   },
+   "labels": [
+    "process_low",
+    "error_ignore"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [],
+   "header_line": 26,
+   "file": "modules/local/filt3r.nf",
+   "effective": {
+    "container": "local/filt3r:v0.1",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.filt3r_bin": [
+     "params.filt3r_bin",
+     "conf/gandalf.config"
+    ],
+    "ext.filt3r_ref": [
+     "params.filt3r_ref",
+     "conf/gandalf.config"
+    ]
+   },
+   "class": "LOCAL_IMAGE",
+   "class_detail": "local/filt3r:v0.1",
+   "entry": "tspipe"
+  },
+  "FLT3_CONSENSUS": {
+   "directives": {
+    "container": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "flt3_consensus.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "flt3_consensus.py"
+   ],
+   "header_line": 26,
+   "file": "modules/local/flt3_consensus.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/cnvkit:0.9.10--pyhdfd78af_0",
+   "entry": "tspipe"
+  },
+  "FLT3_ITD_EXT": {
+   "directives": {
+    "container": "local/flt3_itd_ext:v0.2"
+   },
+   "labels": [
+    "process_low",
+    "error_ignore"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "flt3_itd_ext"
+   ],
+   "header_line": 21,
+   "file": "modules/local/flt3_itd_ext.nf",
+   "effective": {
+    "container": "local/flt3_itd_ext:v0.2",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "LOCAL_IMAGE",
+   "class_detail": "local/flt3_itd_ext:v0.2",
+   "entry": "tspipe"
+  },
+  "FLT3_TO_VARIANTS": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "legacy_python_env"
+   ],
+   "scripts": [
+    "/bin/flt3_to_variants.py",
+    "flt3_to_variants.py"
+   ],
+   "projectdir_refs": [
+    "${projectDir}/bin/flt3_to_variants.py"
+   ],
+   "literals": [],
+   "tools": [
+    "<params.legacy_python_env>/bin/python"
+   ],
+   "header_line": 16,
+   "file": "modules/local/flt3_to_variants.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "FREEBAYES": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "freebayes"
+   ],
+   "header_line": 13,
+   "file": "modules/local/freebayes.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "GATK_CNV_CALL_SEGMENTS": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 6,
+   "file": "modules/local/gatk_cnv_call_segments.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "GATK_CNV_COLLECT_ALLELIC": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 10,
+   "file": "modules/local/gatk_cnv_collect_allelic.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "GATK_CNV_COLLECT_COUNTS": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 9,
+   "file": "modules/local/gatk_cnv_collect_counts.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "GATK_CNV_DENOISE": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "cnv_sex_fallback"
+   ],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 9,
+   "file": "modules/local/gatk_cnv_denoise.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "GATK_CNV_GENE_PROJECT": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "gatk_cnv_gene_project.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk_cnv_gene_project.py"
+   ],
+   "header_line": 9,
+   "file": "modules/local/gatk_cnv_gene_project.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "GATK_CNV_MODEL_SEGMENTS": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 8,
+   "file": "modules/local/gatk_cnv_model_segments.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "GETITD": {
+   "directives": {
+    "container": "local/getitd:v0.1"
+   },
+   "labels": [
+    "process_low",
+    "error_ignore"
+   ],
+   "params": [],
+   "scripts": [
+    "/opt/getitd/getitd.py",
+    "bin/flt3_consensus.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "python"
+   ],
+   "header_line": 29,
+   "file": "modules/local/getitd.nf",
+   "effective": {
+    "container": "local/getitd:v0.1",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.getitd_path": [
+     "params.getitd_path",
+     "conf/gandalf.config"
+    ]
+   },
+   "class": "LOCAL_IMAGE",
+   "class_detail": "local/getitd:v0.1",
+   "entry": "tspipe"
+  },
+  "HMF_AMBER": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "hmf_env"
+   ],
+   "scripts": [
+    "/amber.jar"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "java"
+   ],
+   "header_line": 9,
+   "file": "modules/local/hmf_amber.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/hmftools/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "hmftools, targeted-seq",
+   "entry": "tspipe"
+  },
+  "HMF_COBALT": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "hmf_env",
+    "hmf_pcf_gamma"
+   ],
+   "scripts": [
+    "/cobalt.jar"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "java"
+   ],
+   "header_line": 9,
+   "file": "modules/local/hmf_cobalt.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/hmftools/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "hmftools, targeted-seq",
+   "entry": "tspipe"
+  },
+  "HMF_PURPLE": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "hmf_env"
+   ],
+   "scripts": [
+    "/purple.jar",
+    "purple_gene_table.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "java",
+    "purple_gene_table.py"
+   ],
+   "header_line": 10,
+   "file": "modules/local/hmf_purple.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/hmftools/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "hmftools, targeted-seq",
+   "entry": "tspipe"
+  },
+  "HSMETRICS": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [
+    "scripts/10_hsmetrics.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 12,
+   "file": "modules/local/hsmetrics.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "IGV_REPORTS": {
+   "directives": {
+    "container": "quay.io/biocontainers/igv-reports:1.12.0--pyh7cba7a3_0"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "igv_gene_track"
+   ],
+   "scripts": [
+    "igv_reports.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "igv_reports.py"
+   ],
+   "header_line": 29,
+   "file": "modules/local/igv_reports.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/igv-reports:1.12.0--pyh7cba7a3_0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/igv-reports:1.12.0--pyh7cba7a3_0",
+   "entry": "tspipe"
+  },
+  "PICARD_MARKDUPLICATES": {
+   "directives": {
+    "conda": "bioconda::gatk4=4.5.0.0",
+    "container": "broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 7,
+   "file": "modules/local/markduplicates.nf",
+   "effective": {
+    "container": "broadinstitute/gatk:4.5.0.0",
+    "conda": "bioconda::gatk4=4.5.0.0",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "MNV_MERGE": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "mnv_merge.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "mnv_merge.py"
+   ],
+   "header_line": 15,
+   "file": "modules/local/mnv_merge.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "MOSDEPTH": {
+   "directives": {
+    "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "mosdepth"
+   ],
+   "header_line": 16,
+   "file": "modules/local/mosdepth.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+   "entry": "tspipe"
+  },
+  "GATK4_MUTECT2": {
+   "directives": {
+    "container": "broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk"
+   ],
+   "header_line": 27,
+   "file": "modules/local/mutect2.nf",
+   "effective": {
+    "container": "broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "ONCOVI": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "legacy_python_env",
+    "oncovi_dir"
+   ],
+   "scripts": [
+    "/bin/oncovi.py",
+    "15_oncovi.py",
+    "oncovi.py"
+   ],
+   "projectdir_refs": [
+    "${projectDir}/bin/oncovi.py"
+   ],
+   "literals": [],
+   "tools": [
+    "<params.legacy_python_env>/bin/python"
+   ],
+   "header_line": 16,
+   "file": "modules/local/oncovi.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "ORGANIZE_OUTPUT": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "organize_output.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "organize_output.py"
+   ],
+   "header_line": 1,
+   "file": "modules/local/organize_output.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "PARSE_EXON_COVERAGE": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "parse_exon_coverage.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "parse_exon_coverage.py"
+   ],
+   "header_line": 17,
+   "file": "modules/local/parse_exon_coverage.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "PINDEL": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "pindel",
+    "pindel2vcf"
+   ],
+   "header_line": 15,
+   "file": "modules/local/pindel.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "PINDEL_FLT3_FILTER": {
+   "directives": {
+    "container": "quay.io/biocontainers/bcftools:1.20--h8b25389_0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "bcftools"
+   ],
+   "header_line": 24,
+   "file": "modules/local/pindel_flt3_filter.nf",
+   "effective": {
+    "container": "quay.io/biocontainers/bcftools:1.20--h8b25389_0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "quay.io/biocontainers/bcftools:1.20--h8b25389_0",
+   "entry": "tspipe"
+  },
+  "PLATYPUS": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "platypus"
+   ],
+   "header_line": 22,
+   "file": "modules/local/platypus.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/py2/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "py2",
+   "entry": "tspipe"
+  },
+  "PURECN": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "cnv_sex_fallback",
+    "purecn_extdata"
+   ],
+   "scripts": [
+    "/PureCN.R",
+    "PureCN.R",
+    "purecn_gene_table.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "Rscript",
+    "purecn_gene_table.py"
+   ],
+   "header_line": 17,
+   "file": "modules/local/purecn.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/purecn/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "purecn",
+   "entry": "tspipe"
+  },
+  "PURECN_COVERAGE": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "purecn_extdata"
+   ],
+   "scripts": [
+    "/Coverage.R"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "Rscript"
+   ],
+   "header_line": 9,
+   "file": "modules/local/purecn_coverage.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/purecn/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "purecn",
+   "entry": "tspipe"
+  },
+  "RECONCNV": {
+   "directives": {},
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "/tools/reconcnv/reconCNV.py",
+    "prep_reconcnv_inputs.py"
+   ],
+   "projectdir_refs": [
+    "${projectDir}/tools/reconcnv/reconCNV.py"
+   ],
+   "literals": [],
+   "tools": [
+    "prep_reconcnv_inputs.py",
+    "python"
+   ],
+   "header_line": 10,
+   "file": "modules/local/reconcnv.nf",
+   "effective": {
+    "container": "null",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/reconCNV/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "reconCNV, targeted-seq",
+   "entry": "tspipe"
+  },
+  "REPORT_BUNDLE": {
+   "directives": {
+    "executor": "local"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "outdir"
+   ],
+   "scripts": [
+    "/tools/make_report_bundle.py"
+   ],
+   "projectdir_refs": [
+    "${projectDir}/tools/make_report_bundle.py"
+   ],
+   "literals": [],
+   "tools": [
+    "python3"
+   ],
+   "header_line": 45,
+   "file": "modules/local/report_bundle.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "RUN_BUNDLE": {
+   "directives": {
+    "executor": "local"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "outdir"
+   ],
+   "scripts": [
+    "/tools/make_run_bundle.py"
+   ],
+   "projectdir_refs": [
+    "${projectDir}/tools/make_run_bundle.py"
+   ],
+   "literals": [],
+   "tools": [
+    "python3"
+   ],
+   "header_line": 19,
+   "file": "modules/local/run_bundle.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "SAMPLE_DASHBOARD": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [
+    "outdir"
+   ],
+   "scripts": [
+    "render_dashboard.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "render_dashboard.py"
+   ],
+   "header_line": 17,
+   "file": "modules/local/sample_dashboard.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "SEX_CHECK": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "sex_check.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk",
+    "sex_check.py"
+   ],
+   "header_line": 23,
+   "file": "modules/local/sex_check.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "SOMATICSEQ_ENSEMBLE": {
+   "directives": {
+    "conda": "bioconda::somaticseq=3.7.4",
+    "container": "lethalfang/somaticseq:3.7.4"
+   },
+   "labels": [
+    "process_high"
+   ],
+   "params": [],
+   "scripts": [
+    "scripts/07_somaticseq.py",
+    "somaticseq_parallel.py",
+    "splitVcf.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "single",
+    "somaticseq_parallel.py",
+    "splitVcf.py"
+   ],
+   "header_line": 42,
+   "file": "modules/local/somaticseq.nf",
+   "effective": {
+    "container": "lethalfang/somaticseq:3.7.4",
+    "conda": "bioconda::somaticseq=3.7.4",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "lethalfang/somaticseq:3.7.4",
+   "entry": "tspipe"
+  },
+  "SOMATICSEQ_POSTPROCESS": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "07_somaticseq.py",
+    "bin/annotate.py",
+    "somaticseq_parallel.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "INFO_TAG",
+    "PYRENAME",
+    "active",
+    "bcftools",
+    "bgzip",
+    "caller_labels",
+    "content",
+    "import",
+    "label_csv",
+    "m",
+    "n",
+    "path",
+    "python3",
+    "tabix",
+    "with"
+   ],
+   "header_line": 16,
+   "file": "modules/local/somaticseq_postprocess.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "SPIKEIN_SITES": {
+   "directives": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "spikein_sites.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "gatk",
+    "spikein_sites.py"
+   ],
+   "header_line": 19,
+   "file": "modules/local/spikein_sites.nf",
+   "effective": {
+    "container": "docker://broadinstitute/gatk:4.5.0.0",
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "PUBLIC_IMAGE",
+   "class_detail": "broadinstitute/gatk:4.5.0.0",
+   "entry": "tspipe"
+  },
+  "STRELKA": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [
+    "configureStrelkaGermlineWorkflow.py",
+    "strelka_work/runWorkflow.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "bgzip",
+    "tabix"
+   ],
+   "header_line": 23,
+   "file": "modules/local/strelka.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/py2/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.python2": [
+     "/home/hemat/anaconda3/envs/py2/bin/python",
+     "conf/gandalf.config"
+    ],
+    "ext.strelka_bin": [
+     "/goast/hemat_data/targeted-seq-pipeline/software/strelka2/bin/configureStrelkaGermlineWorkflow.py",
+     "conf/gandalf.config"
+    ]
+   },
+   "class": "HOST",
+   "class_detail": "py2",
+   "entry": "tspipe"
+  },
+  "SV_ANNOTATE": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [],
+   "header_line": 12,
+   "file": "modules/local/sv_annotate.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "-"
+  },
+  "SV_CALLERS": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [],
+   "header_line": 12,
+   "file": "modules/local/sv_callers.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "-"
+  },
+  "U2AF1_RESCUE": {
+   "directives": {
+    "conda": "bioconda::pysam=0.22.0"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "u2af1_rescue.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "u2af1_rescue.py"
+   ],
+   "header_line": 16,
+   "file": "modules/local/u2af1_rescue.nf",
+   "effective": {
+    "container": null,
+    "conda": "bioconda::pysam=0.22.0",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: bioconda::pysam=0.22.0",
+   "entry": "tspipe"
+  },
+  "VARDICT": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [
+    "/teststrandbias.R",
+    "/var2vcf_valid.pl",
+    "teststrandbias.R",
+    "var2vcf_valid.pl"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "vardict-java"
+   ],
+   "header_line": 19,
+   "file": "modules/local/vardict.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.vardict_helpers_dir": [
+     "/goast/hemat_data/programs/VarDictJava/build/install/VarDict/bin",
+     "conf/gandalf.config"
+    ]
+   },
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "VARIANT_FILTER": {
+   "directives": {
+    "conda": "conda-forge::pandas=2.1.4"
+   },
+   "labels": [
+    "process_low"
+   ],
+   "params": [],
+   "scripts": [
+    "variant_filter.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "variant_filter.py"
+   ],
+   "header_line": 18,
+   "file": "modules/local/variant_filter.nf",
+   "effective": {
+    "container": null,
+    "conda": "conda-forge::pandas=2.1.4",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: conda-forge::pandas=2.1.4",
+   "entry": "tspipe"
+  },
+  "VARIANT_VALIDATOR": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "legacy_python_env",
+    "vv_cache_dir",
+    "vv_url"
+   ],
+   "scripts": [
+    "/bin/17_variant_validator.py",
+    "variant_validator.py"
+   ],
+   "projectdir_refs": [
+    "${projectDir}/bin/17_variant_validator.py"
+   ],
+   "literals": [],
+   "tools": [
+    "<params.legacy_python_env>/bin/python"
+   ],
+   "header_line": 18,
+   "file": "modules/local/variant_validator.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": "1",
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "VARSCAN": {
+   "directives": {},
+   "labels": [
+    "process_medium"
+   ],
+   "params": [],
+   "scripts": [],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "bcftools",
+    "bgzip",
+    "samtools",
+    "tabix",
+    "varscan"
+   ],
+   "header_line": 15,
+   "file": "modules/local/varscan.nf",
+   "effective": {
+    "container": null,
+    "conda": null,
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {
+    "ext.min_var_freq": [
+     "0.03",
+     "conf/gandalf.config"
+    ]
+   },
+   "class": "HOST",
+   "class_detail": "targeted-seq",
+   "entry": "tspipe"
+  },
+  "VEP_ANNOTATE": {
+   "directives": {
+    "conda": "conda-forge::pandas=2.1.4"
+   },
+   "labels": [
+    "process_medium"
+   ],
+   "params": [
+    "annovar_db",
+    "annovar_script",
+    "vep_cache"
+   ],
+   "scripts": [
+    "annotate.py"
+   ],
+   "projectdir_refs": [],
+   "literals": [],
+   "tools": [
+    "annotate.py"
+   ],
+   "header_line": 23,
+   "file": "modules/local/vep_annotate.nf",
+   "effective": {
+    "container": null,
+    "conda": "conda-forge::pandas=2.1.4",
+    "executor": "local",
+    "beforeScript": "export PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+    "maxForks": null,
+    "cache": null,
+    "shell": "['/bin/bash', '-euo', 'pipefail']"
+   },
+   "ext": {},
+   "class": "HOST",
+   "class_detail": "targeted-seq, conda directive: conda-forge::pandas=2.1.4",
+   "entry": "tspipe"
+  }
+ },
+ "params": {
+  "input": "null",
+  "outdir": "/goast/hemat_data/nfcore_runs/default",
+  "keep_intermediates": "false",
+  "panel_name": "Twist Myeloid TE-99430185",
+  "reference": "/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
+  "panel": "twist_myeloid",
+  "male_reference": "true",
+  "chrx_threshold": "null",
+  "bed": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/panel.combined.filtered.bed",
+  "exonwise_bed": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/targets.exonwise.bed",
+  "igv_gene_track": "null",
+  "pindel_bed": "/goast/hemat_data/nf-core-tspipe/references/pindel_targets_flt3_ubtf.bed",
+  "adapters": "/goast/hemat_data/targeted-seq-pipeline/references/illumina_adapters.fa",
+  "cnv_pon": "null",
+  "cnv_pon_male": "null",
+  "cnv_pon_female": "null",
+  "cnv_loo_summary": "null",
+  "cnv_noise_profile": "null",
+  "cnv_noisy_bins": "null",
+  "cnv_loo_summary_female": "null",
+  "cnv_noisy_bins_female": "null",
+  "cnv_sex_fallback": "male",
+  "cytoband": "null",
+  "clingen": "null",
+  "snv_blacklist": "/goast/hemat_data/nf-core-tspipe/references/blacklist_file.tsv",
+  "vep_cache": "/goast/hemat_data/targeted-seq-pipeline/references/vep_cache",
+  "annovar_script": "/goast/hemat_data/targeted-seq-pipeline/software/annovar/table_annovar.pl",
+  "annovar_db": "/goast/hemat_data/targeted-seq-pipeline/software/annovar/humandb",
+  "cava_catalog": "/goast/hemat_data/nf-core-tspipe/assets/cava/mane-1.5-grch38-refseq",
+  "cava_config": "/goast/hemat_data/nf-core-tspipe/assets/cava/cava_config.template.txt",
+  "legacy_root": "/home/hemat/targeted-seq-pipeline",
+  "legacy_python_env": "/home/hemat/anaconda3/envs/targeted-seq",
+  "vv_url": "https://rest.variantvalidator.org",
+  "vv_cache_dir": "/goast/hemat_data/targeted-seq-pipeline/references/vv_cache",
+  "oncovi_dir": "/home/hemat/targeted-seq-pipeline/software/oncovi",
+  "genebe_enabled": "true",
+  "genebe_user": "null",
+  "genebe_key": "null",
+  "mobidetails_enabled": "true",
+  "oncokb_enabled": "false",
+  "oncokb_token": "null",
+  "dashboard_python": "null",
+  "flt3_container": "singularity",
+  "flt3_region": "chr13:28003000-28101000",
+  "max_memory": "512.GB",
+  "max_cpus": "96",
+  "max_time": "48.h",
+  "publish_dir_mode": "link",
+  "monochrome_logs": "false",
+  "help": "false",
+  "version": "false",
+  "pipeline_root": "/goast/hemat_data/targeted-seq-pipeline",
+  "dbsnp_vcf": "/goast/hemat_data/references/dbSNPGATK_hg38/Homo_sapiens_assembly38.dbsnp138.vcf.gz",
+  "mills_vcf": "/goast/hemat_data/references/dbSNPGATK_hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz",
+  "gnomad_af_only": "/goast/hemat_data/references/dbSNPGATK_hg38/af-only-gnomad.hg38.vcf.gz",
+  "vardict_bin": "/goast/hemat_data/programs/VarDictJava/build/install/VarDict/bin/VarDict",
+  "getitd_path": "/home/hemat/programs/getitd/getitd.py",
+  "filt3r_bin": "/home/hemat/programs/filt3r/filt3r",
+  "filt3r_ref": "/home/hemat/programs/filt3r/data/flt3_exon14-15.fa",
+  "cnv_gatk_pon": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/gatk_rc_pon_male.hdf5",
+  "cnv_gatk_pon_female": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/gatk_rc_pon_female.hdf5",
+  "cnv_gatk_intervals": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/targets.preprocessed.interval_list",
+  "baf_min_depth": "20",
+  "baf_min_het_sites": "10",
+  "baf_f_min": "0.10",
+  "baf_cr_del": "-0.15",
+  "baf_cr_gain": "0.15",
+  "purecn_extdata": "/home/hemat/anaconda3/envs/purecn/lib/R/library/PureCN/extdata",
+  "purecn_intervals": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/purecn_intervals_twist_myeloid_hg38.txt",
+  "purecn_normaldb": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/normalDB_twist_myeloid_hg38.rds",
+  "purecn_normaldb_female": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/normalDB_twist_myeloid_female_hg38.rds",
+  "decon_pool_male": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/decon_pool_male.RData",
+  "decon_pool_female": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/decon_pool_female.RData",
+  "decon_exons_bed": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/decon_exons.bed",
+  "decon_trans_prob": "0.01",
+  "decon_min_corr": "0.98",
+  "decon_min_cov": "100",
+  "decon_bf": "12",
+  "decon_del_multi_bf": "8",
+  "exon_plot_min_bf": "5",
+  "hmf_env": "/home/hemat/anaconda3/envs/hmftools",
+  "hmf_resources": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8",
+  "hmf_loci": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/AmberGermlineSites.38.tsv.gz",
+  "hmf_gc_profile": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/GC_profile.1000bp.38.cnp",
+  "hmf_ensembl_dir": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/common/ensembl_data",
+  "hmf_hotspots": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/variants/KnownHotspots.somatic.38.vcf.gz",
+  "hmf_target_bed": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/hmftools/target_regions.twist_myeloid.38.bed",
+  "hmf_target_norm": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/hmftools/target_regions.cobalt_normalisation.twist_myeloid.38.tsv",
+  "hmf_driver_panel": "/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/hmftools/DriverGenePanel.twist_myeloid.38.tsv",
+  "hmf_pcf_gamma": "50",
+  "reconcnv_env": "/home/hemat/anaconda3/envs/reconCNV",
+  "reconcnv_template": "/goast/hemat_data/nf-core-tspipe/assets/reconcnv/reconcnv_config_twist_myeloid.json"
+ },
+ "asset_refs": {
+  "bin/dashboard_builder": [
+   "modules/local/dashboard.nf:74"
+  ],
+  "assets/twist_myeloid/known_low_exons.tsv": [
+   "modules/local/dashboard.nf:76"
+  ],
+  "assets/twist_myeloid/spikein_regions.tsv": [
+   "modules/local/dashboard.nf:78",
+   "subworkflows/local/preprocessing.nf:92",
+   "workflows/tspipe.nf:434"
+  ],
+  "assets/twist_myeloid/tp53_interpretation_rules.tsv": [
+   "modules/local/dashboard.nf:80"
+  ],
+  "bin/decon_ReadInBams.R": [
+   "modules/local/decon.nf:56"
+  ],
+  "bin/decon_call_sample.R": [
+   "modules/local/decon.nf:59"
+  ],
+  "bin/filter_decon_calls.py": [
+   "modules/local/decon.nf:64"
+  ],
+  "bin/decon_gene_table.py": [
+   "modules/local/decon.nf:69"
+  ],
+  "bin/flt3_to_variants.py": [
+   "modules/local/flt3_to_variants.nf:45"
+  ],
+  "bin/oncovi.py": [
+   "modules/local/oncovi.nf:48"
+  ],
+  "tools/reconcnv/reconCNV.py": [
+   "modules/local/reconcnv.nf:45"
+  ],
+  "tools/make_report_bundle.py": [
+   "modules/local/report_bundle.nf:71"
+  ],
+  "tools/make_run_bundle.py": [
+   "modules/local/run_bundle.nf:43"
+  ],
+  "bin/17_variant_validator.py": [
+   "modules/local/variant_validator.nf:52"
+  ],
+  "assets/flt3/empty_getitd_hc.tsv": [
+   "subworkflows/local/flt3_itd.nf:94"
+  ],
+  "assets/flt3/empty_flt3_itd_ext.vcf": [
+   "subworkflows/local/flt3_itd.nf:96"
+  ],
+  "assets/flt3/empty_filt3r.vcf": [
+   "subworkflows/local/flt3_itd.nf:98"
+  ],
+  "assets/flt3/empty_pindel_flt3.vcf": [
+   "subworkflows/local/flt3_itd.nf:100"
+  ],
+  "assets/twist_myeloid/het_catalog.tsv": [
+   "subworkflows/local/preprocessing.nf:80"
+  ],
+  "assets/twist_myeloid": [
+   "workflows/build_pon_twist.nf:40"
+  ],
+  "assets/twist_myeloid/cnvkit_pon_male.cnn": [
+   "workflows/tspipe.nf:148"
+  ],
+  "assets/twist_myeloid/cnvkit_pon_female.cnn": [
+   "workflows/tspipe.nf:151"
+  ],
+  "assets/twist_myeloid/cnvkit_loo_summary.tsv": [
+   "workflows/tspipe.nf:155",
+   "workflows/tspipe.nf:176"
+  ],
+  "assets/twist_myeloid/cnvkit_noisy_bins.bed": [
+   "workflows/tspipe.nf:158",
+   "workflows/tspipe.nf:180"
+  ],
+  "assets/twist_myeloid/cnvkit_loo_summary_female.tsv": [
+   "workflows/tspipe.nf:175"
+  ],
+  "assets/twist_myeloid/cnvkit_noisy_bins_female.bed": [
+   "workflows/tspipe.nf:179"
+  ],
+  "assets/twist_myeloid/targets.preprocessed.interval_list": [
+   "workflows/tspipe.nf:273"
+  ],
+  "assets/twist_myeloid/gatk_rc_pon_female.hdf5": [
+   "workflows/tspipe.nf:280"
+  ],
+  "assets/twist_myeloid/snp_sites.baf.bed": [
+   "workflows/tspipe.nf:284"
+  ],
+  "assets/twist_myeloid/baf_background.tsv": [
+   "workflows/tspipe.nf:287",
+   "workflows/tspipe.nf:402"
+  ],
+  "assets/twist_myeloid/normalDB_twist_myeloid_female_hg38.rds": [
+   "workflows/tspipe.nf:311"
+  ],
+  "assets/twist_myeloid/decon_pool_female.RData": [
+   "workflows/tspipe.nf:330"
+  ],
+  "assets/twist_myeloid/paralog_limited_exons.tsv": [
+   "workflows/tspipe.nf:331"
+  ],
+  "assets/twist_myeloid/hmftools/target_regions.cobalt_normalisation.twist_myeloid.38.tsv": [
+   "workflows/tspipe.nf:342"
+  ],
+  "assets/twist_myeloid/cnv_gene_blacklist.tsv": [
+   "workflows/tspipe.nf:381"
+  ],
+  "assets/references/cytoBand_hg38.txt": [
+   "workflows/tspipe.nf:384"
+  ],
+  "assets/references/ClinGen_gene_curation_list_GRCh38.tsv": [
+   "workflows/tspipe.nf:385"
+  ],
+  "assets/twist_myeloid/hmftools/DriverGenePanel.twist_myeloid.38.tsv": [
+   "workflows/tspipe.nf:386"
+  ],
+  "assets/twist_myeloid/targets.focal_cnv.bed": [
+   "workflows/tspipe.nf:393"
+  ],
+  "assets/twist_myeloid/panel.combined.filtered.bed": [
+   "workflows/tspipe.nf:400"
+  ],
+  "assets/twist_myeloid/snp_sites.baf.base.bed": [
+   "workflows/tspipe.nf:401"
+  ],
+  "assets/reconcnv/reconcnv_config_twist_myeloid.json": [
+   "workflows/tspipe.nf:413"
+  ],
+  "assets/NO_FILE_u2af1_pileup_report.txt": [
+   "workflows/tspipe.nf:469"
+  ],
+  "assets/NO_FILE_u2af1_rescue.tsv": [
+   "workflows/tspipe.nf:470"
+  ],
+  "assets/NO_FILE_baf_plot.png": [
+   "workflows/tspipe.nf:471"
+  ]
+ },
+ "stats": {
+  "param:outdir": {
+   "status": "MISSING"
+  },
+  "param:reference": {
+   "status": "FILE",
+   "size": 3249604816
+  },
+  "param:bed": {
+   "status": "FILE",
+   "size": 341153,
+   "md5": "01d8e8ceae9dd708cff7d26ccd999649"
+  },
+  "param:exonwise_bed": {
+   "status": "FILE",
+   "size": 66632,
+   "md5": "25010b2a9da83a91ff81990393974dbb"
+  },
+  "param:pindel_bed": {
+   "status": "FILE",
+   "size": 1334,
+   "md5": "081b918c4bf667b2d6f0f5eabbbb2db2"
+  },
+  "param:adapters": {
+   "status": "FILE",
+   "size": 1387,
+   "md5": "d6217d79d928a6865f508669b539c089"
+  },
+  "param:snv_blacklist": {
+   "status": "FILE",
+   "size": 263571,
+   "md5": "9354ab48b232d7dd39842b86aff4e183"
+  },
+  "param:vep_cache": {
+   "status": "DIR",
+   "entries": 3
+  },
+  "param:annovar_script": {
+   "status": "FILE",
+   "size": 42936,
+   "md5": "400faf02a29925423765a20ab64ef0f0"
+  },
+  "param:annovar_db": {
+   "status": "DIR",
+   "entries": 19
+  },
+  "param:cava_catalog": {
+   "status": "DIR",
+   "entries": 5
+  },
+  "param:cava_config": {
+   "status": "FILE",
+   "size": 1209,
+   "md5": "c3c6962cd78d85aeea5f88b9b114a4cd"
+  },
+  "param:legacy_root": {
+   "status": "DIR",
+   "entries": 23
+  },
+  "param:legacy_python_env": {
+   "status": "DIR",
+   "entries": 16
+  },
+  "param:vv_cache_dir": {
+   "status": "DIR",
+   "entries": 1
+  },
+  "param:oncovi_dir": {
+   "status": "DIR",
+   "entries": 8
+  },
+  "param:pipeline_root": {
+   "status": "DIR",
+   "entries": 23
+  },
+  "param:dbsnp_vcf": {
+   "status": "FILE",
+   "size": 1560889937,
+   "md5": "110aaeb8130bf4edb544a72d2c7829f7"
+  },
+  "param:mills_vcf": {
+   "status": "FILE",
+   "size": 20685880,
+   "md5": "2e02696032dcfe95ff0324f4a13508e3"
+  },
+  "param:gnomad_af_only": {
+   "status": "FILE",
+   "size": 3184275189
+  },
+  "param:vardict_bin": {
+   "status": "FILE",
+   "size": 5483,
+   "md5": "4780d2e79846f90a5c3f33b094ce9df6"
+  },
+  "param:getitd_path": {
+   "status": "FILE",
+   "size": 94872,
+   "md5": "204ed7b7e64ca38911b670b2cfdcfcfc"
+  },
+  "param:filt3r_bin": {
+   "status": "FILE",
+   "size": 16719096,
+   "md5": "9a5ea52b484263963d5c16308e6c27f3"
+  },
+  "param:filt3r_ref": {
+   "status": "FILE",
+   "size": 709,
+   "md5": "0aa3f29f9e933dc76814387c038ddba2"
+  },
+  "param:cnv_gatk_pon": {
+   "status": "FILE",
+   "size": 2229928,
+   "md5": "24d0ba7343224dd220e22e855f987f73"
+  },
+  "param:cnv_gatk_pon_female": {
+   "status": "FILE",
+   "size": 1134432,
+   "md5": "3d3d71f83646fe60784a6775b0d3b00a"
+  },
+  "param:cnv_gatk_intervals": {
+   "status": "FILE",
+   "size": 692373,
+   "md5": "56c7e6292c0220f0b5b2fcc7b9cbd1a8"
+  },
+  "param:purecn_extdata": {
+   "status": "DIR",
+   "entries": 67
+  },
+  "param:purecn_intervals": {
+   "status": "FILE",
+   "size": 316842,
+   "md5": "24de1dbde2ab119ddc8fe1b101b86cbf"
+  },
+  "param:purecn_normaldb": {
+   "status": "FILE",
+   "size": 2259649,
+   "md5": "eee24c9fe93f8bbf8f77cf929b558baa"
+  },
+  "param:purecn_normaldb_female": {
+   "status": "FILE",
+   "size": 953809,
+   "md5": "3c186c4a4e95ad3afcc22ce851f26604"
+  },
+  "param:decon_pool_male": {
+   "status": "FILE",
+   "size": 141529,
+   "md5": "aa98b0220e9922a4f4a6d54e271c9008"
+  },
+  "param:decon_pool_female": {
+   "status": "FILE",
+   "size": 76117,
+   "md5": "c574d9d8856f78ab2a41c3a4ab8b0ce7"
+  },
+  "param:decon_exons_bed": {
+   "status": "FILE",
+   "size": 52708,
+   "md5": "8e1a8f1932c3d93ecbde485a763e1049"
+  },
+  "param:hmf_env": {
+   "status": "DIR",
+   "entries": 31
+  },
+  "param:hmf_resources": {
+   "status": "DIR",
+   "entries": 4
+  },
+  "param:hmf_loci": {
+   "status": "FILE",
+   "size": 43940436,
+   "md5": "6b4ed11ff6256ee0e4e58c64fa0048dc"
+  },
+  "param:hmf_gc_profile": {
+   "status": "FILE",
+   "size": 77087960,
+   "md5": "7c5d697a30b73d74d88e6234b6af11c3"
+  },
+  "param:hmf_ensembl_dir": {
+   "status": "DIR",
+   "entries": 5
+  },
+  "param:hmf_hotspots": {
+   "status": "FILE",
+   "size": 63328,
+   "md5": "142464ab7544999aadf4a28485fafba0"
+  },
+  "param:hmf_target_bed": {
+   "status": "FILE",
+   "size": 341153,
+   "md5": "01d8e8ceae9dd708cff7d26ccd999649"
+  },
+  "param:hmf_target_norm": {
+   "status": "FILE",
+   "size": 114736,
+   "md5": "f13535eaa4b3acfe5b480495bf15e3e2"
+  },
+  "param:hmf_driver_panel": {
+   "status": "FILE",
+   "size": 14367,
+   "md5": "3b4b1e4801669a751596b4c25b52cbbb"
+  },
+  "param:reconcnv_env": {
+   "status": "DIR",
+   "entries": 9
+  },
+  "param:reconcnv_template": {
+   "status": "FILE",
+   "size": 5210,
+   "md5": "cc3e2931c3e8333783d8e4aa1f220090"
+  },
+  "asset:bin/dashboard_builder": {
+   "status": "DIR",
+   "entries": 11
+  },
+  "asset:assets/twist_myeloid/known_low_exons.tsv": {
+   "status": "FILE",
+   "size": 1216,
+   "md5": "6a285e4626c0b3bcba6d6c63e128d94a"
+  },
+  "asset:assets/twist_myeloid/spikein_regions.tsv": {
+   "status": "FILE",
+   "size": 2087,
+   "md5": "5c0debb87a06c00dffa2e05c5a4593bc"
+  },
+  "asset:assets/twist_myeloid/tp53_interpretation_rules.tsv": {
+   "status": "FILE",
+   "size": 3010,
+   "md5": "b61ed912d0caeaa491b418f4b98dd779"
+  },
+  "asset:bin/decon_ReadInBams.R": {
+   "status": "FILE",
+   "size": 3627,
+   "md5": "dffd432565c28e620b161b99cd299671"
+  },
+  "asset:bin/decon_call_sample.R": {
+   "status": "FILE",
+   "size": 7150,
+   "md5": "984597d52864dbe803e34edc85e0314c"
+  },
+  "asset:bin/filter_decon_calls.py": {
+   "status": "FILE",
+   "size": 12070,
+   "md5": "d426d9496650e821026414a9a0000202"
+  },
+  "asset:bin/decon_gene_table.py": {
+   "status": "FILE",
+   "size": 4262,
+   "md5": "f88dbb7f233f770dc4c93a9353ed339d"
+  },
+  "asset:bin/flt3_to_variants.py": {
+   "status": "FILE",
+   "size": 10942,
+   "md5": "a8c95ffb5ffe06cbe1444545bc268b94"
+  },
+  "asset:bin/oncovi.py": {
+   "status": "FILE",
+   "size": 10514,
+   "md5": "82b51d1d450ac52d9962afb95d038e00"
+  },
+  "asset:tools/reconcnv/reconCNV.py": {
+   "status": "FILE",
+   "size": 69072,
+   "md5": "f70835227accc6c50f582c5593b12c2c"
+  },
+  "asset:tools/make_report_bundle.py": {
+   "status": "FILE",
+   "size": 14570,
+   "md5": "0f3a1fa87af0a389c31d090e88583c85"
+  },
+  "asset:tools/make_run_bundle.py": {
+   "status": "FILE",
+   "size": 6919,
+   "md5": "7b7ba1c8775cd6863b2068afeb871e11"
+  },
+  "asset:bin/17_variant_validator.py": {
+   "status": "FILE",
+   "size": 27125,
+   "md5": "3399419f6b419f677aa1f4edc5aecf57"
+  },
+  "asset:assets/flt3/empty_getitd_hc.tsv": {
+   "status": "FILE",
+   "size": 325,
+   "md5": "38cb33a4d9d6848da716d0476b8d8e70"
+  },
+  "asset:assets/flt3/empty_flt3_itd_ext.vcf": {
+   "status": "FILE",
+   "size": 657,
+   "md5": "a1303ee0d534a246a5b7d4c5e767872c"
+  },
+  "asset:assets/flt3/empty_filt3r.vcf": {
+   "status": "FILE",
+   "size": 351,
+   "md5": "82a78801f97c86f75e81b7b11beabc55"
+  },
+  "asset:assets/flt3/empty_pindel_flt3.vcf": {
+   "status": "FILE",
+   "size": 413,
+   "md5": "633a9017c73a37c1b807be713241306b"
+  },
+  "asset:assets/twist_myeloid/het_catalog.tsv": {
+   "status": "FILE",
+   "size": 163820,
+   "md5": "1458a8660e0974c1aab6bc750b1255f7"
+  },
+  "asset:assets/twist_myeloid": {
+   "status": "DIR",
+   "entries": 66
+  },
+  "asset:assets/twist_myeloid/cnvkit_pon_male.cnn": {
+   "status": "FILE",
+   "size": 455024,
+   "md5": "3fcf75b5db55e478f440da1305e82df5"
+  },
+  "asset:assets/twist_myeloid/cnvkit_pon_female.cnn": {
+   "status": "FILE",
+   "size": 457480,
+   "md5": "69f1cc2615d21db53764884488334e55"
+  },
+  "asset:assets/twist_myeloid/cnvkit_loo_summary.tsv": {
+   "status": "FILE",
+   "size": 288597,
+   "md5": "0f83ae037e7b180ba933af1c020a69a4"
+  },
+  "asset:assets/twist_myeloid/cnvkit_noisy_bins.bed": {
+   "status": "FILE",
+   "size": 31737,
+   "md5": "f5f2e33f85ef305b872b64795f1784a0"
+  },
+  "asset:assets/twist_myeloid/cnvkit_loo_summary_female.tsv": {
+   "status": "FILE",
+   "size": 287160,
+   "md5": "36dea3702b177a675c2e512672aa3b6b"
+  },
+  "asset:assets/twist_myeloid/cnvkit_noisy_bins_female.bed": {
+   "status": "FILE",
+   "size": 12487,
+   "md5": "827ded4f17c0594ea17925aeae164b9d"
+  },
+  "asset:assets/twist_myeloid/targets.preprocessed.interval_list": {
+   "status": "FILE",
+   "size": 692373,
+   "md5": "56c7e6292c0220f0b5b2fcc7b9cbd1a8"
+  },
+  "asset:assets/twist_myeloid/gatk_rc_pon_female.hdf5": {
+   "status": "FILE",
+   "size": 1134432,
+   "md5": "3d3d71f83646fe60784a6775b0d3b00a"
+  },
+  "asset:assets/twist_myeloid/snp_sites.baf.bed": {
+   "status": "FILE",
+   "size": 190397,
+   "md5": "d430426b07f62053eaff8e3cefa974fc"
+  },
+  "asset:assets/twist_myeloid/baf_background.tsv": {
+   "status": "FILE",
+   "size": 2392071,
+   "md5": "6535ba3ca0d4232f5d3321b4d0ad800d"
+  },
+  "asset:assets/twist_myeloid/normalDB_twist_myeloid_female_hg38.rds": {
+   "status": "FILE",
+   "size": 953809,
+   "md5": "3c186c4a4e95ad3afcc22ce851f26604"
+  },
+  "asset:assets/twist_myeloid/decon_pool_female.RData": {
+   "status": "FILE",
+   "size": 76117,
+   "md5": "c574d9d8856f78ab2a41c3a4ab8b0ce7"
+  },
+  "asset:assets/twist_myeloid/paralog_limited_exons.tsv": {
+   "status": "FILE",
+   "size": 151115,
+   "md5": "fbddec6b22b57458c470aecca77bc75b"
+  },
+  "asset:assets/twist_myeloid/hmftools/target_regions.cobalt_normalisation.twist_myeloid.38.tsv": {
+   "status": "FILE",
+   "size": 114736,
+   "md5": "f13535eaa4b3acfe5b480495bf15e3e2"
+  },
+  "asset:assets/twist_myeloid/cnv_gene_blacklist.tsv": {
+   "status": "FILE",
+   "size": 510,
+   "md5": "ac58b8e79dc46dcbbc0a16e196e3dc23"
+  },
+  "asset:assets/references/cytoBand_hg38.txt": {
+   "status": "FILE",
+   "size": 54567,
+   "md5": "1b87bbfe572064c2a40d79683ea7a6ad"
+  },
+  "asset:assets/references/ClinGen_gene_curation_list_GRCh38.tsv": {
+   "status": "FILE",
+   "size": 263407,
+   "md5": "6aacf38dc679e951d13c75daddfd10ac"
+  },
+  "asset:assets/twist_myeloid/hmftools/DriverGenePanel.twist_myeloid.38.tsv": {
+   "status": "FILE",
+   "size": 14367,
+   "md5": "3b4b1e4801669a751596b4c25b52cbbb"
+  },
+  "asset:assets/twist_myeloid/targets.focal_cnv.bed": {
+   "status": "FILE",
+   "size": 555,
+   "md5": "176e3b224e201446af3c3c0aa3edba28"
+  },
+  "asset:assets/twist_myeloid/panel.combined.filtered.bed": {
+   "status": "FILE",
+   "size": 341153,
+   "md5": "01d8e8ceae9dd708cff7d26ccd999649"
+  },
+  "asset:assets/twist_myeloid/snp_sites.baf.base.bed": {
+   "status": "FILE",
+   "size": 16312,
+   "md5": "5528b7b1cd64fb8786755c01133359c0"
+  },
+  "asset:assets/reconcnv/reconcnv_config_twist_myeloid.json": {
+   "status": "FILE",
+   "size": 5210,
+   "md5": "cc3e2931c3e8333783d8e4aa1f220090"
+  },
+  "asset:assets/NO_FILE_u2af1_pileup_report.txt": {
+   "status": "FILE",
+   "size": 0,
+   "md5": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "asset:assets/NO_FILE_u2af1_rescue.tsv": {
+   "status": "FILE",
+   "size": 0,
+   "md5": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "asset:assets/NO_FILE_baf_plot.png": {
+   "status": "FILE",
+   "size": 0,
+   "md5": "d41d8cd98f00b204e9800998ecf8427e"
+  }
+ },
+ "literals_code": [
+  {
+   "file": "nextflow.config",
+   "line": 16,
+   "literal": "/goast/hemat_data/nfcore_runs/default",
+   "comment": false
+  },
+  {
+   "file": "nextflow.config",
+   "line": 71,
+   "literal": "/home/hemat/targeted-seq-pipeline",
+   "comment": false
+  },
+  {
+   "file": "nextflow.config",
+   "line": 72,
+   "literal": "/home/hemat/anaconda3/envs/targeted-seq",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 24,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 38,
+   "literal": "/goast/hemat_data/references/dbSNPGATK_hg38/Homo_sapiens_assembly38.dbsnp138.vcf.gz",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 39,
+   "literal": "/goast/hemat_data/references/dbSNPGATK_hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 42,
+   "literal": "/goast/hemat_data/references/dbSNPGATK_hg38/af-only-gnomad.hg38.vcf.gz",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 63,
+   "literal": "/goast/hemat_data/programs/VarDictJava/build/install/VarDict/bin/VarDict",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 64,
+   "literal": "/home/hemat/programs/getitd/getitd.py",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 65,
+   "literal": "/home/hemat/programs/filt3r/filt3r",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 66,
+   "literal": "/home/hemat/programs/filt3r/data/flt3_exon14-15.fa",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 90,
+   "literal": "/home/hemat/anaconda3/envs/targeted-seq",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 92,
+   "literal": "/home/hemat/anaconda3/envs/py2",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 98,
+   "literal": "PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 116,
+   "literal": "/home/hemat/anaconda3/envs/py2/bin/python",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 117,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/software/strelka2/bin/configureStrelkaGermlineWorkflow.py",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 119,
+   "literal": "PATH=/home/hemat/anaconda3/envs/py2/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 123,
+   "literal": "PATH=/home/hemat/anaconda3/envs/py2/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 129,
+   "literal": "/goast/hemat_data/programs/VarDictJava/build/install/VarDict/bin",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 187,
+   "literal": "/goast/hemat_data",
+   "comment": false
+  },
+  {
+   "file": "conf/gandalf.config",
+   "line": 187,
+   "literal": "/home/hemat/programs",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 53,
+   "literal": "/home/hemat/anaconda3/envs/purecn/lib/R/library/PureCN/extdata",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 71,
+   "literal": "/home/hemat/anaconda3/envs/hmftools",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 72,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 73,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/AmberGermlineSites.38.tsv.gz",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 74,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/GC_profile.1000bp.38.cnp",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 75,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/common/ensembl_data",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 76,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/variants/KnownHotspots.somatic.38.vcf.gz",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 82,
+   "literal": "/home/hemat/anaconda3/envs/reconCNV",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 131,
+   "literal": "PATH=/home/hemat/anaconda3/envs/purecn/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 145,
+   "literal": "PATH=/home/hemat/anaconda3/envs/decon/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 164,
+   "literal": "PATH=/home/hemat/anaconda3/envs/hmftools/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_apply.config",
+   "line": 182,
+   "literal": "PATH=/home/hemat/anaconda3/envs/reconCNV/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "conf/twist_pon_noncontainer.config",
+   "line": 21,
+   "literal": "PATH=/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "bin/backbone_depth_qc.py",
+   "line": 51,
+   "literal": "/goast/hemat_data/pon_twist",
+   "comment": false
+  },
+  {
+   "file": "bin/backbone_depth_qc.py",
+   "line": 55,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
+   "comment": false
+  },
+  {
+   "file": "bin/filter_decon_calls.py",
+   "line": 31,
+   "literal": "/goast/hemat_data/twist_pilot/decon_v4/pool25_v4calls_all.txt",
+   "comment": false
+  },
+  {
+   "file": "bin/filter_decon_calls.py",
+   "line": 33,
+   "literal": "/goast/hemat_data/pon_twist/realign_v4/{sample",
+   "comment": false
+  },
+  {
+   "file": "bin/filter_decon_calls.py",
+   "line": 34,
+   "literal": "/goast/hemat_data/twist_pilot/decon_v4/pool25_v4calls_filtered.tsv",
+   "comment": false
+  },
+  {
+   "file": "bin/verify_normals_sex.py",
+   "line": 53,
+   "literal": "/goast/hemat_data/pon_twist",
+   "comment": false
+  },
+  {
+   "file": "bin/verify_normals_sex.py",
+   "line": 56,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
+   "comment": false
+  },
+  {
+   "file": "tools/build_purecn_normaldb.sh",
+   "line": 26,
+   "literal": "/goast/hemat_data/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
+   "comment": false
+  },
+  {
+   "file": "tools/build_purecn_normaldb.sh",
+   "line": 28,
+   "literal": "/goast/hemat_data/pon_twist/purecn_normaldb",
+   "comment": false
+  },
+  {
+   "file": "tools/build_purecn_normaldb.sh",
+   "line": 29,
+   "literal": "/home/hemat/anaconda3/envs/purecn",
+   "comment": false
+  },
+  {
+   "file": "tools/build_variant_pon_blacklist.py",
+   "line": 35,
+   "literal": "/goast/hemat_data/pon_twist/realign_v4",
+   "comment": false
+  },
+  {
+   "file": "tools/build_variant_pon_blacklist.py",
+   "line": 36,
+   "literal": "/goast/hemat_data/pon_twist/realign_v4_female",
+   "comment": false
+  },
+  {
+   "file": "tools/compare_tsv_to_production.py",
+   "line": 24,
+   "literal": "/goast/hemat_data/nfcore_runs/<run>/25NGS1307/<path>/annotated.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/compare_tsv_to_production.py",
+   "line": 25,
+   "literal": "/home/hemat/targeted-seq-pipeline/results/25NGS1307/<path>/annotated.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/derive_exclusion_list.py",
+   "line": 47,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/derive_exclusion_list.py",
+   "line": 51,
+   "literal": "/goast/hemat_data/pon_twist/pon/cnvkit_pon_male.cnn",
+   "comment": false
+  },
+  {
+   "file": "tools/exon_depth_survey.py",
+   "line": 51,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/exon_depth_survey.py",
+   "line": 53,
+   "literal": "/goast/hemat_data/nxf_work_twist",
+   "comment": false
+  },
+  {
+   "file": "tools/exon_depth_survey.py",
+   "line": 55,
+   "literal": "/goast/hemat_data/pon_twist/pon/loo_qc/loo_bin_fp_rates.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/exon_depth_survey.py",
+   "line": 60,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/make_bnc_pon_samplesheet.py",
+   "line": 14,
+   "literal": "/goast/hemat_data/BNC_fastqs",
+   "comment": false
+  },
+  {
+   "file": "tools/make_bnc_pon_samplesheet.py",
+   "line": 15,
+   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv",
+   "comment": false
+  },
+  {
+   "file": "tools/make_pon_twist_samplesheet.py",
+   "line": 43,
+   "literal": "/goast/hemat_data/pon_twist/bams",
+   "comment": false
+  },
+  {
+   "file": "tools/make_report_bundle.py",
+   "line": 73,
+   "literal": "/goast/hemat_data/nfcore_runs/tspipe_clinical_myeloid_cnv_20260524_142741",
+   "comment": false
+  },
+  {
+   "file": "tools/make_report_bundle.py",
+   "line": 78,
+   "literal": "/goast/hemat_data/nfcore_runs/tspipe_clinical_myeloid_cnv_20260524_142741",
+   "comment": false
+  },
+  {
+   "file": "tools/make_tspipe_samplesheet.py",
+   "line": 56,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/sample_fastqs",
+   "comment": false
+  },
+  {
+   "file": "tools/make_tspipe_samplesheet.py",
+   "line": 57,
+   "literal": "/goast/hemat_data/nf-core-tspipe/tspipe_samplesheets/clinical_test_2026-05-24.csv",
+   "comment": false
+  },
+  {
+   "file": "tools/make_tspipe_samplesheet.py",
+   "line": 61,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/sample_fastqs",
+   "comment": false
+  },
+  {
+   "file": "tools/make_tspipe_samplesheet.py",
+   "line": 62,
+   "literal": "/goast/hemat_data/nf-core-tspipe/tspipe_samplesheets/clinical_sex_map.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/make_tspipe_samplesheet.py",
+   "line": 63,
+   "literal": "/goast/hemat_data/nf-core-tspipe/tspipe_samplesheets/clinical_test_2026-05-24.csv",
+   "comment": false
+  },
+  {
+   "file": "tools/paralog_limited_exons.py",
+   "line": 27,
+   "literal": "/goast/hemat_data/pon_twist/paralog_v4",
+   "comment": false
+  },
+  {
+   "file": "tools/paralog_limited_exons.py",
+   "line": 29,
+   "literal": "/goast/hemat_data/pon_twist/paralog_v4",
+   "comment": false
+  },
+  {
+   "file": "tools/paralog_limited_exons.py",
+   "line": 30,
+   "literal": "/goast/hemat_data/pon_twist/paralog_v4/paralog_limited_exons.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/paralog_limited_exons.py",
+   "line": 31,
+   "literal": "/goast/hemat_data/pon_twist/paralog_v4/retained_fraction_matrix.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/paralog_limited_exons.py",
+   "line": 33,
+   "literal": "/goast/hemat_data/pon_twist/paralog_v4/paralog_limited_exons.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/paralog_limited_exons.py",
+   "line": 34,
+   "literal": "/goast/hemat_data/pon_twist/realign_v4/Male3-TwistMy/clinical/Male3-TwistMy.final.bam",
+   "comment": false
+  },
+  {
+   "file": "tools/paralog_limited_exons.py",
+   "line": 35,
+   "literal": "/goast/hemat_data/pon_twist/paralog_v4/paralog_limited_exons.annotated.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/portability_inventory.py",
+   "line": 34,
+   "literal": "/goast/[^\\s",
+   "comment": false
+  },
+  {
+   "file": "tools/portability_inventory.py",
+   "line": 34,
+   "literal": "/home/hemat/[^\\s",
+   "comment": false
+  },
+  {
+   "file": "tools/portability_inventory.py",
+   "line": 34,
+   "literal": "*anaconda3/[^\\s",
+   "comment": false
+  },
+  {
+   "file": "tools/portability_inventory.py",
+   "line": 39,
+   "literal": "anaconda3/envs/([A-Za-z0-9_.-",
+   "comment": false
+  },
+  {
+   "file": "tools/portability_inventory.py",
+   "line": 401,
+   "literal": "anaconda3/envs/",
+   "comment": false
+  },
+  {
+   "file": "tools/portability_inventory.py",
+   "line": 740,
+   "literal": "/goast/hemat_data",
+   "comment": false
+  },
+  {
+   "file": "tools/portability_inventory.py",
+   "line": 740,
+   "literal": "/home/hemat/programs",
+   "comment": false
+  },
+  {
+   "file": "tools/run_pipeline.sh",
+   "line": 20,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/run_pipeline.sh",
+   "line": 21,
+   "literal": "/goast/hemat_data/nfcore_runs",
+   "comment": false
+  },
+  {
+   "file": "tools/run_pipeline.sh",
+   "line": 120,
+   "literal": "/home/hemat/anaconda3/envs/targeted-seq/bin/python",
+   "comment": false
+  },
+  {
+   "file": "tools/run_pipeline.sh",
+   "line": 121,
+   "literal": "/home/hemat/targeted-seq-pipeline/scripts/15_oncovi.py",
+   "comment": false
+  },
+  {
+   "file": "tools/run_pipeline.sh",
+   "line": 122,
+   "literal": "/home/hemat/targeted-seq-pipeline/scripts/17_variant_validator.py",
+   "comment": false
+  },
+  {
+   "file": "tools/run_pipeline.sh",
+   "line": 123,
+   "literal": "/home/hemat/targeted-seq-pipeline/scripts/17b_flt3_to_variants.py",
+   "comment": false
+  },
+  {
+   "file": "tools/run_pipeline.sh",
+   "line": 132,
+   "literal": "/goast/hemat_data",
+   "comment": false
+  },
+  {
+   "file": "tools/start_vv_gunicorn.sh",
+   "line": 103,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/software/rest_variantValidator/",
+   "comment": false
+  },
+  {
+   "file": "tools/update_manifest_md5s.py",
+   "line": 43,
+   "literal": "/goast/hemat_data/nf-core-tspipe/assets/myeloid_cnv/MANIFEST.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/verify_s3_archived.py",
+   "line": 20,
+   "literal": "/goast/hemat_data/s3_fastqarchival_inventory_20260906.txt",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_container_fix.py",
+   "line": 42,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_container_fix.py",
+   "line": 176,
+   "literal": "/goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_container_fix.py",
+   "line": 178,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_dashboard_patch.py",
+   "line": 48,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_dashboard_patch.py",
+   "line": 351,
+   "literal": "/goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_dateformat_fix.py",
+   "line": 42,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_dateformat_fix.py",
+   "line": 178,
+   "literal": "/goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_port.py",
+   "line": 40,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/exon_coverage.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 14,
+   "literal": "/home/hemat/inbox/from_claude/parse_exon_coverage.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 15,
+   "literal": "/home/hemat/inbox/from_claude/mosdepth.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 16,
+   "literal": "/home/hemat/inbox/from_claude/parse_exon_coverage.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 19,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/parse_exon_coverage.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 20,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/mosdepth.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 21,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/parse_exon_coverage.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 24,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/exon_coverage.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 40,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 41,
+   "literal": "/home/hemat/inbox/from_claude",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
+   "line": 67,
+   "literal": "/home/hemat/inbox/from_claude/",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle2.py",
+   "line": 40,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_hsmetrics_port.py",
+   "line": 39,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/hsmetrics.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_mosdepth_exonwise_bed.py",
+   "line": 65,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_mosdepth_include_duplicates.py",
+   "line": 73,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_mosdepth_include_duplicates.py",
+   "line": 74,
+   "literal": "/home/hemat/targeted-seq-pipeline",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_preprocessing_qc_wiring.py",
+   "line": 29,
+   "literal": "/goast/hemat_data/nf-core-tspipe/subworkflows/local/preprocessing.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_qc_publishdir_routing.py",
+   "line": 34,
+   "literal": "/goast/hemat_data/nf-core-tspipe/conf/modules.config",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_render_py36_fix.py",
+   "line": 13,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/render_dashboard.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_render_py36_fix.py",
+   "line": 44,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_render_py36_fix.py",
+   "line": 150,
+   "literal": "/goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_render_py36_fix.py",
+   "line": 152,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_somaticseq_arbitrary_callers.py",
+   "line": 73,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/somaticseq.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_somaticseq_groovy_dollar_escape_fix.py",
+   "line": 33,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/somaticseq.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_somaticseq_postprocess_fix.py",
+   "line": 48,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/somaticseq_postprocess.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_somaticseq_split_sort_pipefail_fix.py",
+   "line": 60,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/somaticseq.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-17/apply_tspipe_qc_channels.py",
+   "line": 26,
+   "literal": "/goast/hemat_data/nf-core-tspipe/workflows/tspipe.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-18/manual_edits_required.md",
+   "line": 119,
+   "literal": "/goast/hemat_data/nfcore_runs/<run>/25NGS1307",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-19/apply_pindel_gt_filter.py",
+   "line": 32,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-19/test_pindel_gt_filter.py",
+   "line": 31,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-19/test_pindel_gt_filter.py",
+   "line": 39,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_build_pon_preprocessing_fix.py",
+   "line": 63,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_build_sex_pon_filename_and_threshold_fix.py",
+   "line": 77,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py",
+   "line": 16,
+   "literal": "/goast/hemat_data/nf-core-tspipe/references/myeloid_cnv/...",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py",
+   "line": 49,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py",
+   "line": 65,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py",
+   "line": 67,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py",
+   "line": 257,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py",
+   "line": 258,
+   "literal": "/goast/hemat_data/nfcore_runs/tspipe_clinical_myeloid_cnv_*",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_docs_usage_pon_rewrite.py",
+   "line": 56,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py",
+   "line": 83,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py",
+   "line": 85,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py",
+   "line": 89,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_integrate_clean_genome_scatter.py",
+   "line": 63,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/cnv_plots.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/apply_somaticseq_drop_alt_contigs.py",
+   "line": 61,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/seed_myeloid_cnv_assets.py",
+   "line": 57,
+   "literal": "/goast/hemat_data/nfcore_runs/pon_myeloid_cnv_20260524_104140",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/seed_myeloid_cnv_assets.py",
+   "line": 58,
+   "literal": "/goast/hemat_data/nf-core-tspipe/work/74/4a45951314871dadf957b5afd259ef",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/seed_myeloid_cnv_assets.py",
+   "line": 68,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 74,
+   "literal": "/goast/hemat_data/BNC_fastqs",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 75,
+   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets/my_pon.csv",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 104,
+   "literal": "/goast/hemat_data/nfcore_runs/default",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 134,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 135,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 141,
+   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 142,
+   "literal": "/goast/hemat_data/nf-core-tspipe/tools/make_bnc_pon_samplesheet.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 143,
+   "literal": "/goast/hemat_data/BNC_fastqs",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 144,
+   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 152,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 157,
+   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 158,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 159,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 161,
+   "literal": "/goast/hemat_data/nfcore_runs/${RUN_TAG",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 177,
+   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 178,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 179,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 181,
+   "literal": "/goast/hemat_data/nfcore_runs/${RUN_TAG",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-24/usage_pon.md.new",
+   "line": 200,
+   "literal": "/goast/hemat_data/nfcore_runs/${RUN_TAG",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py",
+   "line": 42,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py",
+   "line": 379,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py",
+   "line": 383,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-05-25/apply_report_bundle_wiring_2026-05-25.py",
+   "line": 48,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-09/patch_annotate_flagpick.py",
+   "line": 34,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-09/patch_runvep_env.py",
+   "line": 36,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_annotate_flagpick.py",
+   "line": 34,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_annotate_parse_csq_docstring.py",
+   "line": 23,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_apply_blacklist_guard.py",
+   "line": 40,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/apply_blacklist.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_build_cnv_fallback_annotated.py",
+   "line": 23,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/build.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_cnv_parser_annotated_table.py",
+   "line": 29,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/parsers/cnv.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_cnv_parser_docstring.py",
+   "line": 26,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/parsers/cnv.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_dashboard_triage_share.py",
+   "line": 32,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/assets/js/variant-browser.js",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_dashboard_triage_share.py",
+   "line": 33,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/templates/sample_report.html.j2",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_flt3_itd_ext_sentinel.py",
+   "line": 38,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/flt3_itd_ext.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_nextflow_config_blacklist_skipfrom.py",
+   "line": 33,
+   "literal": "/goast/hemat_data/nf-core-tspipe/nextflow.config",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_organize_output_nf_cnv_annotated.py",
+   "line": 31,
+   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/organize_output.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_organize_output_py_cnv_annotated.py",
+   "line": 32,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/organize_output.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_runvep_env.py",
+   "line": 36,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_sample_report_cnv_annotated_table.py",
+   "line": 25,
+   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/templates/sample_report.html.j2",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_tspipe_cnv_annotated_join.py",
+   "line": 26,
+   "literal": "/goast/hemat_data/nf-core-tspipe/workflows/tspipe.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-10/patch_tspipe_deadcode.py",
+   "line": 29,
+   "literal": "/goast/hemat_data/nf-core-tspipe/workflows/tspipe.nf",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_default_annotators.py",
+   "line": 58,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails_curate.py",
+   "line": 43,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-01/patch_builder_filtered_bed.py",
+   "line": 32,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 204,
+   "literal": "/home/hemat/targeted-seq-pipeline",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 205,
+   "literal": "/home/hemat/anaconda3/envs/targeted-seq",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 206,
+   "literal": "/home/hemat/targeted-seq-pipeline",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 207,
+   "literal": "/home/hemat/anaconda3/envs/targeted-seq",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-06/patch_decon_v1.py",
+   "line": 62,
+   "literal": "PATH=/home/hemat/anaconda3/envs/decon/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
+   "line": 184,
+   "literal": "/home/hemat/anaconda3/envs/hmftools",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
+   "line": 185,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
+   "line": 186,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/AmberGermlineSites.38.tsv.gz",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
+   "line": 187,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/GC_profile.1000bp.38.cnp",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
+   "line": 188,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/common/ensembl_data",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
+   "line": 189,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/variants/KnownHotspots.somatic.38.vcf.gz",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
+   "line": 198,
+   "literal": "PATH=/home/hemat/anaconda3/envs/hmftools/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-07/patch_viz_v1.py",
+   "line": 78,
+   "literal": "/home/hemat/anaconda3/envs/reconCNV",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-07/patch_viz_v1.py",
+   "line": 91,
+   "literal": "PATH=/home/hemat/anaconda3/envs/reconCNV/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-08/check_annovar_key.py",
+   "line": 4,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-08/check_annovar_key.py",
+   "line": 46,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
+   "line": 21,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
+   "line": 24,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/singularity_cache",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/check_annovar_fatal.py",
+   "line": 18,
+   "literal": "/home/hemat/anaconda3/envs/targeted-seq/bin/python",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/check_annovar_fatal.py",
+   "line": 19,
+   "literal": "/goast/hemat_data/nf-core-tspipe/work/xx/yyyy...",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
+   "line": 14,
+   "literal": "/goast/hemat_data/references/1000G_hg38_phased",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/housekeeping_n10.sh",
+   "line": 19,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/housekeeping_n10.sh",
+   "line": 20,
+   "literal": "/goast/hemat_data/twist_val/repo_scratch_$(date",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/mocha17_offline.sh",
+   "line": 25,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/singularity_cache/local-mocha-v1.img",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/mocha17_offline.sh",
+   "line": 26,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-09/mocha17_offline.sh",
+   "line": 27,
+   "literal": "/goast/hemat_data/references/1000G_hg38_phased",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-10/check_tp53_block.sh",
+   "line": 14,
+   "literal": "/goast/hemat_data/twist_val/tspipe_run8",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-10/check_tp53_block.sh",
+   "line": 17,
+   "literal": "/goast/hemat_data/twist_val",
+   "comment": false
+  },
+  {
+   "file": "tools/patches/2026-09-10/run_dilution_17p.sh",
+   "line": 9,
+   "literal": "/goast/hemat_data/twist_val/tspipe_run8",
+   "comment": false
+  },
+  {
+   "file": "tools/build_artefacts/scatter_chr_gene_standalone.py",
+   "line": 23,
+   "literal": "/goast/hemat_data/targeted-seq-pipeline/results/25NGS1307/cnvkit",
+   "comment": false
+  },
+  {
+   "file": "tools/build_artefacts/scatter_chr_gene_standalone.py",
+   "line": 24,
+   "literal": "/home/hemat/targeted-seq-pipeline/references/myeloid/cnv_scatter_regions.txt",
+   "comment": false
+  },
+  {
+   "file": "tools/build_artefacts/scatter_chr_gene_standalone.py",
+   "line": 248,
+   "literal": "/home/hemat/targeted-seq-pipeline/references/myeloid/cnv_scatter_regions.txt",
+   "comment": false
+  },
+  {
+   "file": "tools/decon/build_decon_pool.sh",
+   "line": 20,
+   "literal": "/goast/hemat_data/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
+   "comment": false
+  },
+  {
+   "file": "tools/decon/build_decon_pool.sh",
+   "line": 22,
+   "literal": "/goast/hemat_data/pon_twist/decon_pool",
+   "comment": false
+  },
+  {
+   "file": "tools/decon/build_decon_pool.sh",
+   "line": 23,
+   "literal": "/home/hemat/anaconda3/envs/decon",
+   "comment": false
+  },
+  {
+   "file": "tools/decon/filter_decon_calls.py",
+   "line": 31,
+   "literal": "/goast/hemat_data/twist_pilot/decon_v4/pool25_v4calls_all.txt",
+   "comment": false
+  },
+  {
+   "file": "tools/decon/filter_decon_calls.py",
+   "line": 33,
+   "literal": "/goast/hemat_data/pon_twist/realign_v4/{sample",
+   "comment": false
+  },
+  {
+   "file": "tools/decon/filter_decon_calls.py",
+   "line": 34,
+   "literal": "/goast/hemat_data/twist_pilot/decon_v4/pool25_v4calls_filtered.tsv",
+   "comment": false
+  },
+  {
+   "file": "tools/hmftools/build_panel_resources.sh",
+   "line": 19,
+   "literal": "/goast/hemat_data/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
+   "comment": false
+  },
+  {
+   "file": "tools/hmftools/build_panel_resources.sh",
+   "line": 20,
+   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8",
+   "comment": false
+  },
+  {
+   "file": "tools/hmftools/build_panel_resources.sh",
+   "line": 21,
+   "literal": "/home/hemat/anaconda3/envs/hmftools",
+   "comment": false
+  },
+  {
+   "file": "tools/hmftools/build_panel_resources.sh",
+   "line": 23,
+   "literal": "/goast/hemat_data/pon_twist/hmftools_panel",
+   "comment": false
+  },
+  {
+   "file": "tools/hmftools/setup_hmftools.sh",
+   "line": 12,
+   "literal": "/goast/hemat_data/references/hmftools",
+   "comment": false
+  },
+  {
+   "file": "tools/hmftools/setup_hmftools.sh",
+   "line": 14,
+   "literal": "/home/hemat/anaconda3",
+   "comment": false
+  },
+  {
+   "file": "launch_tspipe.sh",
+   "line": 55,
+   "literal": "/goast/hemat_data/nf-core-tspipe",
+   "comment": false
+  }
+ ],
+ "network": [
+  {
+   "file": "nextflow.config",
+   "line": 75,
+   "urls": [
+    "http://localhost:5001"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "// Set to http://localhost:5001 to use the Docker stack (see"
+  },
+  {
+   "file": "nextflow.config",
+   "line": 78,
+   "urls": [
+    "https://rest.variantvalidator.org"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "vv_url             = 'https://rest.variantvalidator.org'"
+  },
+  {
+   "file": "nextflow.config",
+   "line": 85,
+   "urls": [
+    "https://genebe.net"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "// GeneBe (https://genebe.net) adds ACMG classification, ClinVar"
+  },
+  {
+   "file": "nextflow.config",
+   "line": 96,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "// MobiDetails (https://mobidetails.chu-montpellier.fr) adds a curated"
+  },
+  {
+   "file": "nextflow.config",
+   "line": 104,
+   "urls": [
+    "https://www.oncokb.org"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "// OncoKB (https://www.oncokb.org) provides precision-oncology"
+  },
+  {
+   "file": "nextflow.config",
+   "line": 106,
+   "urls": [
+    "https://www.oncokb.org/account/register."
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "// available at https://www.oncokb.org/account/register."
+  },
+  {
+   "file": "nextflow.config",
+   "line": 208,
+   "urls": [
+    "https://github.com/patkarlab/nf-core-tspipe"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "homePage        = 'https://github.com/patkarlab/nf-core-tspipe'"
+  },
+  {
+   "file": "modules/local/deepsomatic.nf",
+   "line": 12,
+   "urls": [
+    "https://github.com/google/deepsomatic/blob/r1.10/docs/deepsomatic-case-study-wgs-tumor-only.md"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "* Reference: https://github.com/google/deepsomatic/blob/r1.10/docs/deepsomatic-case-study-wgs-tumor-only.md"
+  },
+  {
+   "file": "bin/17_variant_validator.py",
+   "line": 60,
+   "urls": [
+    "http://localhost:5001"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "DEFAULT_VV_URL = \"http://localhost:5001\""
+  },
+  {
+   "file": "bin/17_variant_validator.py",
+   "line": 134,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "resp = requests.get(test_url, timeout=PROBE_TIMEOUT)  # MARKER: vv_probe_timeout"
+  },
+  {
+   "file": "bin/17_variant_validator.py",
+   "line": 262,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "resp = requests.get(url, timeout=timeout)"
+  },
+  {
+   "file": "bin/dashboard_builder/build.py",
+   "line": 601,
+   "urls": [
+    "https://www.oncokb.org/account/register"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"https://www.oncokb.org/account/register). Cached per-sample.\""
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/cancervar.py",
+   "line": 3,
+   "urls": [
+    "https://cancervar.wglab.org"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "CancerVar (https://cancervar.wglab.org) implements the AMP/ASCO/CAP 2017"
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/cancervar.py",
+   "line": 15,
+   "urls": [
+    "https://cancervar.wglab.org/api_new.php"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "GET https://cancervar.wglab.org/api_new.php"
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/cancervar.py",
+   "line": 49,
+   "urls": [
+    "https://cancervar.wglab.org/api_new.php"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "CANCERVAR_URL = \"https://cancervar.wglab.org/api_new.php\""
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/cancervar.py",
+   "line": 241,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "response = requests.get("
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/genebe.py",
+   "line": 3,
+   "urls": [
+    "https://genebe.net"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "GeneBe (https://genebe.net) provides ACMG classification, ClinVar status, gnomAD"
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/genebe.py",
+   "line": 8,
+   "urls": [
+    "https://api.genebe.net/cloud/api-public/v1/variants?genome=hg38"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "POST https://api.genebe.net/cloud/api-public/v1/variants?genome=hg38"
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/genebe.py",
+   "line": 36,
+   "urls": [
+    "https://api.genebe.net/cloud/api-public/v1/variants"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "GENEBE_BATCH_URL = \"https://api.genebe.net/cloud/api-public/v1/variants\""
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/genebe.py",
+   "line": 140,
+   "urls": [],
+   "calls": [
+    "requests.post"
+   ],
+   "comment": false,
+   "text": "response = requests.post("
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/mobidetails.py",
+   "line": 3,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "MobiDetails (https://mobidetails.chu-montpellier.fr) hosts curated genomic"
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/mobidetails.py",
+   "line": 12,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/exists/{variant_ghgvs}"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "GET https://mobidetails.chu-montpellier.fr/api/variant/exists/{variant_ghgvs}"
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/mobidetails.py",
+   "line": 38,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "MD_EXISTS_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}\""
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/mobidetails.py",
+   "line": 42,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/{vid}/cli/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "MD_VARIANT_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/{vid}/cli/\""
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/mobidetails.py",
+   "line": 71,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "resp = requests.get("
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/mobidetails.py",
+   "line": 164,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "response = requests.get("
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/oncokb.py",
+   "line": 3,
+   "urls": [
+    "https://www.oncokb.org"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "OncoKB (https://www.oncokb.org) is a precision-oncology knowledge base curated"
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/oncokb.py",
+   "line": 5,
+   "urls": [
+    "https://www.oncokb.org/account/register"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "register a free academic account at https://www.oncokb.org/account/register"
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/oncokb.py",
+   "line": 9,
+   "urls": [
+    "https://www.oncokb.org/api/v1/annotate/mutations/byGenomicChange"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "GET https://www.oncokb.org/api/v1/annotate/mutations/byGenomicChange"
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/oncokb.py",
+   "line": 34,
+   "urls": [
+    "https://www.oncokb.org/api/v1/annotate/mutations/byGenomicChange"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "ONCOKB_URL = \"https://www.oncokb.org/api/v1/annotate/mutations/byGenomicChange\""
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/oncokb.py",
+   "line": 101,
+   "urls": [
+    "https://www.oncokb.org/account/register"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"Register at https://www.oncokb.org/account/register for a free token.\","
+  },
+  {
+   "file": "bin/dashboard_builder/parsers/oncokb.py",
+   "line": 167,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "response = requests.get("
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/bootstrap.bundle.min.js",
+   "line": 2,
+   "urls": [
+    "https://getbootstrap.com/"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "* Bootstrap v5.3.3 (https://getbootstrap.com/)"
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/bootstrap.bundle.min.js",
+   "line": 3,
+   "urls": [
+    "https://github.com/twbs/bootstrap/graphs/contributors"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "* Copyright 2011-2024 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)"
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/bootstrap.bundle.min.js",
+   "line": 4,
+   "urls": [
+    "https://github.com/twbs/bootstrap/blob/main/LICENSE"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "* Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)"
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/bootstrap.bundle.min.js",
+   "line": 6,
+   "urls": [
+    "https://popper.js.org",
+    "https://popper.js.org"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "!function(t,e){\"object\"==typeof exports&&\"undefined\"!=typeof module?module.exports=e():\"function\"==typeof define&&define.amd?define(e):(t=\"u"
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/chart.umd.min.js",
+   "line": 5,
+   "urls": [
+    "https://www.jsdelivr.com/using-sri-with-dynamic-files"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "* Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files"
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/chart.umd.min.js",
+   "line": 9,
+   "urls": [
+    "https://www.chartjs.org"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "* https://www.chartjs.org"
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/chart.umd.min.js",
+   "line": 16,
+   "urls": [
+    "https://github.com/kurkle/color#readme"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "* https://github.com/kurkle/color#readme"
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/dataTables.min.js",
+   "line": 4,
+   "urls": [
+    "https://datatables.net/tn/",
+    "https://datatables.net/tn/17"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "!function(n){\"use strict\";var a;\"function\"==typeof define&&define.amd?define([\"jquery\"],function(t){return n(t,window,document)}):\"object\"=="
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/variant-browser.js",
+   "line": 542,
+   "urls": [
+    "https://genebe.net/variant/hg38/chr"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "return \"https://genebe.net/variant/hg38/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt;"
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/variant-browser.js",
+   "line": 552,
+   "urls": [
+    "https://franklin.genoox.com/clinical-db/variant/snp/chr"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "return \"https://franklin.genoox.com/clinical-db/variant/snp/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt + \"-hg38\";"
+  },
+  {
+   "file": "bin/dashboard_builder/assets/js/variant-browser.js",
+   "line": 1345,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "(vid ? \"https://mobidetails.chu-montpellier.fr/api/variant/\" + vid + \"/browser/\" : \"\");"
+  },
+  {
+   "file": "bin/dashboard_builder/templates/sample_report.html.j2",
+   "line": 419,
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/snp/{{"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "{% if s.rsid and s.rsid != '-' %}<a href=\"https://www.ncbi.nlm.nih.gov/snp/{{ s.rsid }}\" target=\"_blank\" rel=\"noopener\">dbSNP</a>{% endif %}"
+  },
+  {
+   "file": "bin/dashboard_builder/templates/sample_report.html.j2",
+   "line": 421,
+   "urls": [
+    "https://franklin.genoox.com/clinical-db/variant/snp/chr{{"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "&middot; <a href=\"https://franklin.genoox.com/clinical-db/variant/snp/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}-hg38\" target=\"_blank\" re"
+  },
+  {
+   "file": "bin/dashboard_builder/templates/sample_report.html.j2",
+   "line": 422,
+   "urls": [
+    "https://genebe.net/variant/hg38/chr{{"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "&middot; <a href=\"https://genebe.net/variant/hg38/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}\" target=\"_blank\" rel=\"noopener\">GeneBe</a>"
+  },
+  {
+   "file": "tools/fetch_cava_catalog.py",
+   "line": 27,
+   "urls": [],
+   "calls": [
+    "urllib.request"
+   ],
+   "comment": false,
+   "text": "import urllib.request"
+  },
+  {
+   "file": "tools/fetch_cava_catalog.py",
+   "line": 32,
+   "urls": [
+    "https://raw.githubusercontent.com/{REPO}/{COMMIT}/cava_catalogs.tsv"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "CATALOG_TSV = f\"https://raw.githubusercontent.com/{REPO}/{COMMIT}/cava_catalogs.tsv\""
+  },
+  {
+   "file": "tools/fetch_cava_catalog.py",
+   "line": 33,
+   "urls": [
+    "https://media.githubusercontent.com/media/{REPO}/{COMMIT}/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "MEDIA = f\"https://media.githubusercontent.com/media/{REPO}/{COMMIT}/\""
+  },
+  {
+   "file": "tools/fetch_cava_catalog.py",
+   "line": 46,
+   "urls": [],
+   "calls": [
+    "urllib.request"
+   ],
+   "comment": false,
+   "text": "req = urllib.request.Request(url, headers={\"User-Agent\": \"tspipe-fetch-cava-catalog\"})"
+  },
+  {
+   "file": "tools/fetch_cava_catalog.py",
+   "line": 50,
+   "urls": [],
+   "calls": [
+    "urllib.request",
+    "urlopen"
+   ],
+   "comment": false,
+   "text": "with urllib.request.urlopen(req, timeout=120) as resp:"
+  },
+  {
+   "file": "tools/fetch_cava_catalog.py",
+   "line": 101,
+   "urls": [
+    "https://github.com/{REPO}"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "f\"repository        https://github.com/{REPO}\","
+  },
+  {
+   "file": "tools/portability_inventory.py",
+   "line": 38,
+   "urls": [],
+   "calls": [
+    "curl",
+    "wget",
+    "urlopen",
+    "httpx"
+   ],
+   "comment": false,
+   "text": "NET_WORD_RE = re.compile(r\"\\b(curl|wget|requests\\.(get|post|Session)|urllib\\.request|urlopen|http\\.client|httpx)\\b\")"
+  },
+  {
+   "file": "tools/run_pipeline.sh",
+   "line": 109,
+   "urls": [],
+   "calls": [
+    "curl"
+   ],
+   "comment": false,
+   "text": "http_code=$(curl -sf -o /dev/null -w '%{http_code}' --max-time 10 \\"
+  },
+  {
+   "file": "tools/run_pipeline.sh",
+   "line": 110,
+   "urls": [
+    "http://localhost:5001/VariantValidator/variantvalidator/GRCh38/NM_000088.4:c.589G%3ET/all?content-type=application/json"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"http://localhost:5001/VariantValidator/variantvalidator/GRCh38/NM_000088.4:c.589G%3ET/all?content-type=application/json\" \\"
+  },
+  {
+   "file": "tools/start_vv_gunicorn.sh",
+   "line": 18,
+   "urls": [
+    "http://localhost:5001."
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "# call http://localhost:5001. So gunicorn must be bound to container"
+  },
+  {
+   "file": "tools/start_vv_gunicorn.sh",
+   "line": 40,
+   "urls": [
+    "http://localhost:"
+   ],
+   "calls": [],
+   "comment": true,
+   "text": "# 4. Polls http://localhost:<host-port>/ until any HTTP code in"
+  },
+  {
+   "file": "tools/start_vv_gunicorn.sh",
+   "line": 146,
+   "urls": [
+    "http://localhost:${HOST_PORT}/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "log \"waiting for HTTP response on http://localhost:${HOST_PORT}/ (up to ${WAIT_TIMEOUT_SEC}s)\""
+  },
+  {
+   "file": "tools/start_vv_gunicorn.sh",
+   "line": 150,
+   "urls": [
+    "http://localhost:${HOST_PORT}/"
+   ],
+   "calls": [
+    "curl"
+   ],
+   "comment": false,
+   "text": "last_code=\"$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \"http://localhost:${HOST_PORT}/\" || echo 000)\""
+  },
+  {
+   "file": "tools/start_vv_gunicorn.sh",
+   "line": 152,
+   "urls": [
+    "http://localhost:${HOST_PORT}/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "log \"OK: http://localhost:${HOST_PORT}/ responded HTTP ${last_code}\""
+  },
+  {
+   "file": "tools/start_vv_gunicorn.sh",
+   "line": 158,
+   "urls": [
+    "http://localhost:${HOST_PORT}/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "err \"http://localhost:${HOST_PORT}/ did not respond within ${WAIT_TIMEOUT_SEC}s (last code: ${last_code})\""
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_default_annotators.py",
+   "line": 142,
+   "urls": [
+    "https://genebe.net"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "'    // GeneBe (https://genebe.net) adds ACMG classification, ClinVar\\n'"
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_default_annotators.py",
+   "line": 152,
+   "urls": [
+    "https://genebe.net"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "'    // GeneBe (https://genebe.net) adds ACMG classification, ClinVar\\n'"
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_default_annotators.py",
+   "line": 163,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "'    // MobiDetails (https://mobidetails.chu-montpellier.fr) adds a curated\\n'"
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_franklin_link.py",
+   "line": 44,
+   "urls": [
+    "https://genebe.net/variant/hg38/chr"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "'    return \"https://genebe.net/variant/hg38/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt;\\n'"
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_franklin_link.py",
+   "line": 50,
+   "urls": [
+    "https://genebe.net/variant/hg38/chr"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "'    return \"https://genebe.net/variant/hg38/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt;\\n'"
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_franklin_link.py",
+   "line": 60,
+   "urls": [
+    "https://franklin.genoox.com/clinical-db/variant/snp/chr"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "'    return \"https://franklin.genoox.com/clinical-db/variant/snp/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt + \"-hg38\";\\n'"
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
+   "line": 59,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"anchor\": r'''MD_EXISTS_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}\""
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
+   "line": 61,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"replacement\": r'''MD_EXISTS_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}\""
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
+   "line": 65,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/{vid}/cli/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "MD_VARIANT_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/{vid}/cli/\""
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
+   "line": 85,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "resp = requests.get("
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
+   "line": 305,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "(vid ? \"https://mobidetails.chu-montpellier.fr/api/variant/\" + vid + \"/browser/\" : \"\");"
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails_curate.py",
+   "line": 53,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "(vid ? \"https://mobidetails.chu-montpellier.fr/api/variant/\" + vid + \"/browser/\" : \"\");"
+  },
+  {
+   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails_curate.py",
+   "line": 194,
+   "urls": [
+    "https://mobidetails.chu-montpellier.fr/api/variant/"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "(vid ? \"https://mobidetails.chu-montpellier.fr/api/variant/\" + vid + \"/browser/\" : \"\");"
+  },
+  {
+   "file": "tools/patches/2026-09-02/patch_vv_probe_timeout.py",
+   "line": 23,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "ANCHOR = \"resp = requests.get(test_url, timeout=30)\""
+  },
+  {
+   "file": "tools/patches/2026-09-02/patch_vv_probe_timeout.py",
+   "line": 24,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "REPLACEMENT = (\"resp = requests.get(test_url, timeout=150)\""
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 6,
+   "urls": [
+    "https://rest.variantvalidator.org"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "https://rest.variantvalidator.org (measured 1.4 s cold / 0.6 s warm from"
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 40,
+   "urls": [
+    "http://localhost:5001"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "('DEFAULT_VV_URL = \"http://localhost:5001\"\\n',"
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 41,
+   "urls": [
+    "http://localhost:5001"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "'DEFAULT_VV_URL = \"http://localhost:5001\"\\n'"
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 50,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "('            resp = requests.get(test_url, timeout=150)  # MARKER: vv_probe_timeout -- measured ~80 s per validation\\n'"
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 54,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "'            resp = requests.get(test_url, timeout=PROBE_TIMEOUT)  # MARKER: vv_probe_timeout -- measured ~80 s per validation\\n'"
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 123,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "'            resp = requests.get(url, timeout=timeout)\\n',"
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 127,
+   "urls": [],
+   "calls": [
+    "requests.get"
+   ],
+   "comment": false,
+   "text": "'            resp = requests.get(url, timeout=timeout)\\n'),"
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 192,
+   "urls": [
+    "http://localhost:5001"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "('            --vv-url http://localhost:5001 \\\\\\\\\\n'"
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 199,
+   "urls": [
+    "http://localhost:5001\\n"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "('            vv_url: http://localhost:5001\\n',"
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 210,
+   "urls": [
+    "http://localhost:5001"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"    // Set to http://localhost:5001 to use the Docker stack (see\\n\""
+  },
+  {
+   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
+   "line": 213,
+   "urls": [
+    "https://rest.variantvalidator.org"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"    vv_url             = 'https://rest.variantvalidator.org'\\n\""
+  },
+  {
+   "file": "tools/patches/2026-09-08/patch_dash_spikein_links_v1.py",
+   "line": 58,
+   "urls": [
+    "https://www.ncbi.nlm.nih.gov/snp/{{"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"                    {% if s.rsid and s.rsid != '-' %}<a href=\\\"https://www.ncbi.nlm.nih.gov/snp/{{ s.rsid }}\\\" target=\\\"_blank\\\" rel=\\\"noop"
+  },
+  {
+   "file": "tools/patches/2026-09-08/patch_dash_spikein_links_v1.py",
+   "line": 60,
+   "urls": [
+    "https://franklin.genoox.com/clinical-db/variant/snp/chr{{"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"                      &middot; <a href=\\\"https://franklin.genoox.com/clinical-db/variant/snp/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}-"
+  },
+  {
+   "file": "tools/patches/2026-09-08/patch_dash_spikein_links_v1.py",
+   "line": 61,
+   "urls": [
+    "https://genebe.net/variant/hg38/chr{{"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "\"                      &middot; <a href=\\\"https://genebe.net/variant/hg38/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}\\\" target=\\\"_blank\\\" "
+  },
+  {
+   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
+   "line": 31,
+   "urls": [
+    "https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "BCFTOOLS_URL=https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2"
+  },
+  {
+   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
+   "line": 35,
+   "urls": [
+    "https://raw.githubusercontent.com/freeseek/mocha/${MOCHA_COMMIT}"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "MOCHA_RAW=https://raw.githubusercontent.com/freeseek/mocha/${MOCHA_COMMIT}"
+  },
+  {
+   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
+   "line": 63,
+   "urls": [],
+   "calls": [
+    "wget"
+   ],
+   "comment": false,
+   "text": "wget -q -O \"$SRC/bcftools-${BCFTOOLS_VERSION}.tar.bz2.part\" \"$BCFTOOLS_URL\""
+  },
+  {
+   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
+   "line": 69,
+   "urls": [],
+   "calls": [
+    "wget"
+   ],
+   "comment": false,
+   "text": "wget -q -O \"$SRC/mocha/$f.part\" \"$MOCHA_RAW/$f\""
+  },
+  {
+   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
+   "line": 15,
+   "urls": [
+    "https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "BASE=https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV"
+  },
+  {
+   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
+   "line": 26,
+   "urls": [],
+   "calls": [
+    "wget"
+   ],
+   "comment": true,
+   "text": "# stop any sequential wget still appending to the file"
+  },
+  {
+   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
+   "line": 27,
+   "urls": [],
+   "calls": [
+    "wget"
+   ],
+   "comment": false,
+   "text": "pkill -u \"$USER\" -f 'wget.*1000genomes' 2>/dev/null || true"
+  },
+  {
+   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
+   "line": 38,
+   "urls": [],
+   "calls": [
+    "curl"
+   ],
+   "comment": false,
+   "text": "curl -s --max-time 1800 --speed-limit 1000 --speed-time 60 -r $((s + have))-$e \"$BASE/$F\" >> \"$part\" || true"
+  },
+  {
+   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
+   "line": 73,
+   "urls": [],
+   "calls": [
+    "curl"
+   ],
+   "comment": false,
+   "text": "curl -s --retry 10 --retry-delay 10 -o \"$F.tbi\" \"$BASE/$F.tbi\""
+  },
+  {
+   "file": "tools/reconcnv/reconCNV.py",
+   "line": 939,
+   "urls": [
+    "https://genome.ucsc.edu/cgi-bin/hgTracks?db="
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "url = \"https://genome.ucsc.edu/cgi-bin/hgTracks?db=\" + config['files']['genome_build'] + \"&position=@chrom:@start-@end\""
+  },
+  {
+   "file": "tools/hmftools/setup_hmftools.sh",
+   "line": 13,
+   "urls": [
+    "https://data.oncoanalyser.com/r2/reference/dist/v1/hartwig/pipeline_resources/hmf_pipeline_resources.38_v3.0.0--8.tar.gz"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "BUNDLE_URL=\"https://data.oncoanalyser.com/r2/reference/dist/v1/hartwig/pipeline_resources/hmf_pipeline_resources.38_v3.0.0--8.tar.gz\""
+  },
+  {
+   "file": "tools/hmftools/setup_hmftools.sh",
+   "line": 48,
+   "urls": [],
+   "calls": [
+    "curl"
+   ],
+   "comment": false,
+   "text": "curl -L --retry 5 --retry-delay 10 -C - -o \"$TAR\" \"$BUNDLE_URL\""
+  },
+  {
+   "file": "launch_tspipe.sh",
+   "line": 40,
+   "urls": [
+    "http://localhost:5001}"
+   ],
+   "calls": [],
+   "comment": false,
+   "text": "VV_URL=\"${VV_URL:-http://localhost:5001}\""
+  },
+  {
+   "file": "launch_tspipe.sh",
+   "line": 76,
+   "urls": [],
+   "calls": [
+    "curl"
+   ],
+   "comment": false,
+   "text": "code=$(curl -sf -o /dev/null -w '%{http_code}' \\"
+  }
+ ]
+}
