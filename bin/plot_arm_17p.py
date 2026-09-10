@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dedicated 17p figure (ARM17P_V1): depth, BAF and PURPLE copy number along 17p in genomic
+"""Dedicated 17p figure (ARM17P_V2, supersedes V1): depth, BAF and PURPLE copy number along 17p in genomic
 coordinates, with the panel genes and, when a clinical table is given, the TP53 variant VAF(s).
 
 Inputs (all pipeline outputs; nothing recomputed)
@@ -13,11 +13,23 @@ Inputs (all pipeline outputs; nothing recomputed)
   --clinical         clinical/<S>.somaticseq.clinical.final.tsv (TP53 rows -> VAF markers)     [optional]
 Output: --out PNG. Python 3.6 / matplotlib 3.2 compatible (GATK container).
 
-Tracks (top to bottom): denoised log2 copy ratio per bin with the arm median and CNVkit
-segments; raw ALT fraction of every catalog site (heterozygous sites coloured by the BAF_V2
-arm verdict, circles = 17p SNP windows, triangles = backbone sites) with the 0.5 +/- f/2
-band; PURPLE total and minor-allele copy number; gene strip. The centromere is shaded.
+  --allelic + --background   allelic counts and baf_background.tsv: per-window depth ratio of the
+                     17p SNP windows, computed as on the chromosome pages (median over the window's
+                     catalog positions of log2(sample depth / cohort median depth)), sample-normalised by
+                     subtracting the median of the same ratio over every catalog position outside the
+                     chromosome (the backbone, from the background table)                  [optional]
+  --index / --index-label    append a row to the CHROM_PAGES index so the figure is listed as a
+                     chromosome page (default label chr17p)                                    [optional]
+
+Tracks (top to bottom): depth - the SNP-window depth ratios along the arm plus the CNVkit segment and
+the arm median of the exon bins (the bins themselves stay on the chromosome page; --exon-bins draws them); raw ALT fraction of every catalog
+site (heterozygous sites coloured by the BAF_V2 arm verdict, circles = SNP windows, triangles =
+backbone sites) with the 0.5 +/- f/2 band; PURPLE total and minor-allele copy number; gene strip.
+The centromere is shaded. ARM17P_V2.
 """
+import bisect
+import math
+import os
 
 import argparse
 import csv
@@ -45,6 +57,92 @@ def arm_bounds(arm):
     chrom, letter = "chr" + arm[:-1], arm[-1]
     c0, c1 = CEN[chrom]
     return chrom, letter, ((0, c0) if letter == "p" else (c1, 10 ** 9))
+
+
+def read_bg_depth(path, chrom):
+    """baf_background.tsv -> {pos: cohort median depth} on chrom (positions with a cohort depth)."""
+    med = {}
+    if not path or not os.path.isfile(path):
+        return med
+    with open(path) as fh:
+        header = None
+        for line in fh:
+            if line.startswith("#") or not line.strip():
+                continue
+            p = line.rstrip("\n").split("\t")
+            if header is None:
+                header = p
+                continue
+            r = dict(zip(header, p))
+            if r.get("contig") != chrom:
+                continue
+            try:
+                med[int(r["position"])] = float(r["median_depth"])
+            except (KeyError, ValueError):
+                continue
+    return med
+
+
+def read_bg_depth_all(path):
+    """same, genome-wide: {(contig, pos): cohort median depth} - for the sample-centring offset."""
+    med = {}
+    if not path or not os.path.isfile(path):
+        return med
+    with open(path) as fh:
+        header = None
+        for line in fh:
+            if line.startswith("#") or not line.strip():
+                continue
+            p = line.rstrip("\n").split("\t")
+            if header is None:
+                header = p
+                continue
+            r = dict(zip(header, p))
+            try:
+                med[(r["contig"], int(r["position"]))] = float(r["median_depth"])
+            except (KeyError, ValueError):
+                continue
+    return med
+
+
+def read_allelic_depth(path, keys):
+    """GATK allelic counts -> {(contig, pos): depth} for the given keys."""
+    out = {}
+    if not path or not os.path.isfile(path):
+        return out
+    with open(path) as fh:
+        for line in fh:
+            if line.startswith("@") or line.startswith("CONTIG"):
+                continue
+            p = line.rstrip("\n").split("\t")
+            if len(p) < 4:
+                continue
+            try:
+                key = (p[0], int(p[1]))
+                if key in keys:
+                    out[key] = int(p[2]) + int(p[3])
+            except ValueError:
+                continue
+    return out
+
+
+def window_depth_ratios(windows, depth, bg):
+    """{(s, e): log2 ratio} - median over the window's catalog positions of sample / cohort median.
+    depth and bg are keyed by position on one chromosome. Mirrors plot_targets_trio.py."""
+    pos = sorted(p for p in bg if p in depth and bg[p] > 0)
+    out = {}
+    for s, e, _ in windows:
+        i = bisect.bisect_left(pos, s + 1)
+        vals = []
+        while i < len(pos) and pos[i] <= e:
+            vals.append(depth[pos[i]] / bg[pos[i]])
+            i += 1
+        if vals:
+            vals.sort()
+            r = vals[len(vals) // 2]
+            if r > 0:
+                out[(s, e)] = math.log2(r)
+    return out
 
 
 def site_classes(bed_path, chrom):
@@ -82,6 +180,12 @@ def main():
     ap.add_argument("--purple-dir", default=None)
     ap.add_argument("--snp-bed", default=None)
     ap.add_argument("--clinical", default=None)
+    ap.add_argument("--allelic", default=None, help="GATK allelicCounts.tsv (window depth ratios)")
+    ap.add_argument("--background", default=None, help="baf_background.tsv (cohort median depth per position)")
+    ap.add_argument("--index", default=None, help="CHROM_PAGES index TSV to append a row to")
+    ap.add_argument("--index-label", default="chr17p", help="chroms/label used in the index row (pill text without 'chr')")
+    ap.add_argument("--exon-bins", action="store_true",
+                    help="also draw the gene exon depth bins (off by default: they are on the chromosome page)")
     ap.add_argument("--sample", required=True)
     ap.add_argument("--arm", default="17p")
     ap.add_argument("--gene", default="TP53", help="gene whose consensus row and variants are highlighted")
@@ -143,6 +247,31 @@ def main():
 
     windows, backbone = site_classes(args.snp_bed, chrom)
 
+    # SNP-window depth ratios on this arm, as on the chromosome pages, centred on the sample's
+    # genome-wide window median (all catalog positions with a cohort depth, all chromosomes)
+    win_depth, win_raw, win_offset, n_genome_windows = {}, {}, 0.0, 0
+    if args.allelic and args.background and windows:
+        bg_all = read_bg_depth_all(args.background)
+        depth_all = read_allelic_depth(args.allelic, set(bg_all))
+        by_c = {}
+        for (c, p), d in depth_all.items():
+            if bg_all.get((c, p), 0) > 0:
+                by_c.setdefault(c, {})[p] = d
+        bg_by_c = {}
+        for (c, p), m in bg_all.items():
+            bg_by_c.setdefault(c, {})[p] = m
+        # sample-level reference: median log2(sample / cohort) over every catalog position outside this
+        # chromosome (the backbone), taken from the background table itself - no BED needed
+        genome_vals = [math.log2(d / bg_all[(c, p)]) for (c, p), d in depth_all.items()
+                       if c != chrom and bg_all.get((c, p), 0) > 0 and d > 0]
+        n_genome_windows = len(genome_vals)
+        if genome_vals:
+            genome_vals.sort()
+            win_offset = genome_vals[len(genome_vals) // 2]
+        arm_wins = [w for w in windows if lo <= w[0] < hi]
+        win_raw = window_depth_ratios(arm_wins, by_c.get(chrom, {}), bg_by_c.get(chrom, {}))   # as on the chr17 page
+        win_depth = dict((k, v - win_offset) for k, v in win_raw.items())                      # sample-normalised
+
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -156,8 +285,16 @@ def main():
     ax_cr, ax_baf, ax_cn, ax_gene = axes
 
     # ---- depth ----
-    if bins:
-        ax_cr.scatter([(b[1] + b[2]) / 2e6 for b in bins], [b[3] for b in bins], s=7, c="#8c8c8c", linewidths=0, zorder=2)
+    win_med = None
+    if win_depth:
+        wx = [(s0 + e0) / 2e6 for (s0, e0) in win_depth]
+        wy = list(win_depth.values())
+        ax_cr.scatter(wx, wy, s=9, c="#5dade2", alpha=0.55, linewidths=0, zorder=1)
+        wv = sorted(wy)
+        win_med = wv[len(wv) // 2]
+        ax_cr.axhline(win_med, color="#2e86c1", lw=0.9, ls="--", zorder=1)
+    if bins and args.exon_bins:
+        ax_cr.scatter([(b[1] + b[2]) / 2e6 for b in bins], [b[3] for b in bins], s=7, c="#4d4d4d", linewidths=0, zorder=2)
     for s in cnvkit_segs:
         s0, s1 = max(s["start"], lo), min(s["end"], hi if hi < 10 ** 9 else s["end"])
         if s1 > s0:
@@ -167,16 +304,34 @@ def main():
     for y in (-0.15, 0.15):
         ax_cr.axhline(y, color="#bbbbbb", lw=0.7, ls=":", zorder=0)
     ax_cr.axhline(0, color="#999999", lw=0.7, zorder=0)
-    ax_cr.set_ylabel("denoised log2 CR")
-    if genes:
-        ax_cr.text(0.01, 0.05, "depth bins exist only at the panel genes on this arm (%s); the SNP windows carry no depth bin" %
-                   ", ".join(g["gene"] for g in genes), transform=ax_cr.transAxes, fontsize=7, color="#777777", va="bottom")
-    ymax = max([abs(b[3]) for b in bins] + [0.5])
-    ax_cr.set_ylim(-min(ymax * 1.15, 2.5), min(ymax * 1.15, 2.5))
-    ax_cr.legend(handles=[Line2D([0], [0], marker="o", color="w", markerfacecolor="#8c8c8c", markersize=5, label="bins"),
-                          Line2D([0], [0], color="#1f4e79", lw=2, label="CNVkit segments"),
-                          Line2D([0], [0], color="#555555", lw=1, label="arm median %s" % ("%.2f" % cr_med if cr_med is not None else "NA"))],
-                 fontsize=7, loc="upper right", ncol=3, frameon=False)
+    ax_cr.set_ylabel("log2 depth ratio")
+    vals = (sorted(abs(b[3]) for b in bins) if args.exon_bins else []) + sorted(abs(v) for v in win_depth.values())
+    if not vals and cr_med is not None:
+        vals = [abs(cr_med)]
+    vals.sort()
+    p95 = vals[int(0.95 * (len(vals) - 1))] if vals else 0.5
+    ymax = max(0.5, min(1.5, p95 * 1.25))
+    ax_cr.set_ylim(-ymax, ymax)
+    n_clip = sum(1 for v in win_depth.values() if abs(v) > ymax)
+    if n_clip:
+        ax_cr.text(0.99, 0.04, "%d window(s) beyond +/-%.1f not shown" % (n_clip, ymax), transform=ax_cr.transAxes,
+                   fontsize=6.5, color="#777777", ha="right", va="bottom")
+    handles = [Line2D([0], [0], color="#1f4e79", lw=2, label="CNVkit segment (from the gene exon bins, chr17 page)"),
+               Line2D([0], [0], color="#555555", lw=1, label="arm median of the exon bins %s" % ("%.2f" % cr_med if cr_med is not None else "NA"))]
+    if bins and args.exon_bins:
+        handles.insert(0, Line2D([0], [0], marker="o", color="w", markerfacecolor="#4d4d4d", markersize=5,
+                                 label="gene exon bins (denoised CR, %d)" % len(bins)))
+    if win_depth:
+        handles.insert(0, Line2D([0], [0], marker="o", color="w", markerfacecolor="#5dade2", markersize=5,
+                                 label="SNP-window depth ratio vs cohort, sample-normalised (%d windows; backbone level %+.2f removed)" % (len(win_depth), win_offset)))
+        off_txt = ""
+        if cr_med is not None:
+            off_txt = "; vs exon bins %+.2f (probe-batch offset, run-constant when the arm is uniform)" % (win_med - cr_med)
+        handles.append(Line2D([0], [0], color="#2e86c1", lw=0.9, ls="--", label="17p window median %.2f%s" % (win_med, off_txt)))
+    else:
+        ax_cr.text(0.01, 0.05, "SNP-window depth not available (needs --allelic and --background); the gene exon bins are on the chr17 page",
+                   transform=ax_cr.transAxes, fontsize=7, color="#777777", va="bottom")
+    ax_cr.legend(handles=handles, fontsize=6.5, loc="upper right", ncol=2, frameon=False)
 
     # ---- BAF ----
     het_x, het_y, het_m, hom_x, hom_y = [], [], [], [], []
@@ -209,7 +364,8 @@ def main():
     if f_est is not None and f_est == f_est:
         baf_label += "  f=%.2f" % f_est
     baf_label += "  (%s het sites, %s)" % (n_het, conf)
-    handles = [Line2D([0], [0], marker="o", color="w", markerfacecolor=colour, markersize=6, label="het, 17p SNP window"),
+    handles = [Line2D([0], [0], marker="o", color="w", markerfacecolor=colour, markersize=6,
+                      label="het, SNP window - colour = BAF_V2 verdict (%s)" % verdict),
                Line2D([0], [0], marker="^", color="w", markerfacecolor=colour, markersize=6, label="het, backbone site"),
                Line2D([0], [0], marker="o", color="w", markerfacecolor="#d9d9d9", markersize=5, label="homozygous")]
     if verdict not in ("NEUTRAL", "INDETERMINATE", "NA") and f_est is not None:
@@ -277,8 +433,38 @@ def main():
     fig.suptitle("   |   ".join(bits), fontsize=10, y=0.985)
     fig.subplots_adjust(top=0.94, bottom=0.07, left=0.07, right=0.98)
     fig.savefig(args.out, dpi=140, bbox_inches="tight")
-    print("[ok] %s: %s figure -> %s (%d bins, %d sites, %d het, %d genes, %d %s variant(s))" % (
-        args.sample, args.arm, args.out, len(bins), len(sites), len(het_x), len(genes), len(variants), args.gene))
+    print("[ok] %s: %s figure -> %s (%d bins, %d window depth ratios, %d sites, %d het, %d genes, %d %s variant(s))" % (
+        args.sample, args.arm, args.out, len(bins), len(win_depth), len(sites), len(het_x), len(genes), len(variants), args.gene))
+    raw_med = None
+    if win_raw:
+        rv = sorted(win_raw.values())
+        raw_med = rv[len(rv) // 2]
+    print("[medians] %s  exon-bin arm median %s  |  17p windows raw %s  backbone ref %s (%d positions)  normalised %s  |  BAF_V2 %s f=%s %s  |  PURPLE at %s %s/%s" % (
+        args.sample, "%.3f" % cr_med if cr_med is not None else "NA",
+        "%.3f" % raw_med if raw_med is not None else "NA", "%.3f" % win_offset, n_genome_windows,
+        "%.3f" % win_med if win_med is not None else "NA",
+        verdict, "%.3f" % f_est if f_est is not None else "NA", conf,
+        args.gene, (focus or {}).get("h_cn_min", "?"), (focus or {}).get("h_macn_min", "?")))
+
+    if args.index:
+        # same columns as plot_targets_trio.py: sample label chroms n_targets n_depth_bins n_baf_sites n_purple_targets file
+        n_targets = len([w for w in windows if lo <= w[0] < hi]) + len([p for p in backbone if lo <= p < hi])
+        row = [args.sample, args.index_label, args.index_label, str(n_targets), str(len(bins) + len(win_depth)),
+               str(len(sites)), str(len(purple_segs)), os.path.basename(args.out)]
+        existing = ""
+        if os.path.isfile(args.index):
+            with open(args.index) as fh:
+                existing = fh.read()
+        if existing and not existing.endswith("\n"):
+            existing += "\n"
+        header = "sample\tlabel\tchroms\tn_targets\tn_depth_bins\tn_baf_sites\tn_purple_targets\tfile\n"
+        lines = [l for l in existing.splitlines() if l and not l.split("\t")[1:2] == [args.index_label]]
+        body = "\n".join(lines) + ("\n" if lines else "")
+        if not body.startswith("sample\t"):
+            body = header + body
+        with open(args.index, "w") as fh:
+            fh.write(body + "\t".join(row) + "\n")
+        print("[ok] index row '%s' -> %s" % (args.index_label, args.index))
 
 
 if __name__ == "__main__":

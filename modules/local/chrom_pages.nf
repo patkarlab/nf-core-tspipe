@@ -61,9 +61,10 @@ process CHROM_PAGES {
             plot_genome_overview.py --sample ${meta.id} --consensus-json ${consensus_json} --allelic ${allelic} \\
                 ${purple_arg} --out chrom_pages/${meta.id}.genome.png
 
-            # dedicated 17p figure: depth bins + CNVkit segments, BAF per catalog site with the BAF_V2 band,
-            # PURPLE total/minor CN, panel genes (ARM17P_V1)
-            plot_arm_17p.py --sample ${meta.id} --consensus-json ${consensus_json} ${purple_arg} ${snp17_arg} \\
+            # dedicated 17p page (ARM17P_V2): gene exon bins + SNP-window depth ratios + CNVkit segments, BAF per
+            # catalog site with the BAF_V2 band, PURPLE total/minor CN, panel genes; registered in the index as chr17p
+            plot_arm_17p.py --sample ${meta.id} --consensus-json ${consensus_json} --allelic ${allelic} ${bg_arg} \\
+                ${purple_arg} ${snp17_arg} --index chrom_pages/${meta.id}.chrom_pages.tsv --index-label chr17p \\
                 --out chrom_pages/${meta.id}.17p.png
         """
 }

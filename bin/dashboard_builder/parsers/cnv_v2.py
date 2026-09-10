@@ -37,12 +37,19 @@ DECON_COLUMNS = ["Gene", "CNV.type", "N.exons", "Chromosome", "Start", "End", "B
 
 
 def _chrom_key(c):
+    """Sort key: autosomes, then X, Y, then anything else; an arm suffix sorts right after its
+    chromosome ("chr17p" after "chr17"). Always a 3-tuple (ARM17P_V2)."""
     c = str(c).replace("chr", "").upper()
     if c == "X":
-        return (1, 23)
+        return (1, 23, "")
     if c == "Y":
-        return (1, 24)
-    return (0, int(c)) if c.isdigit() else (2, c)
+        return (1, 24, "")
+    i = 0
+    while i < len(c) and c[i].isdigit():
+        i += 1
+    if i:
+        return (0, int(c[:i]), c[i:])
+    return (2, c, "")
 
 
 def _read_tsv(path):

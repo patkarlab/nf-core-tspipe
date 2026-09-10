@@ -115,3 +115,35 @@ argument overlays the TP53 variant VAF(s); not used in the pipeline because the 
 does not exist at CHROM_PAGES time (the dashboard python, targeted-seq env, has matplotlib 3.10,
 so a dashboard-time overlay is possible). Changing the figure re-executes CHROM_PAGES for every
 sample (plus ORGANIZE, DASHBOARD, bundles). Patcher `tools/patches/2026-09-10/patch_arm17p_v1.py`.
+
+### Revision 2026-09-10 (ARM17P_V2 + TP53_ON_17P_V1): the 17p page
+
+Placement: `plot_arm_17p.py` appends a row `chr17p` to `chrom_pages/<S>.chrom_pages.tsv`, so the
+17p figure is a chromosome page — pill "17p" right after "17" (`parsers/cnv_v2.py` `_chrom_key`
+sorts an arm suffix after its chromosome), its own Include checkbox (`chrom_page::chr17p`), in
+the bundle like the other pages. The TP53 / 17p observation card (TP53_OBS_V1) no longer heads
+the CNV tab: it is a template macro `tp53_card` rendered inside the 17p pane above the figure;
+on a run without a 17p page it renders at the end of the CNV tab instead. The Reporting-tab
+one-line mirror is unchanged.
+
+Depth track: the gene exon bins are not drawn (they are on the chr17 page; `--exon-bins`
+restores them). The track shows the SNP-window depth ratios — median over each window's catalog
+positions of log2(sample depth / cohort median depth), computed as on the chromosome pages from
+`--allelic` and `--background` — sample-normalised by subtracting the median of the same ratio
+over every catalog position outside chr17 (the backbone, from the background table), plus the
+CNVkit segment and the exon-bin arm median as lines. The legend prints the 17p window median and
+its offset from the exon-bin median; heterozygous sites are coloured by the BAF_V2 arm verdict
+and the legend says so.
+
+Why normalised, and how to read it (eight run8 samples, 2026-09-10; table in
+`docs/audit/2026-09-10/17p_window_depth_medians.md`): raw ratios are not a copy-number measure —
+the seven 17p-neutral samples spread from −0.05 to −0.33 with each library's depth relative to
+the cohort, and the 26CGH1250 chromosome-17 gain is invisible. After backbone normalisation the
+seven neutral samples collapse to −0.18 ± 0.03 and 26CGH1250 sits at +0.13, i.e. +0.31 above the
+neutral level, equal to its exon-bin arm median. The remaining −0.18 is a probe-batch offset (the
+17p supplementary windows yield ~12 % less relative to the backbone in run8 than in the 48-normal
+cohort); it is constant within a run and is not removed. Read the track by its shape along the
+arm and by the window-minus-exon-bin offset: the same offset as the run's other samples means the
+windows moved with the genes; a different one means windows and genes disagree. A per-run
+calibration would remove the batch term once runs are large enough; supplementary windows with
+matched control windows elsewhere would remove it by design (Twist letter).

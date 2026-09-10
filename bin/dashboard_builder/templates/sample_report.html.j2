@@ -532,8 +532,8 @@
         {% endif %}
 
         {# MARKER TP53_OBS_V1: TP53 / 17p observation block -- observations only; the interpretation wording comes from assets/<panel>/tp53_interpretation_rules.tsv #}
-        {% if ctx.tp53 %}
-        {% set _t = ctx.tp53 %}
+        {# MARKER TP53_ON_17P_V1: the card is a macro, rendered inside the chr17p chromosome page (fallback: end of the CNV tab) #}
+        {% macro tp53_card(_t, cnv) %}
         <div class="card mb-3" id="tp53-observation-card">
           <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span class="fw-medium">TP53 / 17p observation</span>
@@ -596,12 +596,7 @@
               </span>
               {% if _t.rules.errors %}<div class="small text-danger mt-1">Rule table problems: {{ _t.rules.errors | join('; ') | e }}</div>{% endif %}
             </div>
-            {# MARKER ARM17P_V1: dedicated 17p figure, report-selectable like any CNV plot #}
-            {% if ctx.cnv and ctx.cnv.arm17p_figure %}
-            <div class="row g-3 mt-1 mb-2">
-              {{ macros.render_cnv_plot_card('arm17p::1', '17p: depth bins and CNVkit segments, BAF per catalog site with the BAF_V2 band, PURPLE total / minor copy number, panel genes (TP53 in bold)', ctx.cnv.arm17p_figure, 'col-12') }}
-            </div>
-            {% endif %}
+            {# MARKER ARM17P_V2: the 17p figure is the chromosome page this card sits on #}
             <details class="small">
               <summary class="text-muted">Fields available to the rule table (this sample's values)</summary>
               <div class="mt-1" style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">
@@ -610,7 +605,7 @@
             </details>
           </div>
         </div>
-        {% endif %}
+        {% endmacro %}
 
         {# DASH_CNV_TABS_V1: five sub-tabs; each source shown once #}
         <ul class="nav nav-tabs mb-3" id="cnv-subtabs" role="tablist">
@@ -786,8 +781,9 @@
           <div class="tab-content" id="cnv-chrom-panes">
             {% for item in ctx.cnv.chrom_pages %}
               <div class="tab-pane fade{% if loop.first %} show active{% endif %}" id="cnv-chrom-{{ item.chrom }}" role="tabpanel">
+                {% if item.chrom == 'chr17p' and ctx.tp53 %}{{ tp53_card(ctx.tp53, ctx.cnv) }}{% endif %}   {# TP53_ON_17P_V1 #}
                 <div class="row g-3">
-                  {{ macros.render_cnv_plot_card('chrom_page::' ~ item.chrom, item.chrom ~ ' (' ~ item.n_targets ~ ' targets, ' ~ item.n_baf_sites ~ ' BAF sites)', item.path, 'col-12') }}
+                  {{ macros.render_cnv_plot_card('chrom_page::' ~ item.chrom, ('17p page' if item.chrom == 'chr17p' else item.chrom) ~ ' (' ~ item.n_targets ~ ' targets, ' ~ item.n_baf_sites ~ ' BAF sites)', item.path, 'col-12') }}
                 </div>
               </div>
             {% endfor %}
@@ -804,6 +800,11 @@
         {% endif %}
           </div>
         </div>
+
+        {# TP53_ON_17P_V1: fallback placement when the run has no chr17p page #}
+        {% if ctx.tp53 and not (ctx.cnv and ctx.cnv.chrom_pages and (ctx.cnv.chrom_pages | selectattr('chrom', 'equalto', 'chr17p') | list)) %}
+        <div class="mt-3">{{ tp53_card(ctx.tp53, ctx.cnv) }}</div>
+        {% endif %}
 
         <script>
           // DASH_CNV_TABS_V1: DataTables laid out while hidden need a column adjust once visible
