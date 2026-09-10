@@ -382,34 +382,23 @@ Nextflow mounts only the work dir and staged `path` inputs into a container; the
 
 ## 5. Absolute-path literals (/goast, /home/hemat, anaconda3)
 
+`tools/patches/` (archived patchers, historical by design) and this script are excluded from the scan.
+
 | File | In code | In comments |
 |---|---|---|
-| tools/patches/2026-05-24/usage_pon.md.new | 19 | 0 |
 | conf/gandalf.config | 18 | 0 |
 | conf/twist_apply.config | 12 | 0 |
-| tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py | 10 | 0 |
 | tools/paralog_limited_exons.py | 7 | 0 |
-| tools/patches/2026-09-07/patch_hmf_purple_v1.py | 7 | 0 |
-| tools/portability_inventory.py | 7 | 0 |
 | tools/run_pipeline.sh | 7 | 0 |
 | tools/make_tspipe_samplesheet.py | 5 | 0 |
 | tools/exon_depth_survey.py | 4 | 0 |
 | tools/hmftools/build_panel_resources.sh | 4 | 0 |
-| tools/patches/2026-05-17/apply_render_py36_fix.py | 4 | 0 |
-| tools/patches/2026-09-03/patch_vv_public_endpoint.py | 4 | 0 |
 | bin/filter_decon_calls.py | 3 | 0 |
 | nextflow.config | 3 | 0 |
 | tools/build_artefacts/scatter_chr_gene_standalone.py | 3 | 0 |
 | tools/build_purecn_normaldb.sh | 3 | 0 |
 | tools/decon/build_decon_pool.sh | 3 | 0 |
 | tools/decon/filter_decon_calls.py | 3 | 0 |
-| tools/patches/2026-05-17/apply_container_fix.py | 3 | 0 |
-| tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py | 3 | 0 |
-| tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py | 3 | 0 |
-| tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py | 3 | 0 |
-| tools/patches/2026-05-24/seed_myeloid_cnv_assets.py | 3 | 0 |
-| tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py | 3 | 0 |
-| tools/patches/2026-09-09/mocha17_offline.sh | 3 | 1 |
 | bin/backbone_depth_qc.py | 2 | 0 |
 | bin/verify_normals_sex.py | 2 | 0 |
 | tools/build_variant_pon_blacklist.py | 2 | 0 |
@@ -418,61 +407,9 @@ Nextflow mounts only the work dir and staged `path` inputs into a container; the
 | tools/hmftools/setup_hmftools.sh | 2 | 1 |
 | tools/make_bnc_pon_samplesheet.py | 2 | 0 |
 | tools/make_report_bundle.py | 2 | 0 |
-| tools/patches/2026-05-17/apply_dashboard_patch.py | 2 | 0 |
-| tools/patches/2026-05-17/apply_dateformat_fix.py | 2 | 0 |
-| tools/patches/2026-05-17/apply_mosdepth_include_duplicates.py | 2 | 0 |
-| tools/patches/2026-05-19/test_pindel_gt_filter.py | 2 | 0 |
-| tools/patches/2026-06-10/patch_dashboard_triage_share.py | 2 | 0 |
-| tools/patches/2026-09-07/patch_viz_v1.py | 2 | 0 |
-| tools/patches/2026-09-08/check_annovar_key.py | 2 | 0 |
-| tools/patches/2026-09-09/build_mocha_v1.sh | 2 | 0 |
-| tools/patches/2026-09-09/check_annovar_fatal.py | 2 | 0 |
-| tools/patches/2026-09-09/housekeeping_n10.sh | 2 | 0 |
-| tools/patches/2026-09-10/check_tp53_block.sh | 2 | 0 |
 | conf/twist_pon_noncontainer.config | 1 | 0 |
 | launch_tspipe.sh | 1 | 0 |
 | tools/make_pon_twist_samplesheet.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_exon_coverage_port.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_exon_coverage_split_bundle2.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_hsmetrics_port.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_mosdepth_exonwise_bed.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_preprocessing_qc_wiring.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_qc_publishdir_routing.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_somaticseq_arbitrary_callers.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_somaticseq_groovy_dollar_escape_fix.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_somaticseq_postprocess_fix.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_somaticseq_split_sort_pipefail_fix.py | 1 | 0 |
-| tools/patches/2026-05-17/apply_tspipe_qc_channels.py | 1 | 0 |
-| tools/patches/2026-05-18/manual_edits_required.md | 1 | 0 |
-| tools/patches/2026-05-19/apply_pindel_gt_filter.py | 1 | 0 |
-| tools/patches/2026-05-24/apply_build_pon_preprocessing_fix.py | 1 | 0 |
-| tools/patches/2026-05-24/apply_build_sex_pon_filename_and_threshold_fix.py | 1 | 0 |
-| tools/patches/2026-05-24/apply_docs_usage_pon_rewrite.py | 1 | 0 |
-| tools/patches/2026-05-24/apply_integrate_clean_genome_scatter.py | 1 | 0 |
-| tools/patches/2026-05-24/apply_somaticseq_drop_alt_contigs.py | 1 | 0 |
-| tools/patches/2026-05-25/apply_report_bundle_wiring_2026-05-25.py | 1 | 0 |
-| tools/patches/2026-06-09/patch_annotate_flagpick.py | 1 | 0 |
-| tools/patches/2026-06-09/patch_runvep_env.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_annotate_flagpick.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_annotate_parse_csq_docstring.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_apply_blacklist_guard.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_build_cnv_fallback_annotated.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_cnv_parser_annotated_table.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_cnv_parser_docstring.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_flt3_itd_ext_sentinel.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_nextflow_config_blacklist_skipfrom.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_organize_output_nf_cnv_annotated.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_organize_output_py_cnv_annotated.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_runvep_env.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_sample_report_cnv_annotated_table.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_tspipe_cnv_annotated_join.py | 1 | 0 |
-| tools/patches/2026-06-10/patch_tspipe_deadcode.py | 1 | 0 |
-| tools/patches/2026-06-19/patch_dashboard_default_annotators.py | 1 | 0 |
-| tools/patches/2026-06-19/patch_dashboard_mobidetails_curate.py | 1 | 0 |
-| tools/patches/2026-09-01/patch_builder_filtered_bed.py | 1 | 0 |
-| tools/patches/2026-09-06/patch_decon_v1.py | 1 | 0 |
-| tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh | 1 | 0 |
-| tools/patches/2026-09-10/run_dilution_17p.sh | 1 | 0 |
 | tools/start_vv_gunicorn.sh | 1 | 1 |
 | tools/update_manifest_md5s.py | 1 | 0 |
 | tools/verify_s3_archived.py | 1 | 0 |
@@ -553,13 +490,6 @@ Code occurrences (each must become a param, an asset, a staged input, or a conta
 - `tools/paralog_limited_exons.py:33` /goast/hemat_data/pon_twist/paralog_v4/paralog_limited_exons.tsv
 - `tools/paralog_limited_exons.py:34` /goast/hemat_data/pon_twist/realign_v4/Male3-TwistMy/clinical/Male3-TwistMy.final.bam
 - `tools/paralog_limited_exons.py:35` /goast/hemat_data/pon_twist/paralog_v4/paralog_limited_exons.annotated.tsv
-- `tools/portability_inventory.py:34` /goast/[^\s
-- `tools/portability_inventory.py:34` /home/hemat/[^\s
-- `tools/portability_inventory.py:34` *anaconda3/[^\s
-- `tools/portability_inventory.py:39` anaconda3/envs/([A-Za-z0-9_.-
-- `tools/portability_inventory.py:401` anaconda3/envs/
-- `tools/portability_inventory.py:740` /goast/hemat_data
-- `tools/portability_inventory.py:740` /home/hemat/programs
 - `tools/run_pipeline.sh:20` /goast/hemat_data/nf-core-tspipe
 - `tools/run_pipeline.sh:21` /goast/hemat_data/nfcore_runs
 - `tools/run_pipeline.sh:120` /home/hemat/anaconda3/envs/targeted-seq/bin/python
@@ -570,134 +500,6 @@ Code occurrences (each must become a param, an asset, a staged input, or a conta
 - `tools/start_vv_gunicorn.sh:103` /goast/hemat_data/targeted-seq-pipeline/software/rest_variantValidator/
 - `tools/update_manifest_md5s.py:43` /goast/hemat_data/nf-core-tspipe/assets/myeloid_cnv/MANIFEST.tsv
 - `tools/verify_s3_archived.py:20` /goast/hemat_data/s3_fastqarchival_inventory_20260906.txt
-- `tools/patches/2026-05-17/apply_container_fix.py:42` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_container_fix.py:176` /goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date
-- `tools/patches/2026-05-17/apply_container_fix.py:178` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_dashboard_patch.py:48` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_dashboard_patch.py:351` /goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date
-- `tools/patches/2026-05-17/apply_dateformat_fix.py:42` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_dateformat_fix.py:178` /goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date
-- `tools/patches/2026-05-17/apply_exon_coverage_port.py:40` /goast/hemat_data/nf-core-tspipe/modules/local/exon_coverage.nf
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:14` /home/hemat/inbox/from_claude/parse_exon_coverage.py
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:15` /home/hemat/inbox/from_claude/mosdepth.nf
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:16` /home/hemat/inbox/from_claude/parse_exon_coverage.nf
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:19` /goast/hemat_data/nf-core-tspipe/bin/parse_exon_coverage.py
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:20` /goast/hemat_data/nf-core-tspipe/modules/local/mosdepth.nf
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:21` /goast/hemat_data/nf-core-tspipe/modules/local/parse_exon_coverage.nf
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:24` /goast/hemat_data/nf-core-tspipe/modules/local/exon_coverage.nf
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:40` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:41` /home/hemat/inbox/from_claude
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py:67` /home/hemat/inbox/from_claude/
-- `tools/patches/2026-05-17/apply_exon_coverage_split_bundle2.py:40` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_hsmetrics_port.py:39` /goast/hemat_data/nf-core-tspipe/modules/local/hsmetrics.nf
-- `tools/patches/2026-05-17/apply_mosdepth_exonwise_bed.py:65` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_mosdepth_include_duplicates.py:73` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_mosdepth_include_duplicates.py:74` /home/hemat/targeted-seq-pipeline
-- `tools/patches/2026-05-17/apply_preprocessing_qc_wiring.py:29` /goast/hemat_data/nf-core-tspipe/subworkflows/local/preprocessing.nf
-- `tools/patches/2026-05-17/apply_qc_publishdir_routing.py:34` /goast/hemat_data/nf-core-tspipe/conf/modules.config
-- `tools/patches/2026-05-17/apply_render_py36_fix.py:13` /goast/hemat_data/nf-core-tspipe/bin/render_dashboard.py
-- `tools/patches/2026-05-17/apply_render_py36_fix.py:44` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_render_py36_fix.py:150` /goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date
-- `tools/patches/2026-05-17/apply_render_py36_fix.py:152` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-17/apply_somaticseq_arbitrary_callers.py:73` /goast/hemat_data/nf-core-tspipe/modules/local/somaticseq.nf
-- `tools/patches/2026-05-17/apply_somaticseq_groovy_dollar_escape_fix.py:33` /goast/hemat_data/nf-core-tspipe/modules/local/somaticseq.nf
-- `tools/patches/2026-05-17/apply_somaticseq_postprocess_fix.py:48` /goast/hemat_data/nf-core-tspipe/modules/local/somaticseq_postprocess.nf
-- `tools/patches/2026-05-17/apply_somaticseq_split_sort_pipefail_fix.py:60` /goast/hemat_data/nf-core-tspipe/modules/local/somaticseq.nf
-- `tools/patches/2026-05-17/apply_tspipe_qc_channels.py:26` /goast/hemat_data/nf-core-tspipe/workflows/tspipe.nf
-- `tools/patches/2026-05-18/manual_edits_required.md:119` /goast/hemat_data/nfcore_runs/<run>/25NGS1307
-- `tools/patches/2026-05-19/apply_pindel_gt_filter.py:32` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-19/test_pindel_gt_filter.py:31` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-19/test_pindel_gt_filter.py:39` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/apply_build_pon_preprocessing_fix.py:63` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/apply_build_sex_pon_filename_and_threshold_fix.py:77` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py:16` /goast/hemat_data/nf-core-tspipe/references/myeloid_cnv/...
-- `tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py:49` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py:65` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py:67` /goast/hemat_data/nf-core-tspipe/bin/dashboard_builder
-- `tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py:257` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py:258` /goast/hemat_data/nfcore_runs/tspipe_clinical_myeloid_cnv_*
-- `tools/patches/2026-05-24/apply_docs_usage_pon_rewrite.py:56` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py:83` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py:85` /goast/hemat_data/targeted-seq-pipeline/bedfiles/
-- `tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py:89` /goast/hemat_data/targeted-seq-pipeline/references/
-- `tools/patches/2026-05-24/apply_integrate_clean_genome_scatter.py:63` /goast/hemat_data/nf-core-tspipe/bin/cnv_plots.py
-- `tools/patches/2026-05-24/apply_somaticseq_drop_alt_contigs.py:61` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/seed_myeloid_cnv_assets.py:57` /goast/hemat_data/nfcore_runs/pon_myeloid_cnv_20260524_104140
-- `tools/patches/2026-05-24/seed_myeloid_cnv_assets.py:58` /goast/hemat_data/nf-core-tspipe/work/74/4a45951314871dadf957b5afd259ef
-- `tools/patches/2026-05-24/seed_myeloid_cnv_assets.py:68` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/usage_pon.md.new:74` /goast/hemat_data/BNC_fastqs
-- `tools/patches/2026-05-24/usage_pon.md.new:75` /goast/hemat_data/nf-core-tspipe/pon_samplesheets/my_pon.csv
-- `tools/patches/2026-05-24/usage_pon.md.new:104` /goast/hemat_data/nfcore_runs/default
-- `tools/patches/2026-05-24/usage_pon.md.new:134` /goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed
-- `tools/patches/2026-05-24/usage_pon.md.new:135` /goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed
-- `tools/patches/2026-05-24/usage_pon.md.new:141` /goast/hemat_data/nf-core-tspipe/pon_samplesheets
-- `tools/patches/2026-05-24/usage_pon.md.new:142` /goast/hemat_data/nf-core-tspipe/tools/make_bnc_pon_samplesheet.py
-- `tools/patches/2026-05-24/usage_pon.md.new:143` /goast/hemat_data/BNC_fastqs
-- `tools/patches/2026-05-24/usage_pon.md.new:144` /goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv
-- `tools/patches/2026-05-24/usage_pon.md.new:152` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-24/usage_pon.md.new:157` /goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv
-- `tools/patches/2026-05-24/usage_pon.md.new:158` /goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta
-- `tools/patches/2026-05-24/usage_pon.md.new:159` /goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed
-- `tools/patches/2026-05-24/usage_pon.md.new:161` /goast/hemat_data/nfcore_runs/${RUN_TAG
-- `tools/patches/2026-05-24/usage_pon.md.new:177` /goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv
-- `tools/patches/2026-05-24/usage_pon.md.new:178` /goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta
-- `tools/patches/2026-05-24/usage_pon.md.new:179` /goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed
-- `tools/patches/2026-05-24/usage_pon.md.new:181` /goast/hemat_data/nfcore_runs/${RUN_TAG
-- `tools/patches/2026-05-24/usage_pon.md.new:200` /goast/hemat_data/nfcore_runs/${RUN_TAG
-- `tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py:42` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py:379` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py:383` /goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed
-- `tools/patches/2026-05-25/apply_report_bundle_wiring_2026-05-25.py:48` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-06-09/patch_annotate_flagpick.py:34` /goast/hemat_data/nf-core-tspipe/bin/annotate.py
-- `tools/patches/2026-06-09/patch_runvep_env.py:36` /goast/hemat_data/nf-core-tspipe/bin/annotate.py
-- `tools/patches/2026-06-10/patch_annotate_flagpick.py:34` /goast/hemat_data/nf-core-tspipe/bin/annotate.py
-- `tools/patches/2026-06-10/patch_annotate_parse_csq_docstring.py:23` /goast/hemat_data/nf-core-tspipe/bin/annotate.py
-- `tools/patches/2026-06-10/patch_apply_blacklist_guard.py:40` /goast/hemat_data/nf-core-tspipe/bin/apply_blacklist.py
-- `tools/patches/2026-06-10/patch_build_cnv_fallback_annotated.py:23` /goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/build.py
-- `tools/patches/2026-06-10/patch_cnv_parser_annotated_table.py:29` /goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/parsers/cnv.py
-- `tools/patches/2026-06-10/patch_cnv_parser_docstring.py:26` /goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/parsers/cnv.py
-- `tools/patches/2026-06-10/patch_dashboard_triage_share.py:32` /goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/assets/js/variant-browser.js
-- `tools/patches/2026-06-10/patch_dashboard_triage_share.py:33` /goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/templates/sample_report.html.j2
-- `tools/patches/2026-06-10/patch_flt3_itd_ext_sentinel.py:38` /goast/hemat_data/nf-core-tspipe/modules/local/flt3_itd_ext.nf
-- `tools/patches/2026-06-10/patch_nextflow_config_blacklist_skipfrom.py:33` /goast/hemat_data/nf-core-tspipe/nextflow.config
-- `tools/patches/2026-06-10/patch_organize_output_nf_cnv_annotated.py:31` /goast/hemat_data/nf-core-tspipe/modules/local/organize_output.nf
-- `tools/patches/2026-06-10/patch_organize_output_py_cnv_annotated.py:32` /goast/hemat_data/nf-core-tspipe/bin/organize_output.py
-- `tools/patches/2026-06-10/patch_runvep_env.py:36` /goast/hemat_data/nf-core-tspipe/bin/annotate.py
-- `tools/patches/2026-06-10/patch_sample_report_cnv_annotated_table.py:25` /goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/templates/sample_report.html.j2
-- `tools/patches/2026-06-10/patch_tspipe_cnv_annotated_join.py:26` /goast/hemat_data/nf-core-tspipe/workflows/tspipe.nf
-- `tools/patches/2026-06-10/patch_tspipe_deadcode.py:29` /goast/hemat_data/nf-core-tspipe/workflows/tspipe.nf
-- `tools/patches/2026-06-19/patch_dashboard_default_annotators.py:58` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-06-19/patch_dashboard_mobidetails_curate.py:43` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-09-01/patch_builder_filtered_bed.py:32` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-09-03/patch_vv_public_endpoint.py:204` /home/hemat/targeted-seq-pipeline
-- `tools/patches/2026-09-03/patch_vv_public_endpoint.py:205` /home/hemat/anaconda3/envs/targeted-seq
-- `tools/patches/2026-09-03/patch_vv_public_endpoint.py:206` /home/hemat/targeted-seq-pipeline
-- `tools/patches/2026-09-03/patch_vv_public_endpoint.py:207` /home/hemat/anaconda3/envs/targeted-seq
-- `tools/patches/2026-09-06/patch_decon_v1.py:62` PATH=/home/hemat/anaconda3/envs/decon/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH
-- `tools/patches/2026-09-07/patch_hmf_purple_v1.py:184` /home/hemat/anaconda3/envs/hmftools
-- `tools/patches/2026-09-07/patch_hmf_purple_v1.py:185` /goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8
-- `tools/patches/2026-09-07/patch_hmf_purple_v1.py:186` /goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/AmberGermlineSites.38.tsv.gz
-- `tools/patches/2026-09-07/patch_hmf_purple_v1.py:187` /goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/GC_profile.1000bp.38.cnp
-- `tools/patches/2026-09-07/patch_hmf_purple_v1.py:188` /goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/common/ensembl_data
-- `tools/patches/2026-09-07/patch_hmf_purple_v1.py:189` /goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/variants/KnownHotspots.somatic.38.vcf.gz
-- `tools/patches/2026-09-07/patch_hmf_purple_v1.py:198` PATH=/home/hemat/anaconda3/envs/hmftools/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH
-- `tools/patches/2026-09-07/patch_viz_v1.py:78` /home/hemat/anaconda3/envs/reconCNV
-- `tools/patches/2026-09-07/patch_viz_v1.py:91` PATH=/home/hemat/anaconda3/envs/reconCNV/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH
-- `tools/patches/2026-09-08/check_annovar_key.py:4` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-09-08/check_annovar_key.py:46` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-09-09/build_mocha_v1.sh:21` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-09-09/build_mocha_v1.sh:24` /goast/hemat_data/targeted-seq-pipeline/singularity_cache
-- `tools/patches/2026-09-09/check_annovar_fatal.py:18` /home/hemat/anaconda3/envs/targeted-seq/bin/python
-- `tools/patches/2026-09-09/check_annovar_fatal.py:19` /goast/hemat_data/nf-core-tspipe/work/xx/yyyy...
-- `tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh:14` /goast/hemat_data/references/1000G_hg38_phased
-- `tools/patches/2026-09-09/housekeeping_n10.sh:19` /goast/hemat_data/nf-core-tspipe
-- `tools/patches/2026-09-09/housekeeping_n10.sh:20` /goast/hemat_data/twist_val/repo_scratch_$(date
-- `tools/patches/2026-09-09/mocha17_offline.sh:25` /goast/hemat_data/targeted-seq-pipeline/singularity_cache/local-mocha-v1.img
-- `tools/patches/2026-09-09/mocha17_offline.sh:26` /goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta
-- `tools/patches/2026-09-09/mocha17_offline.sh:27` /goast/hemat_data/references/1000G_hg38_phased
-- `tools/patches/2026-09-10/check_tp53_block.sh:14` /goast/hemat_data/twist_val/tspipe_run8
-- `tools/patches/2026-09-10/check_tp53_block.sh:17` /goast/hemat_data/twist_val
-- `tools/patches/2026-09-10/run_dilution_17p.sh:9` /goast/hemat_data/twist_val/tspipe_run8
 - `tools/build_artefacts/scatter_chr_gene_standalone.py:23` /goast/hemat_data/targeted-seq-pipeline/results/25NGS1307/cnvkit
 - `tools/build_artefacts/scatter_chr_gene_standalone.py:24` /home/hemat/targeted-seq-pipeline/references/myeloid/cnv_scatter_regions.txt
 - `tools/build_artefacts/scatter_chr_gene_standalone.py:248` /home/hemat/targeted-seq-pipeline/references/myeloid/cnv_scatter_regions.txt
@@ -717,38 +519,42 @@ Code occurrences (each must become a param, an asset, a staged input, or a conta
 
 ## 6. Network endpoints and HTTP calls
 
-- **(call: curl)**: tools/portability_inventory.py:38, tools/run_pipeline.sh:109, tools/start_vv_gunicorn.sh:150, tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh:38, tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh:73, tools/hmftools/setup_hmftools.sh:48, launch_tspipe.sh:76
-- **(call: httpx)**: tools/portability_inventory.py:38
-- **(call: requests.get)**: bin/17_variant_validator.py:134, bin/17_variant_validator.py:262, bin/dashboard_builder/parsers/cancervar.py:241, bin/dashboard_builder/parsers/mobidetails.py:71, bin/dashboard_builder/parsers/mobidetails.py:164, bin/dashboard_builder/parsers/oncokb.py:167, tools/patches/2026-06-19/patch_dashboard_mobidetails.py:85, tools/patches/2026-09-02/patch_vv_probe_timeout.py:23 (+5)
+### RUN-TIME
+
+- **(call: curl)**: launch_tspipe.sh:76
+- **(call: requests.get)**: bin/17_variant_validator.py:134, bin/17_variant_validator.py:262, bin/dashboard_builder/parsers/cancervar.py:241, bin/dashboard_builder/parsers/mobidetails.py:71, bin/dashboard_builder/parsers/mobidetails.py:164, bin/dashboard_builder/parsers/oncokb.py:167
 - **(call: requests.post)**: bin/dashboard_builder/parsers/genebe.py:140
-- **(call: urllib.request)**: tools/fetch_cava_catalog.py:27, tools/fetch_cava_catalog.py:46, tools/fetch_cava_catalog.py:50
-- **(call: urlopen)**: tools/fetch_cava_catalog.py:50, tools/portability_inventory.py:38
-- **(call: wget)**: tools/portability_inventory.py:38, tools/patches/2026-09-09/build_mocha_v1.sh:63, tools/patches/2026-09-09/build_mocha_v1.sh:69, tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh:26 (comment), tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh:27
 - **api.genebe.net**: bin/dashboard_builder/parsers/genebe.py:8, bin/dashboard_builder/parsers/genebe.py:36
 - **cancervar.wglab.org**: bin/dashboard_builder/parsers/cancervar.py:3, bin/dashboard_builder/parsers/cancervar.py:15, bin/dashboard_builder/parsers/cancervar.py:49
-- **data.oncoanalyser.com**: tools/hmftools/setup_hmftools.sh:13
-- **datatables.net**: bin/dashboard_builder/assets/js/dataTables.min.js:4, bin/dashboard_builder/assets/js/dataTables.min.js:4
-- **franklin.genoox.com**: bin/dashboard_builder/assets/js/variant-browser.js:552, bin/dashboard_builder/templates/sample_report.html.j2:421, tools/patches/2026-06-19/patch_dashboard_franklin_link.py:60, tools/patches/2026-09-08/patch_dash_spikein_links_v1.py:60
-- **ftp.1000genomes.ebi.ac.uk**: tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh:15
-- **genebe.net**: nextflow.config:85 (comment), bin/dashboard_builder/parsers/genebe.py:3, bin/dashboard_builder/assets/js/variant-browser.js:542, bin/dashboard_builder/templates/sample_report.html.j2:422, tools/patches/2026-06-19/patch_dashboard_default_annotators.py:142, tools/patches/2026-06-19/patch_dashboard_default_annotators.py:152, tools/patches/2026-06-19/patch_dashboard_franklin_link.py:44, tools/patches/2026-06-19/patch_dashboard_franklin_link.py:50 (+1)
-- **genome.ucsc.edu**: tools/reconcnv/reconCNV.py:939
-- **getbootstrap.com**: bin/dashboard_builder/assets/js/bootstrap.bundle.min.js:2 (comment)
-- **github.com**: nextflow.config:208, modules/local/deepsomatic.nf:12 (comment), bin/dashboard_builder/assets/js/bootstrap.bundle.min.js:3 (comment), bin/dashboard_builder/assets/js/bootstrap.bundle.min.js:4 (comment), bin/dashboard_builder/assets/js/chart.umd.min.js:16 (comment), tools/fetch_cava_catalog.py:101, tools/patches/2026-09-09/build_mocha_v1.sh:31
-- **localhost:**: tools/start_vv_gunicorn.sh:40 (comment)
-- **localhost:${HOST_PORT}**: tools/start_vv_gunicorn.sh:146, tools/start_vv_gunicorn.sh:150, tools/start_vv_gunicorn.sh:152, tools/start_vv_gunicorn.sh:158
-- **localhost:5001**: nextflow.config:75 (comment), bin/17_variant_validator.py:60, tools/run_pipeline.sh:110, tools/patches/2026-09-03/patch_vv_public_endpoint.py:40, tools/patches/2026-09-03/patch_vv_public_endpoint.py:41, tools/patches/2026-09-03/patch_vv_public_endpoint.py:192, tools/patches/2026-09-03/patch_vv_public_endpoint.py:210
-- **localhost:5001.**: tools/start_vv_gunicorn.sh:18 (comment)
-- **localhost:5001\n**: tools/patches/2026-09-03/patch_vv_public_endpoint.py:199
+- **genebe.net**: bin/dashboard_builder/parsers/genebe.py:3
+- **github.com**: nextflow.config:208
+- **localhost:5001**: bin/17_variant_validator.py:60
 - **localhost:5001}**: launch_tspipe.sh:40
+- **mobidetails.chu-montpellier.fr**: bin/dashboard_builder/parsers/mobidetails.py:3, bin/dashboard_builder/parsers/mobidetails.py:12, bin/dashboard_builder/parsers/mobidetails.py:38, bin/dashboard_builder/parsers/mobidetails.py:42
+- **rest.variantvalidator.org**: nextflow.config:78
+- **www.oncokb.org**: bin/dashboard_builder/build.py:601, bin/dashboard_builder/parsers/oncokb.py:3, bin/dashboard_builder/parsers/oncokb.py:5, bin/dashboard_builder/parsers/oncokb.py:9, bin/dashboard_builder/parsers/oncokb.py:34, bin/dashboard_builder/parsers/oncokb.py:101
+
+### setup/build-time (tools/)
+
+- **(call: curl)**: tools/run_pipeline.sh:109, tools/start_vv_gunicorn.sh:150, tools/hmftools/setup_hmftools.sh:48
+- **(call: urllib.request)**: tools/fetch_cava_catalog.py:27, tools/fetch_cava_catalog.py:46, tools/fetch_cava_catalog.py:50
+- **(call: urlopen)**: tools/fetch_cava_catalog.py:50
+- **data.oncoanalyser.com**: tools/hmftools/setup_hmftools.sh:13
+- **genome.ucsc.edu**: tools/reconcnv/reconCNV.py:939
+- **github.com**: tools/fetch_cava_catalog.py:101
+- **localhost:${HOST_PORT}**: tools/start_vv_gunicorn.sh:146, tools/start_vv_gunicorn.sh:150, tools/start_vv_gunicorn.sh:152, tools/start_vv_gunicorn.sh:158
+- **localhost:5001**: tools/run_pipeline.sh:110
 - **media.githubusercontent.com**: tools/fetch_cava_catalog.py:33
-- **mobidetails.chu-montpellier.fr**: nextflow.config:96 (comment), bin/dashboard_builder/parsers/mobidetails.py:3, bin/dashboard_builder/parsers/mobidetails.py:12, bin/dashboard_builder/parsers/mobidetails.py:38, bin/dashboard_builder/parsers/mobidetails.py:42, bin/dashboard_builder/assets/js/variant-browser.js:1345, tools/patches/2026-06-19/patch_dashboard_default_annotators.py:163, tools/patches/2026-06-19/patch_dashboard_mobidetails.py:59 (+5)
+- **raw.githubusercontent.com**: tools/fetch_cava_catalog.py:32
+
+### browser-side link or vendored library
+
+- **datatables.net**: bin/dashboard_builder/assets/js/dataTables.min.js:4, bin/dashboard_builder/assets/js/dataTables.min.js:4
+- **franklin.genoox.com**: bin/dashboard_builder/assets/js/variant-browser.js:552, bin/dashboard_builder/templates/sample_report.html.j2:421
+- **genebe.net**: bin/dashboard_builder/assets/js/variant-browser.js:542, bin/dashboard_builder/templates/sample_report.html.j2:422
+- **mobidetails.chu-montpellier.fr**: bin/dashboard_builder/assets/js/variant-browser.js:1345
 - **popper.js.org**: bin/dashboard_builder/assets/js/bootstrap.bundle.min.js:6, bin/dashboard_builder/assets/js/bootstrap.bundle.min.js:6
-- **raw.githubusercontent.com**: tools/fetch_cava_catalog.py:32, tools/patches/2026-09-09/build_mocha_v1.sh:35
-- **rest.variantvalidator.org**: nextflow.config:78, tools/patches/2026-09-03/patch_vv_public_endpoint.py:6, tools/patches/2026-09-03/patch_vv_public_endpoint.py:213
-- **www.chartjs.org**: bin/dashboard_builder/assets/js/chart.umd.min.js:9 (comment)
-- **www.jsdelivr.com**: bin/dashboard_builder/assets/js/chart.umd.min.js:5 (comment)
-- **www.ncbi.nlm.nih.gov**: bin/dashboard_builder/templates/sample_report.html.j2:419, tools/patches/2026-09-08/patch_dash_spikein_links_v1.py:58
-- **www.oncokb.org**: nextflow.config:104 (comment), nextflow.config:106 (comment), bin/dashboard_builder/build.py:601, bin/dashboard_builder/parsers/oncokb.py:3, bin/dashboard_builder/parsers/oncokb.py:5, bin/dashboard_builder/parsers/oncokb.py:9, bin/dashboard_builder/parsers/oncokb.py:34, bin/dashboard_builder/parsers/oncokb.py:101
+- **www.ncbi.nlm.nih.gov**: bin/dashboard_builder/templates/sample_report.html.j2:419
 
 ## 7. Derived A1 work list
 

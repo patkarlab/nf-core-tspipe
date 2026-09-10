@@ -3756,48 +3756,6 @@
    "comment": false
   },
   {
-   "file": "tools/portability_inventory.py",
-   "line": 34,
-   "literal": "/goast/[^\\s",
-   "comment": false
-  },
-  {
-   "file": "tools/portability_inventory.py",
-   "line": 34,
-   "literal": "/home/hemat/[^\\s",
-   "comment": false
-  },
-  {
-   "file": "tools/portability_inventory.py",
-   "line": 34,
-   "literal": "*anaconda3/[^\\s",
-   "comment": false
-  },
-  {
-   "file": "tools/portability_inventory.py",
-   "line": 39,
-   "literal": "anaconda3/envs/([A-Za-z0-9_.-",
-   "comment": false
-  },
-  {
-   "file": "tools/portability_inventory.py",
-   "line": 401,
-   "literal": "anaconda3/envs/",
-   "comment": false
-  },
-  {
-   "file": "tools/portability_inventory.py",
-   "line": 740,
-   "literal": "/goast/hemat_data",
-   "comment": false
-  },
-  {
-   "file": "tools/portability_inventory.py",
-   "line": 740,
-   "literal": "/home/hemat/programs",
-   "comment": false
-  },
-  {
    "file": "tools/run_pipeline.sh",
    "line": 20,
    "literal": "/goast/hemat_data/nf-core-tspipe",
@@ -3855,774 +3813,6 @@
    "file": "tools/verify_s3_archived.py",
    "line": 20,
    "literal": "/goast/hemat_data/s3_fastqarchival_inventory_20260906.txt",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_container_fix.py",
-   "line": 42,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_container_fix.py",
-   "line": 176,
-   "literal": "/goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_container_fix.py",
-   "line": 178,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_dashboard_patch.py",
-   "line": 48,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_dashboard_patch.py",
-   "line": 351,
-   "literal": "/goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_dateformat_fix.py",
-   "line": 42,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_dateformat_fix.py",
-   "line": 178,
-   "literal": "/goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_port.py",
-   "line": 40,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/exon_coverage.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 14,
-   "literal": "/home/hemat/inbox/from_claude/parse_exon_coverage.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 15,
-   "literal": "/home/hemat/inbox/from_claude/mosdepth.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 16,
-   "literal": "/home/hemat/inbox/from_claude/parse_exon_coverage.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 19,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/parse_exon_coverage.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 20,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/mosdepth.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 21,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/parse_exon_coverage.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 24,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/exon_coverage.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 40,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 41,
-   "literal": "/home/hemat/inbox/from_claude",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle1.py",
-   "line": 67,
-   "literal": "/home/hemat/inbox/from_claude/",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_exon_coverage_split_bundle2.py",
-   "line": 40,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_hsmetrics_port.py",
-   "line": 39,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/hsmetrics.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_mosdepth_exonwise_bed.py",
-   "line": 65,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_mosdepth_include_duplicates.py",
-   "line": 73,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_mosdepth_include_duplicates.py",
-   "line": 74,
-   "literal": "/home/hemat/targeted-seq-pipeline",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_preprocessing_qc_wiring.py",
-   "line": 29,
-   "literal": "/goast/hemat_data/nf-core-tspipe/subworkflows/local/preprocessing.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_qc_publishdir_routing.py",
-   "line": 34,
-   "literal": "/goast/hemat_data/nf-core-tspipe/conf/modules.config",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_render_py36_fix.py",
-   "line": 13,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/render_dashboard.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_render_py36_fix.py",
-   "line": 44,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_render_py36_fix.py",
-   "line": 150,
-   "literal": "/goast/hemat_data/nfcore_runs/25NGS1307_dashboard_$(date",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_render_py36_fix.py",
-   "line": 152,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_somaticseq_arbitrary_callers.py",
-   "line": 73,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/somaticseq.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_somaticseq_groovy_dollar_escape_fix.py",
-   "line": 33,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/somaticseq.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_somaticseq_postprocess_fix.py",
-   "line": 48,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/somaticseq_postprocess.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_somaticseq_split_sort_pipefail_fix.py",
-   "line": 60,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/somaticseq.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-17/apply_tspipe_qc_channels.py",
-   "line": 26,
-   "literal": "/goast/hemat_data/nf-core-tspipe/workflows/tspipe.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-18/manual_edits_required.md",
-   "line": 119,
-   "literal": "/goast/hemat_data/nfcore_runs/<run>/25NGS1307",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-19/apply_pindel_gt_filter.py",
-   "line": 32,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-19/test_pindel_gt_filter.py",
-   "line": 31,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-19/test_pindel_gt_filter.py",
-   "line": 39,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_build_pon_preprocessing_fix.py",
-   "line": 63,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_build_sex_pon_filename_and_threshold_fix.py",
-   "line": 77,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py",
-   "line": 16,
-   "literal": "/goast/hemat_data/nf-core-tspipe/references/myeloid_cnv/...",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py",
-   "line": 49,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_cnv_loo_qc_cwd_relative_paths_fix.py",
-   "line": 65,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py",
-   "line": 67,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py",
-   "line": 257,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_dashboard_primary_genome_scatter.py",
-   "line": 258,
-   "literal": "/goast/hemat_data/nfcore_runs/tspipe_clinical_myeloid_cnv_*",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_docs_usage_pon_rewrite.py",
-   "line": 56,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py",
-   "line": 83,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py",
-   "line": 85,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_drop_alt_contig_permanent_fix.py",
-   "line": 89,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_integrate_clean_genome_scatter.py",
-   "line": 63,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/cnv_plots.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/apply_somaticseq_drop_alt_contigs.py",
-   "line": 61,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/seed_myeloid_cnv_assets.py",
-   "line": 57,
-   "literal": "/goast/hemat_data/nfcore_runs/pon_myeloid_cnv_20260524_104140",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/seed_myeloid_cnv_assets.py",
-   "line": 58,
-   "literal": "/goast/hemat_data/nf-core-tspipe/work/74/4a45951314871dadf957b5afd259ef",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/seed_myeloid_cnv_assets.py",
-   "line": 68,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 74,
-   "literal": "/goast/hemat_data/BNC_fastqs",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 75,
-   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets/my_pon.csv",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 104,
-   "literal": "/goast/hemat_data/nfcore_runs/default",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 134,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 135,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 141,
-   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 142,
-   "literal": "/goast/hemat_data/nf-core-tspipe/tools/make_bnc_pon_samplesheet.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 143,
-   "literal": "/goast/hemat_data/BNC_fastqs",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 144,
-   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 152,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 157,
-   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 158,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 159,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 161,
-   "literal": "/goast/hemat_data/nfcore_runs/${RUN_TAG",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 177,
-   "literal": "/goast/hemat_data/nf-core-tspipe/pon_samplesheets/bnc_mycnv_25.csv",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 178,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 179,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 181,
-   "literal": "/goast/hemat_data/nfcore_runs/${RUN_TAG",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-24/usage_pon.md.new",
-   "line": 200,
-   "literal": "/goast/hemat_data/nfcore_runs/${RUN_TAG",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py",
-   "line": 42,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py",
-   "line": 379,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-25/apply_report_bundle_pairing_fix_v2_2026-05-25.py",
-   "line": 383,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/bedfiles/myeloid_CNVbackbone_HG38_nf-core-tspipe.bed",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-05-25/apply_report_bundle_wiring_2026-05-25.py",
-   "line": 48,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-09/patch_annotate_flagpick.py",
-   "line": 34,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-09/patch_runvep_env.py",
-   "line": 36,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_annotate_flagpick.py",
-   "line": 34,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_annotate_parse_csq_docstring.py",
-   "line": 23,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_apply_blacklist_guard.py",
-   "line": 40,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/apply_blacklist.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_build_cnv_fallback_annotated.py",
-   "line": 23,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/build.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_cnv_parser_annotated_table.py",
-   "line": 29,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/parsers/cnv.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_cnv_parser_docstring.py",
-   "line": 26,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/parsers/cnv.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_dashboard_triage_share.py",
-   "line": 32,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/assets/js/variant-browser.js",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_dashboard_triage_share.py",
-   "line": 33,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/templates/sample_report.html.j2",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_flt3_itd_ext_sentinel.py",
-   "line": 38,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/flt3_itd_ext.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_nextflow_config_blacklist_skipfrom.py",
-   "line": 33,
-   "literal": "/goast/hemat_data/nf-core-tspipe/nextflow.config",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_organize_output_nf_cnv_annotated.py",
-   "line": 31,
-   "literal": "/goast/hemat_data/nf-core-tspipe/modules/local/organize_output.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_organize_output_py_cnv_annotated.py",
-   "line": 32,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/organize_output.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_runvep_env.py",
-   "line": 36,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/annotate.py",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_sample_report_cnv_annotated_table.py",
-   "line": 25,
-   "literal": "/goast/hemat_data/nf-core-tspipe/bin/dashboard_builder/templates/sample_report.html.j2",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_tspipe_cnv_annotated_join.py",
-   "line": 26,
-   "literal": "/goast/hemat_data/nf-core-tspipe/workflows/tspipe.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-10/patch_tspipe_deadcode.py",
-   "line": 29,
-   "literal": "/goast/hemat_data/nf-core-tspipe/workflows/tspipe.nf",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_default_annotators.py",
-   "line": 58,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails_curate.py",
-   "line": 43,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-01/patch_builder_filtered_bed.py",
-   "line": 32,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 204,
-   "literal": "/home/hemat/targeted-seq-pipeline",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 205,
-   "literal": "/home/hemat/anaconda3/envs/targeted-seq",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 206,
-   "literal": "/home/hemat/targeted-seq-pipeline",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 207,
-   "literal": "/home/hemat/anaconda3/envs/targeted-seq",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-06/patch_decon_v1.py",
-   "line": 62,
-   "literal": "PATH=/home/hemat/anaconda3/envs/decon/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
-   "line": 184,
-   "literal": "/home/hemat/anaconda3/envs/hmftools",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
-   "line": 185,
-   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
-   "line": 186,
-   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/AmberGermlineSites.38.tsv.gz",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
-   "line": 187,
-   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/GC_profile.1000bp.38.cnp",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
-   "line": 188,
-   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/common/ensembl_data",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
-   "line": 189,
-   "literal": "/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/variants/KnownHotspots.somatic.38.vcf.gz",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-07/patch_hmf_purple_v1.py",
-   "line": 198,
-   "literal": "PATH=/home/hemat/anaconda3/envs/hmftools/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-07/patch_viz_v1.py",
-   "line": 78,
-   "literal": "/home/hemat/anaconda3/envs/reconCNV",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-07/patch_viz_v1.py",
-   "line": 91,
-   "literal": "PATH=/home/hemat/anaconda3/envs/reconCNV/bin:/home/hemat/anaconda3/envs/targeted-seq/bin:$PATH",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-08/check_annovar_key.py",
-   "line": 4,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-08/check_annovar_key.py",
-   "line": 46,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
-   "line": 21,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
-   "line": 24,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/singularity_cache",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/check_annovar_fatal.py",
-   "line": 18,
-   "literal": "/home/hemat/anaconda3/envs/targeted-seq/bin/python",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/check_annovar_fatal.py",
-   "line": 19,
-   "literal": "/goast/hemat_data/nf-core-tspipe/work/xx/yyyy...",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
-   "line": 14,
-   "literal": "/goast/hemat_data/references/1000G_hg38_phased",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/housekeeping_n10.sh",
-   "line": 19,
-   "literal": "/goast/hemat_data/nf-core-tspipe",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/housekeeping_n10.sh",
-   "line": 20,
-   "literal": "/goast/hemat_data/twist_val/repo_scratch_$(date",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/mocha17_offline.sh",
-   "line": 25,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/singularity_cache/local-mocha-v1.img",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/mocha17_offline.sh",
-   "line": 26,
-   "literal": "/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-09/mocha17_offline.sh",
-   "line": 27,
-   "literal": "/goast/hemat_data/references/1000G_hg38_phased",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-10/check_tp53_block.sh",
-   "line": 14,
-   "literal": "/goast/hemat_data/twist_val/tspipe_run8",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-10/check_tp53_block.sh",
-   "line": 17,
-   "literal": "/goast/hemat_data/twist_val",
-   "comment": false
-  },
-  {
-   "file": "tools/patches/2026-09-10/run_dilution_17p.sh",
-   "line": 9,
-   "literal": "/goast/hemat_data/twist_val/tspipe_run8",
    "comment": false
   },
   {
@@ -4731,6 +3921,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "RUN-TIME",
    "text": "// Set to http://localhost:5001 to use the Docker stack (see"
   },
   {
@@ -4741,6 +3932,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "vv_url             = 'https://rest.variantvalidator.org'"
   },
   {
@@ -4751,6 +3943,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "RUN-TIME",
    "text": "// GeneBe (https://genebe.net) adds ACMG classification, ClinVar"
   },
   {
@@ -4761,6 +3954,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "RUN-TIME",
    "text": "// MobiDetails (https://mobidetails.chu-montpellier.fr) adds a curated"
   },
   {
@@ -4771,6 +3965,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "RUN-TIME",
    "text": "// OncoKB (https://www.oncokb.org) provides precision-oncology"
   },
   {
@@ -4781,6 +3976,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "RUN-TIME",
    "text": "// available at https://www.oncokb.org/account/register."
   },
   {
@@ -4791,6 +3987,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "homePage        = 'https://github.com/patkarlab/nf-core-tspipe'"
   },
   {
@@ -4801,6 +3998,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "RUN-TIME",
    "text": "* Reference: https://github.com/google/deepsomatic/blob/r1.10/docs/deepsomatic-case-study-wgs-tumor-only.md"
   },
   {
@@ -4811,6 +4009,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "DEFAULT_VV_URL = \"http://localhost:5001\""
   },
   {
@@ -4821,6 +4020,7 @@
     "requests.get"
    ],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "resp = requests.get(test_url, timeout=PROBE_TIMEOUT)  # MARKER: vv_probe_timeout"
   },
   {
@@ -4831,6 +4031,7 @@
     "requests.get"
    ],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "resp = requests.get(url, timeout=timeout)"
   },
   {
@@ -4841,6 +4042,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "\"https://www.oncokb.org/account/register). Cached per-sample.\""
   },
   {
@@ -4851,6 +4053,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "CancerVar (https://cancervar.wglab.org) implements the AMP/ASCO/CAP 2017"
   },
   {
@@ -4861,6 +4064,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "GET https://cancervar.wglab.org/api_new.php"
   },
   {
@@ -4871,6 +4075,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "CANCERVAR_URL = \"https://cancervar.wglab.org/api_new.php\""
   },
   {
@@ -4881,6 +4086,7 @@
     "requests.get"
    ],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "response = requests.get("
   },
   {
@@ -4891,6 +4097,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "GeneBe (https://genebe.net) provides ACMG classification, ClinVar status, gnomAD"
   },
   {
@@ -4901,6 +4108,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "POST https://api.genebe.net/cloud/api-public/v1/variants?genome=hg38"
   },
   {
@@ -4911,6 +4119,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "GENEBE_BATCH_URL = \"https://api.genebe.net/cloud/api-public/v1/variants\""
   },
   {
@@ -4921,6 +4130,7 @@
     "requests.post"
    ],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "response = requests.post("
   },
   {
@@ -4931,6 +4141,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "MobiDetails (https://mobidetails.chu-montpellier.fr) hosts curated genomic"
   },
   {
@@ -4941,6 +4152,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "GET https://mobidetails.chu-montpellier.fr/api/variant/exists/{variant_ghgvs}"
   },
   {
@@ -4951,6 +4163,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "MD_EXISTS_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}\""
   },
   {
@@ -4961,6 +4174,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "MD_VARIANT_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/{vid}/cli/\""
   },
   {
@@ -4971,6 +4185,7 @@
     "requests.get"
    ],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "resp = requests.get("
   },
   {
@@ -4981,6 +4196,7 @@
     "requests.get"
    ],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "response = requests.get("
   },
   {
@@ -4991,6 +4207,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "OncoKB (https://www.oncokb.org) is a precision-oncology knowledge base curated"
   },
   {
@@ -5001,6 +4218,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "register a free academic account at https://www.oncokb.org/account/register"
   },
   {
@@ -5011,6 +4229,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "GET https://www.oncokb.org/api/v1/annotate/mutations/byGenomicChange"
   },
   {
@@ -5021,6 +4240,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "ONCOKB_URL = \"https://www.oncokb.org/api/v1/annotate/mutations/byGenomicChange\""
   },
   {
@@ -5031,6 +4251,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "\"Register at https://www.oncokb.org/account/register for a free token.\","
   },
   {
@@ -5041,6 +4262,7 @@
     "requests.get"
    ],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "response = requests.get("
   },
   {
@@ -5051,6 +4273,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "browser-side link or vendored library",
    "text": "* Bootstrap v5.3.3 (https://getbootstrap.com/)"
   },
   {
@@ -5061,6 +4284,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "browser-side link or vendored library",
    "text": "* Copyright 2011-2024 The Bootstrap Authors (https://github.com/twbs/bootstrap/graphs/contributors)"
   },
   {
@@ -5071,6 +4295,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "browser-side link or vendored library",
    "text": "* Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)"
   },
   {
@@ -5082,6 +4307,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "browser-side link or vendored library",
    "text": "!function(t,e){\"object\"==typeof exports&&\"undefined\"!=typeof module?module.exports=e():\"function\"==typeof define&&define.amd?define(e):(t=\"u"
   },
   {
@@ -5092,6 +4318,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "browser-side link or vendored library",
    "text": "* Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files"
   },
   {
@@ -5102,6 +4329,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "browser-side link or vendored library",
    "text": "* https://www.chartjs.org"
   },
   {
@@ -5112,6 +4340,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "browser-side link or vendored library",
    "text": "* https://github.com/kurkle/color#readme"
   },
   {
@@ -5123,6 +4352,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "browser-side link or vendored library",
    "text": "!function(n){\"use strict\";var a;\"function\"==typeof define&&define.amd?define([\"jquery\"],function(t){return n(t,window,document)}):\"object\"=="
   },
   {
@@ -5133,6 +4363,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "browser-side link or vendored library",
    "text": "return \"https://genebe.net/variant/hg38/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt;"
   },
   {
@@ -5143,6 +4374,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "browser-side link or vendored library",
    "text": "return \"https://franklin.genoox.com/clinical-db/variant/snp/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt + \"-hg38\";"
   },
   {
@@ -5153,6 +4385,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "browser-side link or vendored library",
    "text": "(vid ? \"https://mobidetails.chu-montpellier.fr/api/variant/\" + vid + \"/browser/\" : \"\");"
   },
   {
@@ -5163,6 +4396,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "browser-side link or vendored library",
    "text": "{% if s.rsid and s.rsid != '-' %}<a href=\"https://www.ncbi.nlm.nih.gov/snp/{{ s.rsid }}\" target=\"_blank\" rel=\"noopener\">dbSNP</a>{% endif %}"
   },
   {
@@ -5173,6 +4407,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "browser-side link or vendored library",
    "text": "&middot; <a href=\"https://franklin.genoox.com/clinical-db/variant/snp/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}-hg38\" target=\"_blank\" re"
   },
   {
@@ -5183,6 +4418,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "browser-side link or vendored library",
    "text": "&middot; <a href=\"https://genebe.net/variant/hg38/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}\" target=\"_blank\" rel=\"noopener\">GeneBe</a>"
   },
   {
@@ -5193,6 +4429,7 @@
     "urllib.request"
    ],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "import urllib.request"
   },
   {
@@ -5203,6 +4440,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "CATALOG_TSV = f\"https://raw.githubusercontent.com/{REPO}/{COMMIT}/cava_catalogs.tsv\""
   },
   {
@@ -5213,6 +4451,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "MEDIA = f\"https://media.githubusercontent.com/media/{REPO}/{COMMIT}/\""
   },
   {
@@ -5223,6 +4462,7 @@
     "urllib.request"
    ],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "req = urllib.request.Request(url, headers={\"User-Agent\": \"tspipe-fetch-cava-catalog\"})"
   },
   {
@@ -5234,6 +4474,7 @@
     "urlopen"
    ],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "with urllib.request.urlopen(req, timeout=120) as resp:"
   },
   {
@@ -5244,20 +4485,8 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "f\"repository        https://github.com/{REPO}\","
-  },
-  {
-   "file": "tools/portability_inventory.py",
-   "line": 38,
-   "urls": [],
-   "calls": [
-    "curl",
-    "wget",
-    "urlopen",
-    "httpx"
-   ],
-   "comment": false,
-   "text": "NET_WORD_RE = re.compile(r\"\\b(curl|wget|requests\\.(get|post|Session)|urllib\\.request|urlopen|http\\.client|httpx)\\b\")"
   },
   {
    "file": "tools/run_pipeline.sh",
@@ -5267,6 +4496,7 @@
     "curl"
    ],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "http_code=$(curl -sf -o /dev/null -w '%{http_code}' --max-time 10 \\"
   },
   {
@@ -5277,6 +4507,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "\"http://localhost:5001/VariantValidator/variantvalidator/GRCh38/NM_000088.4:c.589G%3ET/all?content-type=application/json\" \\"
   },
   {
@@ -5287,6 +4518,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "setup/build-time (tools/)",
    "text": "# call http://localhost:5001. So gunicorn must be bound to container"
   },
   {
@@ -5297,6 +4529,7 @@
    ],
    "calls": [],
    "comment": true,
+   "kind": "setup/build-time (tools/)",
    "text": "# 4. Polls http://localhost:<host-port>/ until any HTTP code in"
   },
   {
@@ -5307,6 +4540,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "log \"waiting for HTTP response on http://localhost:${HOST_PORT}/ (up to ${WAIT_TIMEOUT_SEC}s)\""
   },
   {
@@ -5319,6 +4553,7 @@
     "curl"
    ],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "last_code=\"$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \"http://localhost:${HOST_PORT}/\" || echo 000)\""
   },
   {
@@ -5329,6 +4564,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "log \"OK: http://localhost:${HOST_PORT}/ responded HTTP ${last_code}\""
   },
   {
@@ -5339,387 +4575,8 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "err \"http://localhost:${HOST_PORT}/ did not respond within ${WAIT_TIMEOUT_SEC}s (last code: ${last_code})\""
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_default_annotators.py",
-   "line": 142,
-   "urls": [
-    "https://genebe.net"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "'    // GeneBe (https://genebe.net) adds ACMG classification, ClinVar\\n'"
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_default_annotators.py",
-   "line": 152,
-   "urls": [
-    "https://genebe.net"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "'    // GeneBe (https://genebe.net) adds ACMG classification, ClinVar\\n'"
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_default_annotators.py",
-   "line": 163,
-   "urls": [
-    "https://mobidetails.chu-montpellier.fr"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "'    // MobiDetails (https://mobidetails.chu-montpellier.fr) adds a curated\\n'"
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_franklin_link.py",
-   "line": 44,
-   "urls": [
-    "https://genebe.net/variant/hg38/chr"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "'    return \"https://genebe.net/variant/hg38/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt;\\n'"
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_franklin_link.py",
-   "line": 50,
-   "urls": [
-    "https://genebe.net/variant/hg38/chr"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "'    return \"https://genebe.net/variant/hg38/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt;\\n'"
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_franklin_link.py",
-   "line": 60,
-   "urls": [
-    "https://franklin.genoox.com/clinical-db/variant/snp/chr"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "'    return \"https://franklin.genoox.com/clinical-db/variant/snp/chr\" + c + \"-\" + pos + \"-\" + ref + \"-\" + alt + \"-hg38\";\\n'"
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
-   "line": 59,
-   "urls": [
-    "https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "\"anchor\": r'''MD_EXISTS_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}\""
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
-   "line": 61,
-   "urls": [
-    "https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "\"replacement\": r'''MD_EXISTS_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/exists/{ghgvs}\""
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
-   "line": 65,
-   "urls": [
-    "https://mobidetails.chu-montpellier.fr/api/variant/{vid}/cli/"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "MD_VARIANT_URL = \"https://mobidetails.chu-montpellier.fr/api/variant/{vid}/cli/\""
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
-   "line": 85,
-   "urls": [],
-   "calls": [
-    "requests.get"
-   ],
-   "comment": false,
-   "text": "resp = requests.get("
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails.py",
-   "line": 305,
-   "urls": [
-    "https://mobidetails.chu-montpellier.fr/api/variant/"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "(vid ? \"https://mobidetails.chu-montpellier.fr/api/variant/\" + vid + \"/browser/\" : \"\");"
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails_curate.py",
-   "line": 53,
-   "urls": [
-    "https://mobidetails.chu-montpellier.fr/api/variant/"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "(vid ? \"https://mobidetails.chu-montpellier.fr/api/variant/\" + vid + \"/browser/\" : \"\");"
-  },
-  {
-   "file": "tools/patches/2026-06-19/patch_dashboard_mobidetails_curate.py",
-   "line": 194,
-   "urls": [
-    "https://mobidetails.chu-montpellier.fr/api/variant/"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "(vid ? \"https://mobidetails.chu-montpellier.fr/api/variant/\" + vid + \"/browser/\" : \"\");"
-  },
-  {
-   "file": "tools/patches/2026-09-02/patch_vv_probe_timeout.py",
-   "line": 23,
-   "urls": [],
-   "calls": [
-    "requests.get"
-   ],
-   "comment": false,
-   "text": "ANCHOR = \"resp = requests.get(test_url, timeout=30)\""
-  },
-  {
-   "file": "tools/patches/2026-09-02/patch_vv_probe_timeout.py",
-   "line": 24,
-   "urls": [],
-   "calls": [
-    "requests.get"
-   ],
-   "comment": false,
-   "text": "REPLACEMENT = (\"resp = requests.get(test_url, timeout=150)\""
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 6,
-   "urls": [
-    "https://rest.variantvalidator.org"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "https://rest.variantvalidator.org (measured 1.4 s cold / 0.6 s warm from"
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 40,
-   "urls": [
-    "http://localhost:5001"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "('DEFAULT_VV_URL = \"http://localhost:5001\"\\n',"
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 41,
-   "urls": [
-    "http://localhost:5001"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "'DEFAULT_VV_URL = \"http://localhost:5001\"\\n'"
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 50,
-   "urls": [],
-   "calls": [
-    "requests.get"
-   ],
-   "comment": false,
-   "text": "('            resp = requests.get(test_url, timeout=150)  # MARKER: vv_probe_timeout -- measured ~80 s per validation\\n'"
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 54,
-   "urls": [],
-   "calls": [
-    "requests.get"
-   ],
-   "comment": false,
-   "text": "'            resp = requests.get(test_url, timeout=PROBE_TIMEOUT)  # MARKER: vv_probe_timeout -- measured ~80 s per validation\\n'"
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 123,
-   "urls": [],
-   "calls": [
-    "requests.get"
-   ],
-   "comment": false,
-   "text": "'            resp = requests.get(url, timeout=timeout)\\n',"
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 127,
-   "urls": [],
-   "calls": [
-    "requests.get"
-   ],
-   "comment": false,
-   "text": "'            resp = requests.get(url, timeout=timeout)\\n'),"
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 192,
-   "urls": [
-    "http://localhost:5001"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "('            --vv-url http://localhost:5001 \\\\\\\\\\n'"
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 199,
-   "urls": [
-    "http://localhost:5001\\n"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "('            vv_url: http://localhost:5001\\n',"
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 210,
-   "urls": [
-    "http://localhost:5001"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "\"    // Set to http://localhost:5001 to use the Docker stack (see\\n\""
-  },
-  {
-   "file": "tools/patches/2026-09-03/patch_vv_public_endpoint.py",
-   "line": 213,
-   "urls": [
-    "https://rest.variantvalidator.org"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "\"    vv_url             = 'https://rest.variantvalidator.org'\\n\""
-  },
-  {
-   "file": "tools/patches/2026-09-08/patch_dash_spikein_links_v1.py",
-   "line": 58,
-   "urls": [
-    "https://www.ncbi.nlm.nih.gov/snp/{{"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "\"                    {% if s.rsid and s.rsid != '-' %}<a href=\\\"https://www.ncbi.nlm.nih.gov/snp/{{ s.rsid }}\\\" target=\\\"_blank\\\" rel=\\\"noop"
-  },
-  {
-   "file": "tools/patches/2026-09-08/patch_dash_spikein_links_v1.py",
-   "line": 60,
-   "urls": [
-    "https://franklin.genoox.com/clinical-db/variant/snp/chr{{"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "\"                      &middot; <a href=\\\"https://franklin.genoox.com/clinical-db/variant/snp/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}-"
-  },
-  {
-   "file": "tools/patches/2026-09-08/patch_dash_spikein_links_v1.py",
-   "line": 61,
-   "urls": [
-    "https://genebe.net/variant/hg38/chr{{"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "\"                      &middot; <a href=\\\"https://genebe.net/variant/hg38/chr{{ _c }}-{{ s.pos }}-{{ _ref }}-{{ _alt }}\\\" target=\\\"_blank\\\" "
-  },
-  {
-   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
-   "line": 31,
-   "urls": [
-    "https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "BCFTOOLS_URL=https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2"
-  },
-  {
-   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
-   "line": 35,
-   "urls": [
-    "https://raw.githubusercontent.com/freeseek/mocha/${MOCHA_COMMIT}"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "MOCHA_RAW=https://raw.githubusercontent.com/freeseek/mocha/${MOCHA_COMMIT}"
-  },
-  {
-   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
-   "line": 63,
-   "urls": [],
-   "calls": [
-    "wget"
-   ],
-   "comment": false,
-   "text": "wget -q -O \"$SRC/bcftools-${BCFTOOLS_VERSION}.tar.bz2.part\" \"$BCFTOOLS_URL\""
-  },
-  {
-   "file": "tools/patches/2026-09-09/build_mocha_v1.sh",
-   "line": 69,
-   "urls": [],
-   "calls": [
-    "wget"
-   ],
-   "comment": false,
-   "text": "wget -q -O \"$SRC/mocha/$f.part\" \"$MOCHA_RAW/$f\""
-  },
-  {
-   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
-   "line": 15,
-   "urls": [
-    "https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV"
-   ],
-   "calls": [],
-   "comment": false,
-   "text": "BASE=https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV"
-  },
-  {
-   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
-   "line": 26,
-   "urls": [],
-   "calls": [
-    "wget"
-   ],
-   "comment": true,
-   "text": "# stop any sequential wget still appending to the file"
-  },
-  {
-   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
-   "line": 27,
-   "urls": [],
-   "calls": [
-    "wget"
-   ],
-   "comment": false,
-   "text": "pkill -u \"$USER\" -f 'wget.*1000genomes' 2>/dev/null || true"
-  },
-  {
-   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
-   "line": 38,
-   "urls": [],
-   "calls": [
-    "curl"
-   ],
-   "comment": false,
-   "text": "curl -s --max-time 1800 --speed-limit 1000 --speed-time 60 -r $((s + have))-$e \"$BASE/$F\" >> \"$part\" || true"
-  },
-  {
-   "file": "tools/patches/2026-09-09/fetch_1kg_chr17_parallel.sh",
-   "line": 73,
-   "urls": [],
-   "calls": [
-    "curl"
-   ],
-   "comment": false,
-   "text": "curl -s --retry 10 --retry-delay 10 -o \"$F.tbi\" \"$BASE/$F.tbi\""
   },
   {
    "file": "tools/reconcnv/reconCNV.py",
@@ -5729,6 +4586,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "url = \"https://genome.ucsc.edu/cgi-bin/hgTracks?db=\" + config['files']['genome_build'] + \"&position=@chrom:@start-@end\""
   },
   {
@@ -5739,6 +4597,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "BUNDLE_URL=\"https://data.oncoanalyser.com/r2/reference/dist/v1/hartwig/pipeline_resources/hmf_pipeline_resources.38_v3.0.0--8.tar.gz\""
   },
   {
@@ -5749,6 +4608,7 @@
     "curl"
    ],
    "comment": false,
+   "kind": "setup/build-time (tools/)",
    "text": "curl -L --retry 5 --retry-delay 10 -C - -o \"$TAR\" \"$BUNDLE_URL\""
   },
   {
@@ -5759,6 +4619,7 @@
    ],
    "calls": [],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "VV_URL=\"${VV_URL:-http://localhost:5001}\""
   },
   {
@@ -5769,6 +4630,7 @@
     "curl"
    ],
    "comment": false,
+   "kind": "RUN-TIME",
    "text": "code=$(curl -sf -o /dev/null -w '%{http_code}' \\"
   }
  ]

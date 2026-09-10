@@ -463,6 +463,14 @@ SCAN_DIRS = ("nextflow.config", "main.nf", "conf", "modules", "subworkflows", "w
 SKIP_EXT = (".pyc", ".png", ".jpg", ".gz", ".zip", ".tgz", ".woff", ".woff2", ".ttf", ".ico", ".svg", ".bam", ".bai", ".hdf5", ".rds", ".RData", ".img", ".sif", ".pdf")
 
 
+ARCHIVE_PREFIXES = ("tools/patches/",)
+SELF_NAME = "portability_inventory.py"
+
+
+def is_archive(rel):
+    return rel.startswith(ARCHIVE_PREFIXES) or rel.endswith(SELF_NAME)
+
+
 def iter_scan_files(repo, extra_dirs=()):
     for entry in SCAN_DIRS + tuple(extra_dirs):
         p = os.path.join(repo, entry)
@@ -479,9 +487,13 @@ def iter_scan_files(repo, extra_dirs=()):
 
 def scan_literals(repo):
     hits = []
+    archived = 0
     for path in iter_scan_files(repo):
         rel = os.path.relpath(path, repo)
         ext = os.path.splitext(path)[1]
+        if is_archive(rel):
+            archived += 1
+            continue
         try:
             text = read_text(path)
         except OSError:
@@ -511,12 +523,20 @@ def scan_param_refs(repo):
     return refs, guarded
 
 
+def network_kind(rel, ext):
+    if ext in (".js", ".j2", ".html", ".css"):
+        return "browser-side link or vendored library"
+    if rel.startswith("bin/") or rel.startswith("modules/") or rel.startswith("subworkflows/") or rel.startswith("workflows/") or rel in ("nextflow.config", "launch_tspipe.sh") or rel.startswith("conf/"):
+        return "RUN-TIME"
+    return "setup/build-time (tools/)"
+
+
 def scan_network(repo):
     hits = []
     for path in iter_scan_files(repo):
         rel = os.path.relpath(path, repo)
         ext = os.path.splitext(path)[1]
-        if ext not in (".nf", ".config", ".py", ".sh", ".R", ".pl", ".js", ".j2", ".html"):
+        if ext not in (".nf", ".config", ".py", ".sh", ".R", ".pl", ".js", ".j2", ".html") or is_archive(rel):
             continue
         text = read_text(path)
         for i, line in enumerate(text.splitlines(), 1):
@@ -524,7 +544,7 @@ def scan_network(repo):
             words = NET_WORD_RE.findall(line)
             if urls or words:
                 hits.append({"file": rel, "line": i, "urls": urls, "calls": [w[0] for w in words],
-                             "comment": is_comment_line(line, ext), "text": line.strip()[:140]})
+                             "comment": is_comment_line(line, ext), "kind": network_kind(rel, ext), "text": line.strip()[:140]})
     return hits
 
 
@@ -749,6 +769,8 @@ def build_report(args, procs, chain, defs, values, refs, guarded, literals, netw
     # ---- 5. Literals -------------------------------------------------------------------------
     A("## 5. Absolute-path literals (/goast, /home/hemat, anaconda3)")
     A("")
+    A("`tools/patches/` (archived patchers, historical by design) and this script are excluded from the scan.")
+    A("")
     by_file = defaultdict(lambda: [0, 0])
     for h in literals:
         by_file[h["file"]][1 if h["comment"] else 0] += 1
@@ -766,16 +788,21 @@ def build_report(args, procs, chain, defs, values, refs, guarded, literals, netw
     # ---- 6. Network --------------------------------------------------------------------------
     A("## 6. Network endpoints and HTTP calls")
     A("")
-    hosts = defaultdict(list)
-    for h in network:
-        for u in h["urls"]:
-            m = re.match(r"https?://([^/]+)", u)
-            hosts[m.group(1) if m else u].append("%s:%d%s" % (h["file"], h["line"], " (comment)" if h["comment"] else ""))
-        for c in h["calls"]:
-            hosts["(call: %s)" % c].append("%s:%d%s" % (h["file"], h["line"], " (comment)" if h["comment"] else ""))
-    for host, where in sorted(hosts.items()):
-        A("- **%s**: %s" % (md_escape(host), ", ".join(where[:8]) + (" (+%d)" % (len(where) - 8) if len(where) > 8 else "")))
-    A("")
+    for kind in ("RUN-TIME", "setup/build-time (tools/)", "browser-side link or vendored library"):
+        hosts = defaultdict(list)
+        for h in network:
+            if h["kind"] != kind or h["comment"]:
+                continue
+            for u in h["urls"]:
+                m = re.match(r"https?://([^/]+)", u)
+                hosts[m.group(1) if m else u].append("%s:%d" % (h["file"], h["line"]))
+            for c in h["calls"]:
+                hosts["(call: %s)" % c].append("%s:%d" % (h["file"], h["line"]))
+        A("### %s" % kind)
+        A("")
+        for host, where in sorted(hosts.items()):
+            A("- **%s**: %s" % (md_escape(host), ", ".join(where[:8]) + (" (+%d)" % (len(where) - 8) if len(where) > 8 else "")))
+        A("")
     # ---- 7. Work list ------------------------------------------------------------------------
     A("## 7. Derived A1 work list")
     A("")
