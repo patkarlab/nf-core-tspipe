@@ -51,7 +51,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # procps: Nextflow's task wrapper uses ps for tracing; the rest are runtime libs conda envs may
 # expect from the OS (libgomp for R/BLAS builds, libxrender/libxext for R graphics).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates procps bzip2 curl less locales tzdata libgomp1 libxrender1 libxext6 libxt6 fontconfig \
+        ca-certificates procps bzip2 curl less locales tzdata libgomp1 libxrender1 libxext6 libxt6 fontconfig libtiff5 libquadmath0 \
     && rm -rf /var/lib/apt/lists/* \
     && locale-gen en_US.UTF-8
 COPY --from=unpack /opt /opt

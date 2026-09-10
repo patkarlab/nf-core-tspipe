@@ -14,3 +14,10 @@ b134a5f7c31565555b6bcfd91fee10ab  local-tspipe-host-v1.docker.tar.gz
 ae60f6e9fc0b62d0f90ed42644bb77e5  /goast/hemat_data/targeted-seq-pipeline/singularity_cache/local-tspipe-host-v1.img
 ae60f6e9fc0b62d0f90ed42644bb77e5  /goast/hemat_data/targeted-seq-pipeline/singularity_cache/local-tspipe-host-v1.img
 ```
+
+## v1.1 (thin layer, adds libtiff5 + libquadmath0; reconCNV/PIL fix)
+
+```
+aede69a3185ea55ffe15c813ee97af07  /goast/hemat_data/targeted-seq-pipeline/singularity_cache/local-tspipe-host-v1.1.img
+65d83270aec85918761e559db9e2c181  local-tspipe-host-v1.1.docker.tar.gz
+```

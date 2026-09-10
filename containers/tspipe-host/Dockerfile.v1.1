@@ -1,0 +1,23 @@
+# containers/tspipe-host/Dockerfile.v1.1 -- thin layer on local/tspipe-host:v1 (FREEZE A1 fix)
+#
+# Why a layer and not a rebuild: gandalf's Docker data root is /home (372 GB, ~30 GB free) and the
+# VariantValidator databases live on the same filesystem, so a full rebuild (context + unpack stage
+# + final image, ~25 GB transient) is not worth the risk. The packages below are also listed in the
+# apt line of the main Dockerfile, so a from-scratch build of that file yields an equivalent image.
+#
+# What it fixes (run8-on-image, 2026-09-10):
+#   libtiff5     PIL's _imaging in the reconCNV env is linked against libtiff.so.5; ubuntu:22.04
+#                ships libtiff.so.6 and the packed env carries only .so.6. On gandalf the host el9
+#                /usr/lib64 supplied .so.5, which is why this never showed outside a container.
+#                Symptom: bokeh -> PIL ImportError, RECONCNV writes its placeholder HTML.
+#   libquadmath0 wanted by libgfortran/openblas/libR and many R package .so files in the decon env.
+#                DECoN worked (R resolves it at run time) -- installed as insurance for other hosts.
+#
+# Build: docker build --network=host -f Dockerfile.v1.1 -t local/tspipe-host:v1.1 .
+FROM local/tspipe-host:v1
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends libtiff5 libquadmath0 \
+    && rm -rf /var/lib/apt/lists/* \
+    && ldconfig \
+    && PATH=/opt/envs/reconCNV/bin:$PATH python -c "import bokeh, PIL.Image; print('bokeh+PIL ok in v1.1')"
+LABEL org.opencontainers.image.version="v1.1"
