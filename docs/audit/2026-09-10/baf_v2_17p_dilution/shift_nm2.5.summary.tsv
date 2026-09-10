@@ -1,0 +1,10 @@
+mode	level_f	n_rep	n_called	n_high	n_low	pct_called	pct_high	verdicts	f_est_median	f_est_min	f_est_max	median_dev_median	noise_floor_median	n_het_median	runs_with_other_arm_change
+shift	0.00	20	0	0	0	0	0	NEUTRAL:20	0.071	0.061	0.078	0.036	0.072	139	0
+shift	0.02	20	0	0	0	0	0	NEUTRAL:20	0.071	0.063	0.081	0.036	0.072	139	0
+shift	0.05	20	0	0	0	0	0	NEUTRAL:20	0.079	0.068	0.093	0.040	0.072	138	0
+shift	0.08	20	0	0	0	0	0	NEUTRAL:20	0.098	0.082	0.118	0.049	0.072	138	0
+shift	0.10	20	0	0	0	0	0	NEUTRAL:20	0.119	0.095	0.128	0.059	0.072	138	0
+shift	0.12	20	2	0	2	10	0	CNLOH:2,NEUTRAL:18	0.133	0.125	0.145	0.066	0.072	138	0
+shift	0.15	20	18	0	18	90	0	CNLOH:18,NEUTRAL:2	0.164	0.140	0.193	0.082	0.072	137	0
+shift	0.20	20	20	3	17	100	15	CNLOH:20	0.210	0.199	0.224	0.105	0.072	136	0
+shift	0.25	20	20	20	0	100	100	CNLOH:20	0.255	0.242	0.270	0.127	0.072	135	0

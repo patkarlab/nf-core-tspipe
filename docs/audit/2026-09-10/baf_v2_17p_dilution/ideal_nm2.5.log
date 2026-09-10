@@ -1,0 +1,22 @@
+[info] 4173 background-informative positions; 4173 of them covered in /goast/hemat_data/twist_val/tspipe_run8/26CGH60-TwistMyVal/cnv_gatk/26CGH60-TwistMyVal.allelicCounts.tsv
+[info] 26CGH60-TwistMyVal: 139 17p het sites in the unmodified sample (median depth 1342, min 106, max 2137); mode ideal
+[info] baseline 17p: verdict NEUTRAL f 0.068 n_het 139 noise_floor 0.0716 median_dev 0.0341
+[info] baseline arms with a call: 9p:DEL(HIGH)
+[info] clean 26CGH1292-TwistMyVal: 17p NEUTRAL f 0.056; calls: none
+[info] clean 26CGH1480-TwistMyVal: 17p NEUTRAL f 0.062; calls: none
+[info] clean 26CGH799-TwistMyVal: 17p NEUTRAL f 0.052; calls: none
+[info] clean 26CGH885-TwistMyVal: 17p NEUTRAL f 0.064; calls: none
+[info] running the detector on 180 replicates with 8 workers
+
+mode ideal
+level_f  called  HIGH  LOW  f_est median (min-max)  median_dev  noise_floor  n_het  other-arm changes
+0.00       0/20     0    0  0.020 (0.016-0.024)        0.010       0.072      139      0
+0.02       0/20     0    0  0.024 (0.021-0.030)        0.012       0.072      139      0
+0.05       0/20     0    0  0.052 (0.045-0.056)        0.026       0.072      139      0
+0.08       0/20     0    0  0.080 (0.071-0.086)        0.040       0.072      139      0
+0.10       0/20     0    0  0.100 (0.095-0.105)        0.050       0.072      139      0
+0.12       0/20     0    0  0.120 (0.117-0.125)        0.060       0.072      139      0
+0.15      20/20     0   20  0.150 (0.145-0.153)        0.075       0.072      139      0
+0.20      20/20     0   20  0.201 (0.194-0.205)        0.101       0.072      139      0
+0.25      20/20    20    0  0.251 (0.246-0.254)        0.126       0.072      139      0
+[warn] no figure: No module named 'matplotlib'
