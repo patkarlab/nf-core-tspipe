@@ -1,0 +1,45 @@
+param	gandalf_path	type	size_or_entries	md5
+adapters	/goast/hemat_data/targeted-seq-pipeline/references/illumina_adapters.fa	FILE	1387	d6217d79d928a6865f508669b539c089
+annovar_db	/goast/hemat_data/targeted-seq-pipeline/software/annovar/humandb	DIR	19	
+annovar_script	/goast/hemat_data/targeted-seq-pipeline/software/annovar/table_annovar.pl	FILE	42936	400faf02a29925423765a20ab64ef0f0
+bed	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/panel.combined.filtered.bed	FILE	341153	01d8e8ceae9dd708cff7d26ccd999649
+cava_catalog	/goast/hemat_data/nf-core-tspipe/assets/cava/mane-1.5-grch38-refseq	DIR	5	
+cava_config	/goast/hemat_data/nf-core-tspipe/assets/cava/cava_config.template.txt	FILE	1209	c3c6962cd78d85aeea5f88b9b114a4cd
+cnv_gatk_intervals	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/targets.preprocessed.interval_list	FILE	692373	56c7e6292c0220f0b5b2fcc7b9cbd1a8
+cnv_gatk_pon	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/gatk_rc_pon_male.hdf5	FILE	2229928	24d0ba7343224dd220e22e855f987f73
+cnv_gatk_pon_female	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/gatk_rc_pon_female.hdf5	FILE	1134432	3d3d71f83646fe60784a6775b0d3b00a
+dbsnp_vcf	/goast/hemat_data/references/dbSNPGATK_hg38/Homo_sapiens_assembly38.dbsnp138.vcf.gz	FILE	1560889937	110aaeb8130bf4edb544a72d2c7829f7
+decon_exons_bed	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/decon_exons.bed	FILE	52708	8e1a8f1932c3d93ecbde485a763e1049
+decon_pool_female	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/decon_pool_female.RData	FILE	76117	c574d9d8856f78ab2a41c3a4ab8b0ce7
+decon_pool_male	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/decon_pool_male.RData	FILE	141529	aa98b0220e9922a4f4a6d54e271c9008
+exonwise_bed	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/targets.exonwise.bed	FILE	66632	25010b2a9da83a91ff81990393974dbb
+filt3r_bin	/home/hemat/programs/filt3r/filt3r	FILE	16719096	9a5ea52b484263963d5c16308e6c27f3
+filt3r_ref	/home/hemat/programs/filt3r/data/flt3_exon14-15.fa	FILE	709	0aa3f29f9e933dc76814387c038ddba2
+getitd_path	/home/hemat/programs/getitd/getitd.py	FILE	94872	204ed7b7e64ca38911b670b2cfdcfcfc
+gnomad_af_only	/goast/hemat_data/references/dbSNPGATK_hg38/af-only-gnomad.hg38.vcf.gz	FILE	3184275189	
+hmf_driver_panel	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/hmftools/DriverGenePanel.twist_myeloid.38.tsv	FILE	14367	3b4b1e4801669a751596b4c25b52cbbb
+hmf_ensembl_dir	/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/common/ensembl_data	DIR	5	
+hmf_env	/home/hemat/anaconda3/envs/hmftools	DIR	31	
+hmf_gc_profile	/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/GC_profile.1000bp.38.cnp	FILE	77087960	7c5d697a30b73d74d88e6234b6af11c3
+hmf_hotspots	/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/variants/KnownHotspots.somatic.38.vcf.gz	FILE	63328	142464ab7544999aadf4a28485fafba0
+hmf_loci	/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/AmberGermlineSites.38.tsv.gz	FILE	43940436	6b4ed11ff6256ee0e4e58c64fa0048dc
+hmf_resources	/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8	DIR	4	
+hmf_target_bed	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/hmftools/target_regions.twist_myeloid.38.bed	FILE	341153	01d8e8ceae9dd708cff7d26ccd999649
+hmf_target_norm	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/hmftools/target_regions.cobalt_normalisation.twist_myeloid.38.tsv	FILE	114736	f13535eaa4b3acfe5b480495bf15e3e2
+legacy_python_env	/home/hemat/anaconda3/envs/targeted-seq	DIR	16	
+legacy_root	/home/hemat/targeted-seq-pipeline	DIR	23	
+mills_vcf	/goast/hemat_data/references/dbSNPGATK_hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz	FILE	20685880	2e02696032dcfe95ff0324f4a13508e3
+oncovi_dir	/home/hemat/targeted-seq-pipeline/software/oncovi	DIR	8	
+pindel_bed	/goast/hemat_data/nf-core-tspipe/references/pindel_targets_flt3_ubtf.bed	FILE	1334	081b918c4bf667b2d6f0f5eabbbb2db2
+pipeline_root	/goast/hemat_data/targeted-seq-pipeline	DIR	23	
+purecn_extdata	/home/hemat/anaconda3/envs/purecn/lib/R/library/PureCN/extdata	DIR	67	
+purecn_intervals	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/purecn_intervals_twist_myeloid_hg38.txt	FILE	316842	24de1dbde2ab119ddc8fe1b101b86cbf
+purecn_normaldb	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/normalDB_twist_myeloid_hg38.rds	FILE	2259649	eee24c9fe93f8bbf8f77cf929b558baa
+purecn_normaldb_female	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/normalDB_twist_myeloid_female_hg38.rds	FILE	953809	3c186c4a4e95ad3afcc22ce851f26604
+reconcnv_env	/home/hemat/anaconda3/envs/reconCNV	DIR	9	
+reconcnv_template	/goast/hemat_data/nf-core-tspipe/assets/reconcnv/reconcnv_config_twist_myeloid.json	FILE	5210	cc3e2931c3e8333783d8e4aa1f220090
+reference	/goast/hemat_data/targeted-seq-pipeline/references/hg38_broad/Homo_sapiens_assembly38.masked.fasta	FILE	3249604816	
+snv_blacklist	/goast/hemat_data/nf-core-tspipe/references/blacklist_file.tsv	FILE	263571	9354ab48b232d7dd39842b86aff4e183
+vardict_bin	/goast/hemat_data/programs/VarDictJava/build/install/VarDict/bin/VarDict	FILE	5483	4780d2e79846f90a5c3f33b094ce9df6
+vep_cache	/goast/hemat_data/targeted-seq-pipeline/references/vep_cache	DIR	3	
+vv_cache_dir	/goast/hemat_data/targeted-seq-pipeline/references/vv_cache	DIR	1	

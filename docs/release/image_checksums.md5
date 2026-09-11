@@ -1,0 +1,17 @@
+65e220b63975c6c939beb23cfc5e9f82  broadinstitute-gatk-4.5.0.0.img
+c7191d2ed30fb9e4a74f4ca24f50cac6  google-deepsomatic-1.10.0.img
+f968bba2347f5bb53969db0b2406deca  lethalfang-somaticseq-3.7.4.img
+d641809b487418850fb74257fc6a1606  local-cava-v2.0.15.img
+591bca34550b967d43e23b2835e8b85e  local-filt3r-v0.1.img
+3ad50b797c474547acf9454b6f2a5a93  local-flt3_itd_ext-v0.2.img
+f5d0db079add34399a5c8c486a56ffe5  local-getitd-v0.1.img
+d480e87ce60f5ea932ce6896c1c0d8e4  local-mocha-v1.img
+aede69a3185ea55ffe15c813ee97af07  local-tspipe-host-v1.1.img
+ae60f6e9fc0b62d0f90ed42644bb77e5  local-tspipe-host-v1.img
+353fb822505ea3f5ec81682345539f56  quay.io-biocontainers-bcftools-1.20--h8b25389_0.img
+21645aa7e8a0689391d580f1c5b9220d  quay.io-biocontainers-cnvkit-0.9.10--pyhdfd78af_0.img
+42f8fd5e5673876c3fdff6ce00c5f0ff  quay.io-biocontainers-fastp-0.23.4--h5f740d0_0.img
+93ecf6004aac610c3aee04205e832a81  quay.io-biocontainers-igv-reports-1.12.0--pyh7cba7a3_0.img
+47cd6a775b19dbc5ba9b0785dd6e174b  quay.io-biocontainers-mosdepth-0.3.10--h4e814b3_1.img
+bf73c848e256556186174d1355b9f82a  quay.io-biocontainers-samtools-1.18--h50ea8bc_1.img
+caefe664132ee7552a53a6d82639a531  zhkddocker-flt3_itd_ext-v1.1.img
