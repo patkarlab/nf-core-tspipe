@@ -336,10 +336,29 @@ Two failure modes observed during commissioning, both silent:
   aborts the run. Size the local pool to the largest such request, or give those processes explicit
   smaller requests.
 
-**A site parameter file**, `params_<site>.yaml`, passed with `-params-file`. Parameters supplied
-this way override both the profile and any panel overlay, which is how paths hardcoded in a panel
-overlay for another site are redirected. At minimum it carries the hmftools reference paths and the
-VariantValidator cache directory.
+**A site parameter file**, `params_<site>.yaml`, passed with `-params-file`. At minimum it carries
+the hmftools reference paths and the VariantValidator cache directory.
+
+Configuration precedence decides what this file is for, and it is not obvious:
+
+| Source | Precedence |
+|---|---|
+| `--parameter` on the command line | highest |
+| `-params-file` | overrides everything below |
+| `-c <overlay>.config` (a panel overlay) | overrides the profile |
+| The site profile selected by `-profile` | overrides the defaults |
+| `nextflow.config` and `conf/modules.config` | defaults |
+
+A panel overlay is loaded **after** the site profile, so any parameter the overlay sets cannot be
+changed from a site profile — whatever the profile says is discarded. The hmftools reference paths
+in `conf/twist_apply.config` are of this kind: they are hardcoded to the development host, and a
+second site redirects them with its parameter file, not with its profile. A conditional guard in
+the overlay was tried and does not work: the guard evaluates before the profile's value is visible,
+so the overlay's default always wins (verified on clinical-23, 2026-09-11).
+
+The practical consequence is that a run without `-params-file` uses the development host's
+hmftools paths and fails at AMBER. The site launcher (section 8.3) always passes it, which is why
+runs are started through the launcher rather than by hand.
 
 ### 7.9 Installation qualification
 
@@ -431,7 +450,26 @@ awk -F, 'NR>1{print $2"\n"$3}' <samplesheet> | while read f; do [ -f "$f" ] || e
 
 ### 8.3 Launch
 
-From the head-process machine, in the pipeline directory:
+**Use the site launcher.** Each installation ships one — `tools/launch_<site>.sh` — and it is the
+supported way to start a run:
+
+```bash
+cd <pipeline dir>
+bash tools/launch_<site>.sh <samplesheet.csv> <run name> [extra nextflow args]
+```
+
+It supplies the site profile, the panel overlay, the parameter file and the VariantValidator
+endpoint; validates the samplesheet and every FASTQ path; checks free space and that no run is
+already active against the same work directory; runs the endpoint preflight; and refuses to start
+from a batch job or from any machine other than the head-process machine. It then launches
+detached and confirms the run started. Extra arguments, such as `-resume`, are passed through.
+
+`launch_tspipe.sh` in the repository root is the **development host's** launcher: its defaults
+select the development profile and a run started with it on another site fails with missing
+references under that host's paths. This is not a fault in the installation; it is the wrong
+launcher. Do not edit it to suit a site — add or use that site's launcher instead.
+
+The underlying command, for reference and for troubleshooting only:
 
 ```bash
 RUN=<run name>
@@ -590,6 +628,8 @@ The following were validated together and constitute the qualified state:
    threshold and reported additional variants. Thresholds must never reside in a site profile.
 4. The reference data, matching `docs/release/reference_manifest.tsv`.
 5. Nextflow 25.10.4.
+6. The site launcher and the site parameter file. A run started by any other means may silently
+   use another site's configuration.
 
 Any change to these requires: authorisation by the custodian; implementation on the development
 installation first; a golden regression per section 7.10 with the comparison report retained; a new
@@ -763,6 +803,7 @@ test, and record the outcome with the qualification records (section 13).
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 1.0 | | | First issue. Covers nf-core-tspipe v1.0.0 as validated on two installations (2026-09-10 and 2026-09-11), including the image backup and archive procedure (section 14). |
+| 1.1 | | | Covers v1.0.1. Adds the configuration precedence rule and why a site parameter file, not a site profile, redirects a parameter set by a panel overlay (7.8); makes the site launcher the supported way to start a run, with the failure produced by using another site's launcher (8.3, A.3); adds the launcher and parameter file to the frozen configuration (11). |
 
 ## 16. Associated documents
 
@@ -804,6 +845,7 @@ work: the system described in A.1 is in place and qualified.
 | Adapters | `~/references/adapters/illumina_adapters.fa` |
 | Site profile | `conf/clinical23.config` |
 | Site parameters | `~/pipelines/nf-core-tspipe-v1.0.0/params_clinical23.yaml` |
+| Site launcher | `tools/launch_clinical23.sh` — the supported way to start a run here |
 | VariantValidator cache | `/scratch/patkarlab-clinical/tspipe_release/vv_cache/` |
 | Credentials | `~/.config/nf-core-tspipe/credentials.config` (OncoKB token, mode 600) |
 | Image backup (secondary copy) | `/scratch/patkarlab-clinical/tspipe_release/backup_v1.0.0` (27 GB, verified 2026-09-11) |
@@ -897,22 +939,34 @@ pgrep -u patkarlab-clinical -f nextflow | wc -l           # 0 unless another run
 
 ```bash
 cd ~/pipelines/nf-core-tspipe-v1.0.0
-RUN=myrun_20260915
-setsid nextflow run . \
-    --input myrun.csv \
-    --outdir /scratch/patkarlab-clinical/${RUN} \
-    -w /scratch/patkarlab-clinical/work_${RUN} \
-    -profile clinical23,singularity \
-    -c conf/twist_apply.config \
-    -params-file params_clinical23.yaml \
-    -ansi-log false \
-    > /tmp/${RUN}.log 2>&1 < /dev/null & disown
+bash tools/launch_clinical23.sh myrun.csv myrun_20260915
 ```
 
-Every argument is required. `-c conf/twist_apply.config` selects the Twist myeloid panel;
-`-params-file params_clinical23.yaml` redirects the hmftools reference paths and without it the run
-fails at AMBER; `setsid … & disown` detaches the process so it survives logging out; `-ansi-log
-false` produces a readable log.
+The launcher supplies the profile, the Twist panel overlay, the site parameter file and the
+VariantValidator endpoint; checks the samplesheet and every FASTQ path; verifies free space and
+that no run is already active; runs the endpoint preflight; and refuses to start from a batch job
+or from any machine other than ln1. It launches detached and confirms the run started. Add
+`-resume` as a third argument to continue an interrupted run.
+
+Do not start runs with `launch_tspipe.sh`. That is the development host's launcher: it defaults to
+the gandalf profile, so every reference resolves under `/goast`, which does not exist here, and the
+run fails immediately with missing files. This occurred on 2026-09-11 and was initially mistaken
+for a reference problem. The installation was correct; the launcher was the wrong one.
+
+The command the launcher issues, for reference when troubleshooting:
+
+```bash
+setsid nextflow run . --input myrun.csv \
+    --outdir /scratch/patkarlab-clinical/myrun_20260915 \
+    -w /scratch/patkarlab-clinical/work_myrun_20260915 \
+    -profile clinical23,singularity -c conf/twist_apply.config \
+    -params-file params_clinical23.yaml -ansi-log false \
+    > /tmp/myrun_20260915.log 2>&1 < /dev/null & disown
+```
+
+`-params-file params_clinical23.yaml` is not optional: it redirects the hmftools reference paths,
+which the panel overlay hardcodes to the development host (section 7.8), and a run without it fails
+at AMBER.
 
 **Step 6 — confirm it started**, after about a minute:
 
@@ -989,12 +1043,12 @@ cohort already present on this server:
 ```bash
 cd ~/pipelines/nf-core-tspipe-v1.0.0
 RUN=twistval_$(date +%Y%m%d)
-setsid nextflow run . --input twist_val_8_clinical23.csv \
-    --outdir /scratch/patkarlab-clinical/${RUN} -w /scratch/patkarlab-clinical/work_${RUN} \
-    -profile clinical23,singularity -c conf/twist_apply.config \
-    -params-file params_clinical23.yaml -ansi-log false \
-    > /tmp/${RUN}.log 2>&1 < /dev/null & disown
+bash tools/launch_clinical23.sh twist_val_8_clinical23.csv ${RUN}
+```
 
+When it completes, compare against the accepted reference run:
+
+```bash
 python3 tools/compare_runs.py \
     --a /scratch/patkarlab-clinical/tspipe_run8_c23 \
     --b /scratch/patkarlab-clinical/${RUN} \
