@@ -29,11 +29,36 @@ if command -v apptainer >/dev/null; then note OK "$(apptainer --version)"
 elif command -v singularity >/dev/null; then note OK "$(singularity --version)"
 else note FAIL "no apptainer/singularity on PATH"; fi
 command -v squashfuse >/dev/null && note OK "squashfuse present (.sif can be mounted)" \
-    || note WARN "no squashfuse: images must be sandbox directories (tools/make_sandboxes.sh)"
+    || note WARN "no squashfuse here; compute nodes may also lack it - sandboxes (tools/make_sandboxes.sh) are the safe form"
 
 echo "=== 2. resolved configuration"
 CFG=/tmp/verify_cfg_$$.txt
-nextflow config -flat "$@" . > "$CFG" 2>/tmp/verify_cfg_$$.err || { note FAIL "nextflow config failed: $(tail -1 /tmp/verify_cfg_$$.err)"; exit 1; }
+# `nextflow -c <file> config ...`: -c is a global option and must precede the sub-command.
+PRE=(); POST=(); PARAMS_FILE=""
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -c) PRE+=(-c "$2"); shift 2 ;;
+        -params-file) PARAMS_FILE="$2"; shift 2 ;;
+        *)  POST+=("$1"); shift ;;
+    esac
+done
+nextflow "${PRE[@]}" config -flat "${POST[@]}" . > "$CFG" 2>/tmp/verify_cfg_$$.err || { note FAIL "nextflow config failed: $(tail -1 /tmp/verify_cfg_$$.err)"; exit 1; }
+# `nextflow config` has no -params-file (it is a `run` option), so apply the file here: a params
+# file overrides both the profile and any -c overlay, which is how site paths are redirected.
+if [ -n "$PARAMS_FILE" ]; then
+    [ -f "$PARAMS_FILE" ] || { note FAIL "params file not found: $PARAMS_FILE"; exit 1; }
+    n=0
+    while IFS= read -r line; do
+        case "$line" in ''|'#'*) continue ;; esac
+        key=$(printf '%s' "${line%%:*}" | tr -d ' ')
+        val=$(printf '%s' "${line#*:}" | sed 's/^ *//; s/ *$//; s/^"//; s/"$//')
+        [ -n "$key" ] || continue
+        grep -v "^params\.$key " "$CFG" > "$CFG.tmp" && mv "$CFG.tmp" "$CFG"
+        echo "params.$key = '$val'" >> "$CFG"
+        n=$((n+1))
+    done < "$PARAMS_FILE"
+    note OK "params file applied: $PARAMS_FILE ($n overrides)"
+fi
 CACHE=$(grep -E "^singularity.cacheDir" "$CFG" | head -1 | cut -d= -f2- | tr -d " '\"")
 note OK "image cache: ${CACHE:-<unset>}"
 
@@ -51,9 +76,15 @@ done < "$CHECKSUMS"
 echo "=== 4. references"
 while IFS=$'\t' read -r param gpath type size md5; do
     [ "$param" = "param" ] && continue
+    # vestigial on a containerised install: the modules call the in-image binaries
+    case "$param" in legacy_root|legacy_python_env|filt3r_bin|filt3r_ref|getitd_path|vardict_bin) continue ;; esac
     val=$(grep -E "^params\.$param " "$CFG" | head -1 | cut -d= -f2- | sed "s/^ *//; s/^'//; s/'$//")
     [ -z "$val" ] && { note WARN "params.$param not set in this profile"; continue; }
-    case "$val" in /*) : ;; *) continue ;; esac
+    case "$val" in
+        /opt/*) note OK "$param -> $val (inside the image)"; continue ;;
+        /*) : ;;
+        *) continue ;;
+    esac
     if [ "$type" = "DIR" ]; then
         [ -d "$val" ] && note OK "$param -> $val ($(ls "$val" | wc -l) entries)" || note FAIL "$param missing: $val"
     elif [ -f "$val" ]; then
