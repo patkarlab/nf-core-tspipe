@@ -228,7 +228,8 @@ Install alongside any existing installation; do not overwrite one. Record the co
 
 ### 7.3 Obtain the container images
 
-Preferred: copy the image set from a qualified installation (section 7.4).
+Preferred: copy the image set from a qualified installation (section 7.4), or retrieve it from
+the archive (section 14.5).
 
 If no qualified installation exists — first ever deployment — the principal image is built on a
 machine with Docker and the source conda environments, using the scripts in `containers/tspipe-host/`:
@@ -581,7 +582,8 @@ invalidates the installation's qualification.
 The following were validated together and constitute the qualified state:
 
 1. The pipeline at tag `v1.0.0`, unmodified.
-2. The fourteen container images, matching `docs/release/image_checksums.md5`.
+2. The fourteen container images, matching `docs/release/image_checksums.md5`. These cannot be
+   reproduced; they are backed up per section 14.
 3. All calling and filtering thresholds in `conf/modules.config` — notably VarScan's
    `min_var_freq` of 0.03. During commissioning this parameter was found in a site profile rather
    than the shared configuration, and a second installation consequently called at a tenfold lower
@@ -622,15 +624,147 @@ deployment is complete only when section 7.10 has passed and the comparison repo
 | Operational qualification comparison report (section 7.10) | Custodian | Life of the installation, and after every change |
 | Run log (`/tmp/<run>.log`, copied to the output directory) | Operator | Per laboratory policy for clinical records |
 | Run outputs | Operator | Per laboratory policy for clinical records |
+| Backup verification and restore-test records (section 14) | Custodian | Life of the installation |
 | Deviation and escalation records | Custodian | Per laboratory policy |
 
-## 14. Revision history
+## 14. Backup, archive and restore of the container images
+
+### 14.1 Why this matters
+
+The container images are the only components of the system that cannot be reproduced. Converting a
+Docker image to Singularity format is not byte-reproducible: rebuilding from the same source yields
+a different file, and an installation running different bytes is no longer the qualified
+installation. The reference data can be re-downloaded and the pipeline is in version control; the
+images cannot be recovered from anywhere except a backup.
+
+Three copies are maintained, on independent systems, each verified by checksum:
+
+| Copy | Location | Purpose |
+|---|---|---|
+| Primary | `/goast/hemat_data/tspipe_release/backup_v1.0.0` on the development host | Working copy; source for new deployments |
+| Secondary | `/scratch/patkarlab-clinical/tspipe_release/backup_v1.0.0` on clinical-23 | Survives loss of the development host |
+| Archive | `s3://hemat/tspipe_release/v1.0.0/` (ACTREC Dell ECS, endpoint `caib-ecs.actrec.gov.in`) | Survives loss of either compute system |
+
+The archive bucket is institutional object storage, not a public service. The images bundle
+ANNOVAR, VEP, Strelka2, OncoVI and the hmftools jars, whose licences do not permit public
+redistribution: they must never be placed on a public registry or any world-readable location.
+
+### 14.2 What the backup contains
+
+| Path within the backup | Content |
+|---|---|
+| `images/` | All 14 Singularity images (`.img`), plus the Docker export of the principal image (`local-tspipe-host-v1.1.docker.tar.gz`) and its checksum |
+| `src/` | The `conda-pack` tarballs from which the principal image was built, with `CHECKSUMS.md5`. These are excluded from version control and exist nowhere else |
+| `docs/` | Release notes, image checksums, reference manifest, this SOP, and `COMMIT.txt` recording the exact commit and tag |
+| `nf-core-tspipe-v1.0.0.gitbundle` | A complete clone of the repository, so the pipeline is recoverable without access to the hosting service |
+| `MANIFEST.md5` | Checksums of every file above |
+
+Total approximately 27 GB.
+
+### 14.3 Creating or refreshing the backup
+
+Performed on the development host by the custodian, after any change to the image set:
+
+```bash
+cd <pipeline dir>
+B=<release root>/backup_<version>
+mkdir -p $B/images $B/src $B/docs
+cp -p <singularity cache>/*.img $B/images/
+cp -p <release>/images/*.docker.tar.gz* $B/images/
+cp -p containers/tspipe-host/src/*.tar.gz containers/tspipe-host/src/CHECKSUMS.md5 $B/src/
+cp -p docs/release/image_checksums.md5 docs/release/reference_manifest.tsv       docs/RELEASE_NOTES.md docs/sops/SOP-TSPIPE-001.pdf docs/sops/SOP-TSPIPE-001.md $B/docs/
+git bundle create $B/nf-core-tspipe-<version>.gitbundle --all
+git log -1 --oneline > $B/docs/COMMIT.txt && git describe --tags >> $B/docs/COMMIT.txt
+cd $B && find . -type f ! -name MANIFEST.md5 -exec md5sum {} \; | sort -k2 > MANIFEST.md5
+md5sum -c MANIFEST.md5 | grep -c ": OK"
+```
+
+Distribute to the secondary and archive copies, verifying each:
+
+```bash
+rsync -ah --info=progress2 $B/ <user>@<clinical host>:<path>/backup_<version>/
+ssh <user>@<clinical host> 'cd <path>/backup_<version> && md5sum -c MANIFEST.md5 | grep -c ": OK"'
+
+s3cmd put --recursive $B/ s3://hemat/tspipe_release/<version>/
+s3cmd ls --recursive s3://hemat/tspipe_release/<version>/ | wc -l
+```
+
+Both verification commands must report the file count in `MANIFEST.md5`.
+
+### 14.4 Verifying the archive copy
+
+Checksum an object by downloading it to a file. Do not attempt to verify by streaming to standard
+output — `s3cmd get … -` does not deliver the object content and produces a misleading checksum.
+
+```bash
+s3cmd get --force s3://hemat/tspipe_release/v1.0.0/images/local-tspipe-host-v1.1.img /tmp/verify.img
+ls -la /tmp/verify.img; md5sum /tmp/verify.img; rm -f /tmp/verify.img
+```
+
+Expected: 3,534,614,528 bytes, MD5 `aede69a3185ea55ffe15c813ee97af07`.
+
+Verify the archive at least annually and after any change to the image set, and record the result.
+
+### 14.5 Retrieving the images for a new or rebuilt installation
+
+This replaces section 7.3 when no qualified installation is reachable to copy from.
+
+```bash
+mkdir -p <release root>/images && cd <release root>/images
+s3cmd get --recursive s3://hemat/tspipe_release/v1.0.0/images/ .
+s3cmd get s3://hemat/tspipe_release/v1.0.0/MANIFEST.md5 .
+s3cmd get --recursive s3://hemat/tspipe_release/v1.0.0/docs/ ../docs/
+md5sum -c ../MANIFEST.md5 2>/dev/null | grep -vE ": OK$" | head
+```
+
+Every image must report `OK`. Then proceed from section 7.5 (deploy as `.sif` or sandboxes),
+section 7.6 (reference data), section 7.7 (credentials) and section 7.8 (site configuration).
+
+If the repository is also unavailable, restore it from the bundle:
+
+```bash
+s3cmd get s3://hemat/tspipe_release/v1.0.0/nf-core-tspipe-v1.0.0.gitbundle /tmp/
+git clone /tmp/nf-core-tspipe-v1.0.0.gitbundle <pipeline dir>
+cd <pipeline dir> && git checkout v1.0.0 && git describe --tags
+```
+
+### 14.6 Installing from the Docker export
+
+Required only where the destination uses Docker rather than Apptainer, or where a Singularity
+image must be regenerated locally. Note that a locally regenerated `.sif` will not be byte-identical
+to the archived one; the installation must then be qualified by section 7.10 rather than by
+checksum alone.
+
+```bash
+s3cmd get s3://hemat/tspipe_release/v1.0.0/images/local-tspipe-host-v1.1.docker.tar.gz /tmp/
+s3cmd get s3://hemat/tspipe_release/v1.0.0/images/local-tspipe-host-v1.1.docker.tar.gz.md5 /tmp/
+cd /tmp && md5sum -c local-tspipe-host-v1.1.docker.tar.gz.md5
+docker load -i local-tspipe-host-v1.1.docker.tar.gz
+docker images local/tspipe-host
+docker run --rm -u "$(id -u):$(id -g)" \
+    -v <pipeline dir>/containers/tspipe-host/smoke_test.sh:/tmp/smoke_test.sh:ro \
+    local/tspipe-host:v1.1 bash /tmp/smoke_test.sh
+```
+
+The smoke test must report 29 successful checks. To produce a Singularity image from it:
+
+```bash
+singularity build <cache>/local-tspipe-host-v1.1.img docker-daemon://local/tspipe-host:v1.1
+```
+
+### 14.7 Restore testing
+
+A backup that has never been restored is an assumption. At least once per release, and after any
+change to the image set, perform 14.6 on a machine that does not hold the original, run the smoke
+test, and record the outcome with the qualification records (section 13).
+
+## 15. Revision history
 
 | Version | Date | Author | Change |
 |---|---|---|---|
-| 1.0 | | | First issue. Covers nf-core-tspipe v1.0.0 as validated on two installations (2026-09-10 and 2026-09-11). |
+| 1.0 | | | First issue. Covers nf-core-tspipe v1.0.0 as validated on two installations (2026-09-10 and 2026-09-11), including the image backup and archive procedure (section 14). |
 
-## 15. Associated documents
+## 16. Associated documents
 
 | Document | Location |
 |---|---|
@@ -641,6 +775,7 @@ deployment is complete only when section 7.10 has passed and the comparison repo
 | Pipeline output specification | `docs/output.md` |
 | Panel and dashboard procedures | `docs/sops/` |
 | clinical-23 installation and operating instructions | Annex A of this document |
+| Image backup and archive | `s3://hemat/tspipe_release/v1.0.0/`; see section 14 |
 | Clinical parameter decisions | `docs/clinical_decisions.md` |
 
 ## Annex A — clinical-23: installation as built, and operating instructions
@@ -671,6 +806,8 @@ work: the system described in A.1 is in place and qualified.
 | Site parameters | `~/pipelines/nf-core-tspipe-v1.0.0/params_clinical23.yaml` |
 | VariantValidator cache | `/scratch/patkarlab-clinical/tspipe_release/vv_cache/` |
 | Credentials | `~/.config/nf-core-tspipe/credentials.config` (OncoKB token, mode 600) |
+| Image backup (secondary copy) | `/scratch/patkarlab-clinical/tspipe_release/backup_v1.0.0` (27 GB, verified 2026-09-11) |
+| Image backup (archive copy) | `s3://hemat/tspipe_release/v1.0.0/` |
 | Accepted reference run | `/scratch/patkarlab-clinical/tspipe_run8_c23` (8 Twist validation samples) |
 | Qualification | IQ and OQ passed 2026-09-11. Clinical tables byte-identical to the gandalf installation; comparison report `docs/audit/2026-09-11/run8_gandalf_vs_clinical23_v2.md` |
 
