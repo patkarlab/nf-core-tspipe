@@ -81,7 +81,10 @@ LOG=/tmp/${RUN}.log
 [ -e "$OUTDIR" ] && log "note: $OUTDIR exists; outputs will be added to it (use -resume for an interrupted run)"
 
 # ---- no concurrent run against the same work directory --------------------------------------
-if pgrep -u "$USER" -f "nextflow.*-w $WORKDIR" >/dev/null 2>&1 || pgrep -u "$USER" -f "$RUN" >/dev/null 2>&1; then
+# Match on the work directory only: it appears in the Nextflow command line but not in this
+# launcher's own, so the check cannot detect itself. (An earlier version matched the run name and
+# did exactly that, refusing every first launch.)
+if pgrep -u "$USER" -f "nextflow.*$WORKDIR" >/dev/null 2>&1; then
     die "a Nextflow process for this run appears to be active. Wait for it to exit (Nextflow holds a session lock) before resuming."
 fi
 
