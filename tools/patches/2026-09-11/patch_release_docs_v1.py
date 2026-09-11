@@ -1,10 +1,77 @@
-# Changelog
+#!/usr/bin/env python3
+"""
+RELEASE_DOCS_V1 -- align the release paperwork with the v1.0.0 freeze.
 
-All notable changes are documented in this file. The format is loosely
-based on [Keep a Changelog](https://keepachangelog.com/) and the project
-follows [semantic versioning](https://semver.org/).
+Three independent edits, applied all-or-nothing:
 
-## [Unreleased]
+  1. nextflow.config  : manifest.version '0.1.0dev' -> '1.0.0'
+  2. docs/RELEASE_NOTES.md : the Deployment section points at
+     docs/sops/install_clinical23.md, which does not exist. Repoint it at
+     the controlled SOP and name the sections that actually cover install
+     and porting.
+  3. CHANGELOG.md     : add a [1.0.0] entry for the September work, demote
+     the old "[Unreleased] - 0.1.0-dev" block to a dated [0.1.0-dev]
+     section, open a fresh [Unreleased] for the v1.1 line, and fix the
+     link-reference footer.
+
+Idempotent: each edit is skipped when its MARKER is already present.
+Dry-run by default; pass --apply to write. Timestamped .bak_ backups.
+
+Usage:
+    python3 tools/patches/2026-09-11/patch_release_docs_v1.py            # dry run
+    python3 tools/patches/2026-09-11/patch_release_docs_v1.py --apply
+"""
+
+import argparse
+import datetime as _dt
+import shutil
+import sys
+from pathlib import Path
+
+TAG = "release_docs_v1"
+
+# ---------------------------------------------------------------------------
+# 1. nextflow.config
+# ---------------------------------------------------------------------------
+
+NF_OLD = "    version         = '0.1.0dev'"
+NF_NEW = "    version         = '1.0.0'"
+NF_MARKER = NF_NEW
+
+# ---------------------------------------------------------------------------
+# 2. docs/RELEASE_NOTES.md
+# ---------------------------------------------------------------------------
+
+RN_OLD = """`docs/sops/install_clinical23.md` describes installing this release on a new host: prerequisites,
+loading the image set, placing the reference data against the manifest, verification with the stub
+DAG, and the eight-sample golden regression."""
+
+RN_NEW = """`docs/sops/SOP-TSPIPE-001.md` is the controlled document for this release. Section 7 covers
+installation on a new host from nothing (host software, image transfer and sandboxes, reference
+data, credentials, site-config authoring) with installation qualification in 7.9 and operational
+qualification in 7.10; section 12 covers porting to a further server and the site-specific
+decision table; section 14 covers backup, archive and restore of the container images. Annex A is
+the clinical-23 installation record, including the exact run procedure.
+
+Install-time helpers: `tools/make_sandboxes.sh` (image sandboxes), `tools/verify_install.sh`
+(toolchain, images against `docs/release/image_checksums.md5`, references against
+`docs/release/reference_manifest.tsv`), and `tools/compare_runs.py` for the eight-sample golden
+regression against the accepted run."""
+
+RN_MARKER = "`docs/sops/SOP-TSPIPE-001.md` is the controlled document for this release."
+
+# ---------------------------------------------------------------------------
+# 3. CHANGELOG.md
+# ---------------------------------------------------------------------------
+
+CL_OLD = """## [Unreleased] — 0.1.0-dev
+
+The pre-1.0 working line. Features below are present and validated on
+gandalf; the version stays at `0.1.0-dev` until the first tagged
+GitHub Release.
+"""
+
+CL_NEW = """## [Unreleased]
 
 The v1.1 working line. Nothing here is part of a tagged release. Items deferred from 1.0.0 are
 listed under "Deferred to 1.1" below.
@@ -139,71 +206,90 @@ final VCF; per-run calibration of the 17p window depth.
 
 The pre-1.0 working line, superseded by 1.0.0. Recorded here as the state at the end of the
 initial port from the Python orchestrator.
+"""
 
-### Per-sample workflow (TSPIPE)
+CL_MARKER = "## [1.0.0] — 2026-09-10"
 
-- **Preprocessing**: fastp → bwa-mem2 → Picard MarkDuplicates → GATK4 BQSR → ABRA2 indel realignment.
-- **QC**: Picard HsMetrics, mosdepth (with duplicates included per clinical convention), per-sample dashboard.
-- **8-caller somatic ensemble**: Mutect2, VarDict, VarScan, FreeBayes, Strelka2, Platypus, Pindel, DeepSomatic. Consensus via SomaticSeq.
-- **U2AF1 paralog rescue**: dedicated module recovers calls in the U2AF1 region that paralog collapse would otherwise drop.
-- **4-caller FLT3-ITD ensemble**: FLT3_ITD_EXT, getITD, filt3r, Pindel-region. Pindel-region added 2026-05-19, raising consensus confidence on real ITDs.
-- **CNV calling**: CNVKit against a sex-stratified panel-of-normals selected per-sample from `meta.sex`. Leave-one-out QC, scatter plots, concordance, and annotated clinical CNV TSV.
-- **Annotation**: VEP + ANNOVAR → curated SNV blacklist filter → VariantValidator HGVS verification → OncoVI oncogenicity scoring.
-- **IGV pileup reports**: per-sample interactive HTML for case review, patched in place by the cohort dashboard step to support hash-router deep links from the per-sample report.
-- **Cohort HTML dashboard**: static dashboard at `<outdir>/cohort_index.html` with a row per sample, linking to a tabbed per-sample report at `<outdir>/<sample>/clinical/<sample>_report.html`. Tabs: Overview, QC (HsMetrics + per-exon coverage), Variants — Clinical, Variants — All Filtered, FLT3, CNV (CNVkit plots + clinical TSV), IGV, Reporting, Files. Vendored Bootstrap/jQuery/DataTables/Chart.js under `<outdir>/assets/`; no external CDN dependencies. Source: `dashboard_builder` v0.4.6 vendored at `bin/dashboard_builder/`. Runs on the host via `executor='local'`, reusing the same conda env as VARIANT_VALIDATOR/ONCOVI/FLT3_TO_VARIANTS (`params.legacy_python_env`, override via `params.dashboard_python`). See `docs/dashboard.md` for the full reference.
-- **Clinical deliverable tree**: `<outdir>/<sample>/clinical/` assembled by the reporting subworkflow; scratch directories pruned by the `workflow.onComplete` hook.
+CL_LINK_OLD = "[Unreleased]: https://github.com/patkarlab/nf-core-tspipe/compare/HEAD...HEAD"
 
-### Resource and reference handling
+CL_LINK_NEW = """[Unreleased]: https://github.com/patkarlab/nf-core-tspipe/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/patkarlab/nf-core-tspipe/releases/tag/v1.0.0"""
 
-- **Masked hg38** is used for every step including variant calling. See `docs/clinical_decisions.md` for the U2AF1 paralog rationale.
-- **Panel-namespaced asset layout**: PoN, noise profile, and noisy-bin BED live under `assets/<panel>/` with an asset-default fallback at `${projectDir}/assets/${params.panel}/...` for every CNV input.
-- **Sex declared per-sample** in the samplesheet (`sex` column: `male` / `female` / `unknown`); replaces production's coverage-based inference.
-- **CNV input fallbacks**: `cnv_loo_summary`, `cnv_noise_profile`, `cnv_noisy_bins` resolve to asset defaults unless overridden on the CLI. The historical `--cnv_pon` flag is deprecated and has no effect.
 
-### PoN-build workflow (BUILD_PON)
+# ---------------------------------------------------------------------------
+# Machinery
+# ---------------------------------------------------------------------------
 
-- Standalone workflow entry that replaces `12c_cnv_loo_qc.py`, `12c_build_sex_pon.py`, and the `run_masked_realign.sh` chain.
-- Produces `cnvkit_pon_male.cnn`, `cnvkit_pon_female.cnn`, `cnvkit_loo_summary.tsv`, `loo_bin_noise_profile.tsv`, `cnvkit_noisy_bins.bed`, and `cnvkit_pon_sex_assignment.tsv`.
-- Normals samplesheet supports an `exclude` column to keep a sample in preprocessing but drop it from the PoN aggregation (used for known clonally-aberrant lines like OCIAML3).
+def plan_edit(root, relpath, marker, pairs):
+    """
+    Return (relpath, new_text) or None when the marker is already present.
+    pairs is a list of (old, new); every old must appear exactly once.
+    Raises SystemExit on a missing or ambiguous anchor.
+    """
+    path = root / relpath
+    if not path.is_file():
+        raise SystemExit("[error] missing file: %s" % relpath)
+    text = path.read_text(encoding="utf-8")
 
-### Engineering and validation
+    if marker in text:
+        print("[skip]   %s (marker already present)" % relpath)
+        return None
 
-- All 40 modules in `modules/local/` carry `stub:` blocks for DAG-level validation in `-stub` mode.
-- Documented multi-sample baseline: **16 samples, 2 h 19 min wall time on gandalf** (192 cores, 1.5 TB RAM), 2026-05-19.
-- Two-workflow architecture (TSPIPE and BUILD_PON) declared in `main.nf` with a post-run `workflow.onComplete` hook that prunes scratch directories and warns on filesystem-mismatch publishDir fallbacks.
+    for old, new in pairs:
+        count = text.count(old)
+        if count != 1:
+            raise SystemExit(
+                "[error] %s: anchor found %d times, expected exactly 1:\n---\n%s\n---"
+                % (relpath, count, old[:200])
+            )
+        text = text.replace(old, new, 1)
 
-### Known limitations
+    print("[patch]  %s (%d edit%s)" % (relpath, len(pairs), "" if len(pairs) == 1 else "s"))
+    return (relpath, text)
 
-- `FLT3_ITD_EXT` exits with `NO ITD CANDIDATE CLUSTERS GENERATED` on ITD-negative samples, recorded by Nextflow as a task failure. All other modules complete normally.
-- Bundled `test` profile references missing `assets/test/` fixtures and should not be used. Use `<yoursite>,singularity -stub` with a real samplesheet for structural validation.
 
-### Documentation
+def main():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--apply", action="store_true", help="write the changes (default: dry run)")
+    ap.add_argument("--root", default=".", help="repository root (default: cwd)")
+    args = ap.parse_args()
 
-- Comprehensive install reference at `docs/INSTALL.md`.
-- Per-document references: `docs/usage.md`, `docs/output.md`, `docs/usage_pon.md`, `docs/clinical_decisions.md`, `docs/testing.md`, `docs/deployment.md`.
+    root = Path(args.root).resolve()
+    if not (root / "main.nf").is_file():
+        raise SystemExit("[error] %s does not look like the repo root (no main.nf)" % root)
 
-## Pre-release porting history
+    planned = []
+    for item in (
+        plan_edit(root, "nextflow.config", NF_MARKER, [(NF_OLD, NF_NEW)]),
+        plan_edit(root, "docs/RELEASE_NOTES.md", RN_MARKER, [(RN_OLD, RN_NEW)]),
+        plan_edit(root, "CHANGELOG.md", CL_MARKER,
+                  [(CL_OLD, CL_NEW), (CL_LINK_OLD, CL_LINK_NEW)]),
+    ):
+        if item:
+            planned.append(item)
 
-The pipeline was ported from the in-house Python orchestrator
-`run_sample_pipeline.py` to Nextflow DSL2 over multiple sessions. The
-work is recorded in detail under `docs/audit/` (per-session notes) and
-in the git log; this summary covers the milestones.
+    if not planned:
+        print("\nNothing to do; all three edits are already in place.")
+        return 0
 
-- **Initial scaffold**: 7 subworkflows (preprocessing, variant_calling, flt3_itd, cnv_calling, sv_calling, annotation, reporting) and 38 module files, most as stubs. Python helpers copied into `bin/` for consensus, filter, and organize logic.
-- **Module-by-module porting**: variant callers, FLT3-ITD ensemble, annotation, and reporting filled in across sessions.
-- **CNV wiring (2026-05-15 / 2026-05-16)**: six previously-unwired CNV modules attached to the per-sample DAG; panel-namespaced asset layout established; `gandalf.config` cleaned of CNV-path overrides so asset-default fallbacks fire.
-- **Stub-block sweep (2026-05-16)**: stub blocks added to all 40 modules in one pass, making `-stub` mode usable for DAG-level validation.
-- **End-to-end validation (2026-05-19)**: 16-sample run completes in 2 h 19 min on gandalf with clean clinical deliverables across all samples.
-- **Documentation hardening (2026-05-19 / 2026-05-20)**: README rewritten, `docs/INSTALL.md` authored as the canonical fresh-server reference, `docs/output.md` and `docs/usage.md` rewritten against current configs, `docs/PORTING_STATUS.md` archived to `docs/audit/2026-05-19/`.
+    if not args.apply:
+        print("\nDry run. %d file(s) would change. Re-run with --apply to write."
+              % len(planned))
+        return 0
 
-### Dropped from the port
+    stamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    for relpath, new_text in planned:
+        path = root / relpath
+        backup = path.with_name(path.name + ".bak_%s_%s" % (TAG, stamp))
+        shutil.copy2(path, backup)
+        print("[backup] %s" % backup.name)
+        path.write_text(new_text, encoding="utf-8")
+        print("[write]  %s" % relpath)
 
-The following components from the production tree were intentionally
-not ported:
+    print("\nApplied %d file(s). Verify with: git diff --stat" % len(planned))
+    return 0
 
-- **Alternative CNV callers** never wired into the production runner: `12d_cn_mops.R`, `12d_panelcn_mops.R`, `12d_ifcnv.py`, `12d_ifcnv_precompute.py`.
-- **Lymphoma-specific scripts** (out of scope for the current leukaemia focus): `lymphoma_fusion_scanner.py`, `run_batch_fusion_scan.py`, `build_fusion_pon.py`, `run_lymphoma_batch.sh`.
-- **Orchestration scripts** replaced by Nextflow: `run_sample_pipeline.py`, `run_batch_preprocessing.py`, `cleanup_intermediates.py`.
 
-[Unreleased]: https://github.com/patkarlab/nf-core-tspipe/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/patkarlab/nf-core-tspipe/releases/tag/v1.0.0
+if __name__ == "__main__":
+    sys.exit(main())

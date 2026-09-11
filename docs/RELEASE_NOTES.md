@@ -68,6 +68,14 @@ window depth; the quality items in list B and the evaluation items in list C. Se
 
 ## Deployment
 
-`docs/sops/install_clinical23.md` describes installing this release on a new host: prerequisites,
-loading the image set, placing the reference data against the manifest, verification with the stub
-DAG, and the eight-sample golden regression.
+`docs/sops/SOP-TSPIPE-001.md` is the controlled document for this release. Section 7 covers
+installation on a new host from nothing (host software, image transfer and sandboxes, reference
+data, credentials, site-config authoring) with installation qualification in 7.9 and operational
+qualification in 7.10; section 12 covers porting to a further server and the site-specific
+decision table; section 14 covers backup, archive and restore of the container images. Annex A is
+the clinical-23 installation record, including the exact run procedure.
+
+Install-time helpers: `tools/make_sandboxes.sh` (image sandboxes), `tools/verify_install.sh`
+(toolchain, images against `docs/release/image_checksums.md5`, references against
+`docs/release/reference_manifest.tsv`), and `tools/compare_runs.py` for the eight-sample golden
+regression against the accepted run.
