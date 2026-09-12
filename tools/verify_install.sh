@@ -109,6 +109,21 @@ for p in $(grep -E "^params.(outdir|vv_cache_dir) " "$CFG" | cut -d= -f2- | tr -
     d=$p; [ -d "$d" ] || d=$(dirname "$p")
     [ -w "$d" ] && note OK "writable: $d" || note WARN "not writable: $d"
 done
+echo "=== 7. panel completeness"
+PANEL=$(grep -E "^params.panel " "$CFG" | head -1 | cut -d= -f2- | tr -d " '\"")
+ASSETS="$REPO/assets/${PANEL}"
+if [ -d "$ASSETS" ] && [ -f "$REPO/tools/check_panel_completeness.py" ]; then
+    CALLBED=$(grep -E "^params.bed " "$CFG" | head -1 | cut -d= -f2- | tr -d " '\"")
+    if python3 "$REPO/tools/check_panel_completeness.py" \
+           --assets "$ASSETS" --calling-bed "$CALLBED" --quiet; then
+        note OK "panel completeness: every probe interval is callable"
+    else
+        note FAIL "panel completeness check failed (see lines above)"
+    fi
+else
+    note WARN "panel completeness check skipped (no assets/${PANEL} or script)"
+fi
+
 rm -f "$CFG" /tmp/verify_cfg_$$.err
 echo
 [ "$fail" = 0 ] && echo "VERIFY PASSED" || echo "VERIFY FAILED (see FAIL lines above)"

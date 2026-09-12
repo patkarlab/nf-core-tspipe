@@ -2,7 +2,7 @@ param	gandalf_path	type	size_or_entries	md5
 adapters	/goast/hemat_data/targeted-seq-pipeline/references/illumina_adapters.fa	FILE	1387	d6217d79d928a6865f508669b539c089
 annovar_db	/goast/hemat_data/targeted-seq-pipeline/software/annovar/humandb	DIR	19	
 annovar_script	/goast/hemat_data/targeted-seq-pipeline/software/annovar/table_annovar.pl	FILE	42936	400faf02a29925423765a20ab64ef0f0
-bed	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/panel.combined.filtered.bed	FILE	341153	01d8e8ceae9dd708cff7d26ccd999649
+bed	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/panel.calling.bed	FILE	215491	4b7e123966079266e83ce7baf7642ef5
 cava_catalog	/goast/hemat_data/nf-core-tspipe/assets/cava/mane-1.5-grch38-refseq	DIR	5	
 cava_config	/goast/hemat_data/nf-core-tspipe/assets/cava/cava_config.template.txt	FILE	1209	c3c6962cd78d85aeea5f88b9b114a4cd
 cnv_gatk_intervals	/goast/hemat_data/nf-core-tspipe/assets/twist_myeloid/targets.preprocessed.interval_list	FILE	692373	56c7e6292c0220f0b5b2fcc7b9cbd1a8
