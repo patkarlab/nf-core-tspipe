@@ -7,7 +7,7 @@ IDH2	R140	residue	MDS_CMML	IIC	Level_3B: enasidenib in MDS trials	OncoKB
 FLT3	ITD	exon_indel_14_15	AML	IA	Level_1: midostaurin (newly dx); gilteritinib (R/R); quizartinib (newly dx)	OncoKB Level 1; FDA 2017/2018/2023	Detected by FLT3_ITD_EXT/filt3r/getITD ensemble
 FLT3	D835	residue	AML	IA	Level_1: midostaurin; gilteritinib (R/R)	OncoKB Level 1	TKD; quizartinib NOT approved for TKD
 FLT3	I836	residue	AML	IA	Level_1: midostaurin; gilteritinib	OncoKB Level 1	TKD
-NPM1	W288fs	exon_indel_exon12	AML	IA	Level_1: revumenib (R/R FDA Oct 2025); favorable when no FLT3-ITD	FDA 2025; NCCN Cat 2A; ELN 2022	Defines AML-NPM1
+NPM1	W288fs	residue_285_292	AML	IA	Level_1: revumenib (R/R FDA Oct 2025); favorable when no FLT3-ITD	FDA 2025; NCCN Cat 2A; ELN 2022	Defines AML-NPM1
 KMT2A	rearrangement	fusion	AML_ALL	IA	Level_1: revumenib (R/R KMT2A-rearr leuk FDA Nov 2024)	FDA 2024	NOT SNV; detected by SV pipeline or karyotype
 JAK2	V617F	specific_aa	MPN	IA	Level_1: ruxolitinib (MF, PV); ropeginterferon (PV)	OncoKB Level 1	MPN-defining
 JAK2	V617F	specific_aa	AML_MDS	IIC	Level_4 (no targeted Rx in AML/MDS context)	OncoKB	Same residue, different disease, different tier

@@ -623,12 +623,29 @@ def apply_filters(df):
                 filters.append("COMMON_POLYMORPHISM")
                 continue
 
-        # Check if this is a U2AF1 hotspot (exempt from LOW_CALLERS/LOW_DEPTH)
+        # Check if this is a U2AF1 hotspot (exempt from NO_CALLER_INFO)
         _is_u2af1_hotspot = False
         if str(row.get("Gene", "")).strip() == "U2AF1":
             hgvsp = str(row.get("HGVSp", "")).strip()
             if "Ser34" in hgvsp or "S34" in hgvsp or "Gln157" in hgvsp or "Q157" in hgvsp:
                 _is_u2af1_hotspot = True
+
+        # MARKER HOTSPOT_EXEMPT_V1: LOW_CALLERS and LOW_DEPTH exempt any
+        # hotspot residue from myeloid_hotspots.tsv, not just U2AF1, provided
+        # the consequence is non-synonymous. Canonical hotspots called by a
+        # single caller are recoverable evidence, not noise: NPM1 type A
+        # insertions and FLT3 D835 are routinely single-caller at low VAF
+        # because callers disagree on indel representation. The synonymous
+        # guard keeps out JAK2 p.Gly554=, a FreeBayes-only artefact present in
+        # 24/24 samples at 2.8-6.4% that matches a JAK2 residue range.
+        # NO_CALLER_INFO keeps the U2AF1-only test: no caller information at
+        # all means no evidence.
+        _hotspot_exempt = _is_u2af1_hotspot
+        if not _hotspot_exempt:
+            _csq_lower = str(row.get("_consequence", "")).lower()
+            if "synonymous" not in _csq_lower:
+                if is_hotspot_residue(row.get("Gene", ""), row.get("HGVSp", "")):
+                    _hotspot_exempt = True
 
         # Priority 1: Common polymorphism
         if not np.isnan(row["_max_af"]) and row["_max_af"] > 0.01:
@@ -658,14 +675,14 @@ def apply_filters(df):
         # Priority 3: Low callers (single-caller variants unreliable)
         # U2AF1 hotspots exempt - pileup rescue uses non-standard caller
         caller_count = row["_caller_count"]
-        if caller_count >= 0 and caller_count < 2 and not _is_u2af1_hotspot:
+        if caller_count >= 0 and caller_count < 2 and not _hotspot_exempt:
             filters.append("LOW_CALLERS")
             continue
 
         # Priority 4: Low depth (insufficient alt reads)
         # U2AF1 hotspots exempt - depth may be split across paralog loci
         alt_count = row["_alt_count"]
-        if alt_count >= 0 and alt_count < 10 and not _is_u2af1_hotspot:
+        if alt_count >= 0 and alt_count < 10 and not _hotspot_exempt:
             filters.append("LOW_DEPTH")
             continue
 

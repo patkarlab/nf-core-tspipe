@@ -940,6 +940,15 @@
       if (r.MNV_Note && r.MNV_Note !== "-1") {
         mnvBadge = '<span class="badge bg-info text-dark" title="' + escapeHtml(r.MNV_Note) + '">MNV</span>';
       }
+      // DASH_CEBPA_BZIP_V1: static reminder of the bZIP domain span on CEBPA
+      // cards. Display only - no residue test, no effect on filtering. ELN 2022
+      // favourable risk requires an IN-FRAME bZIP indel; the reviewer judges.
+      let domainBadge = "";
+      if ((r.Gene || "").toUpperCase() === "CEBPA") {
+        domainBadge = '<span class="badge bg-light text-dark border" ' +
+          'title="ELN 2022 favourable risk applies to in-frame bZIP indels only">' +
+          'bZIP aa 278\u2013358 (NM_004364 p42)</span>';
+      }
       // DASH_LAYOUT_V1: CAVA (MANE 1.5 RefSeq) shown on every card, not only when it differs.
       const cavaTx = (r.CAVA_Transcript && r.CAVA_Transcript !== "-1") ? r.CAVA_Transcript : "";
       const cavaC  = (r.CAVA_HGVSc && r.CAVA_HGVSc !== "-1") ? r.CAVA_HGVSc : "";
@@ -997,6 +1006,7 @@
               (r.IMPACT ? '<span class="badge bg-light text-dark border">' + escapeHtml(r.IMPACT) + "</span>" : "") +
               cavaBadges +   // CAVA_V1c
               mnvBadge +     // DASH_LAYOUT_V1 (D17a)
+              domainBadge +  // DASH_CEBPA_BZIP_V1
               igvChip +
             "</div>" +
             '<div class="small font-monospace text-muted mt-1">' +

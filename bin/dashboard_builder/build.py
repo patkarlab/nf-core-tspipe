@@ -53,7 +53,7 @@ from parsers import oncokb as p_oncokb
 from parsers import cancervar as p_cancervar
 
 
-BUILDER_VERSION = "0.5.2-tp53"   # TP53_OBS_V1 (was 0.5.1-layout+cava, DASH_LAYOUT_V1)
+BUILDER_VERSION = "0.5.3-cebpa"   # DASH_CEBPA_BZIP_V1 (was 0.5.2-tp53, TP53_OBS_V1)
 
 # Directories under a run dir that are NOT samples.
 NON_SAMPLE_DIRS = {"pipeline_info", "assets"}
