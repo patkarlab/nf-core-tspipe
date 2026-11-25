@@ -40,3 +40,9 @@ The last tool compares two complete runs, a reference run made before the change
 ```bash
 python3 tools/compare_baf_arms.py --a /path/to/reference_run --b /path/to/new_run --out comparison.txt
 ```
+
+`tools/rescan_baf_arms.py` answers a different question: which samples of earlier runs have an arm that the detector could not call before the change. Every run keeps the allelic counts and the denoised copy ratios of each sample, so the current detector can be run over them in a few seconds per sample without re-running the pipeline. The script writes its results to a directory of its own and nothing into the runs.
+
+```bash
+python3 tools/rescan_baf_arms.py --out /path/to/rescan_output /path/to/run1 /path/to/run2
+```

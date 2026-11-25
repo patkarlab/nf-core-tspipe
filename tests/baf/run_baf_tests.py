@@ -2,9 +2,9 @@
 """tests/baf/run_baf_tests.py -- regression tests for the per-arm BAF detector and what reads its output.
 
 Covers bin/baf_cnloh_detect.py (BAF_V2 + BAF_HETLOSS_V1), the B arm of bin/cnv_consensus_multi.py,
-bin/plot_genome_overview.py, bin/plot_arm_17p.py, the dashboard's BAF-by-arm parser and
-tools/compare_baf_arms.py, on synthetic samples made by tests/baf/simulate_baf_sample.py from the
-panel's own background table. No patient data, no network, nothing outside the repository; about
+bin/plot_genome_overview.py, bin/plot_arm_17p.py, the dashboard's BAF-by-arm parser,
+tools/compare_baf_arms.py and tools/rescan_baf_arms.py, on synthetic samples made by
+tests/baf/simulate_baf_sample.py from the panel's own background table. No patient data, no network, nothing outside the repository; about
 one minute, half of it the two figures.
 
     python3 tests/baf/run_baf_tests.py                 all tests
@@ -30,6 +30,8 @@ What the checks pin down:
      returns the new columns and still reads a summary written before BAF_HETLOSS_V1.
  12. tools/compare_baf_arms.py lists a heterozygosity-loss call as an explained difference between
      two runs and fails on any other difference.
+ 13. tools/rescan_baf_arms.py finds the affected arm from the stored files of an earlier run and
+     writes nothing into that run.
 """
 import argparse
 import csv
@@ -393,6 +395,24 @@ def main():
     p = run(compare, expect_ok=False)
     check("12b ... a changed verdict on an arm the test did not call is reported as unexplained, exit 1",
           p.returncode == 1 and "UNEXPLAINED 5q" in p.stdout and "RESULT: FAIL" in p.stdout, p.stdout[-300:])
+
+    # ---- 13. tools/rescan_baf_arms.py: the detector over the stored files of an earlier run
+    old_run = os.path.join(work, "earlier_run")
+    for name in (name_11q, "normal_f"):
+        d = os.path.join(old_run, name, "cnv_gatk")
+        os.makedirs(d, exist_ok=True)
+        for ext in (".allelicCounts.tsv", ".denoisedCR.tsv"):
+            shutil.copy(os.path.join(work, name + ext), os.path.join(d, name + ext))
+    before = sorted(os.listdir(os.path.join(old_run, name_11q, "cnv_gatk")))
+    rescan_out = os.path.join(work, "rescan_out")
+    p = run([sys.executable, os.path.join(REPO, "tools", "rescan_baf_arms.py"), "--out", rescan_out, old_run], expect_ok=False)
+    listed = []
+    if os.path.isfile(os.path.join(rescan_out, "rescan_calls.tsv")):
+        with open(os.path.join(rescan_out, "rescan_calls.tsv")) as fh:
+            listed = [(r["sample"], r["arm"], r["verdict"]) for r in csv.DictReader(fh, delimiter="\t")]
+    check("13 rescan of an earlier run: lists the 11q arm of the one affected sample and writes nothing into the run",
+          p.returncode == 0 and listed == [(name_11q, "11q", "CNLOH")] and "2 samples rescanned" in p.stdout
+          and sorted(os.listdir(os.path.join(old_run, name_11q, "cnv_gatk"))) == before, "%s | %s" % (listed, p.stdout[-200:] + p.stderr[-200:]))
 
     if args.skip_plots:
         print("skip 11d-f figures (--skip-plots)")
