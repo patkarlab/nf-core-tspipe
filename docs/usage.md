@@ -23,14 +23,17 @@ Two entry workflows are defined in `main.nf`:
 nextflow run . \
     --input /path/to/samplesheet.csv \
     --outdir /path/to/results \
-    -profile <yoursite>,singularity \
+    -profile site,singularity \
+    -c conf/twist_apply.config \
     -resume
 ```
 
-`<yoursite>` is the profile you registered when copying
-`conf/site_template.config` to `conf/<yoursite>.config` (see
-[`docs/INSTALL.md#site-configuration`](INSTALL.md#site-configuration)).
-On the development server the profile is `gandalf`.
+The `site` profile reads `conf/site.config`, your copy of
+`conf/site_template.config` (see
+[`docs/INSTALL.md#site-configuration`](INSTALL.md#site-configuration));
+no profile has to be registered in `nextflow.config`. On the two
+qualified servers the profiles are `gandalf` and `clinical23`. The panel
+overlay given with `-c` is required.
 
 ## Samplesheet
 
@@ -73,7 +76,7 @@ from one of three places:
 
 1. `nextflow.config` itself (in `params { ... }`).
 2. Your active site config (e.g. `conf/gandalf.config` or
-   `conf/<yoursite>.config`).
+   `conf/site.config`).
 3. `${projectDir}/assets/<panel>/` for the CNV PoN and annotation
    reference files, defaulted in by `workflows/tspipe.nf` when not set in
    the active config.
@@ -188,14 +191,15 @@ followed by a comma-separated list.
 |---|---|---|
 | `standard` | `process.executor = 'local'` | Default fallback |
 | `gandalf` | Includes `conf/gandalf.config` (gandalf-specific paths, conda-on-host shortcut, 192-core executor envelope) | On gandalf only |
-| `<yoursite>` | Includes `conf/<yoursite>.config` (paths and resource ceilings for your server) | Any other server |
+| `clinical23` | Includes `conf/clinical23.config` (paths, PBS Pro queues and resource ceilings of the clinical cluster) | On clinical-23 only |
+| `site` | Includes `conf/site.config`, or the file named in `TSPIPE_SITE_CONFIG`, then `conf/containers.config` (paths, executor and resource ceilings for your server) | Any other server |
 | `singularity` | `singularity.enabled = true; docker.enabled = false; singularity.autoMounts = true` | Production runtime; recommended on HPC |
 | `docker` | `docker.enabled = true; singularity.enabled = false; docker.userEmulation = true` | Workstation, or hosts without Singularity |
 | `conda` | `conda.enabled = true` | Slowest, most fragile. Not recommended for production |
 | `slurm` | `process.executor = 'slurm'; process.queue = 'normal'` | SLURM cluster |
 
 Combine a site profile and a runtime profile: `-profile gandalf,singularity`
-or `-profile mysite,slurm,singularity`.
+or `-profile site,singularity`.
 
 ## Running the pipeline
 
@@ -206,7 +210,8 @@ cd /path/to/nf-core-tspipe
 nextflow run . \
     --input /path/to/samplesheet.csv \
     --outdir /path/to/results \
-    -profile <yoursite>,singularity \
+    -profile site,singularity \
+    -c conf/twist_apply.config \
     -resume
 ```
 
@@ -272,7 +277,7 @@ files and emit placeholder versions. Useful for:
 - Reproducing an output structure for downstream-tool development
 
 ```bash
-nextflow run . --input today.csv --outdir results_stub/ -profile <yoursite>,singularity -stub
+nextflow run . --input today.csv --outdir results_stub/ -profile site,singularity -c conf/twist_apply.config -stub
 ```
 
 A stub run completes in seconds. The outputs are empty placeholders;
@@ -319,7 +324,7 @@ nextflow run . -entry BUILD_PON \
     --reference /path/to/hg38_masked.fasta \
     --bed /path/to/panel.bed \
     --outdir /path/to/pon_run \
-    -profile <yoursite>,singularity \
+    -profile site,singularity \
     -resume
 ```
 

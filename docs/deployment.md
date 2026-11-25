@@ -80,22 +80,20 @@ rsync is the safer default.
 ## Site-specific config differences
 
 Per [`docs/INSTALL.md`](INSTALL.md), you have already written
-`conf/<yoursite>.config` from `conf/site_template.config`. The values
-that will *differ from gandalf* are:
-
-| Param                                                                | Likely new value                                       |
-|----------------------------------------------------------------------|--------------------------------------------------------|
-| `pipeline_root`                                                      | Destination references root (e.g. `/data/tspipe_refs`) |
-| `reference`                                                          | `${pipeline_root}/<masked_fasta>`                      |
-| `bed`                                                                | `${pipeline_root}/bedfiles/<panel>.bed`                |
-| `dbsnp_vcf`, `mills_vcf`, `gnomad_af_only`, `vep_cache`, `annovar_db`| All under `${pipeline_root}/...`                       |
-| `max_cpus`, `max_memory`, `max_time`                                 | Match the destination host's hardware                  |
-| Singularity / Apptainer cache directory                              | Point at a large persistent disk on the destination    |
+`conf/site.config` from `conf/site_template.config`. What differs from
+gandalf is confined to that file: `site_root`, under which the template
+expects the reference tree, the images and the VariantValidator cache;
+the individual reference paths, where your layout differs from the one
+the template suggests; `hmf_root`, the directory of the hmftools resource
+bundle; the resource ceilings `max_cpus`, `max_memory` and `max_time`,
+which must match the destination hardware; and the directory of the
+container images, which should be on a large persistent disk.
 
 Everything else (process resource labels, `conf/modules.config`
-behaviour, `singularity.enabled` etc.) should be unchanged across sites.
-If you find yourself needing to override module-level config, that's a
-signal to fix upstream rather than fork.
+behaviour, the panel overlay, the panel assets) is unchanged across
+sites, and no tracked file is edited to install on a server. If you find
+yourself needing to override module-level configuration, that is a signal
+to fix upstream rather than fork.
 
 ## Validation
 

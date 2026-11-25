@@ -20,7 +20,10 @@ set -euo pipefail
 SRC=${1:?source directory containing *.img}
 DEST=${2:?destination cache directory}
 shift 2 || true
-export PATH=/soft/apptainer/1.5.1/bin:$PATH
+# PORTABLE_V1: where the runtime is when it is not on PATH. The default is clinical-23's install, as
+# before; another site sets APPTAINER_BIN_DIR, or needs nothing when apptainer is on PATH.
+APPTAINER_BIN_DIR=${APPTAINER_BIN_DIR:-/soft/apptainer/1.5.1/bin}
+[ -d "$APPTAINER_BIN_DIR" ] && export PATH="$APPTAINER_BIN_DIR:$PATH"
 command -v apptainer >/dev/null || { echo "apptainer not on PATH"; exit 1; }
 mkdir -p "$DEST"
 echo "[start] $(date '+%F %T')  src=$SRC dest=$DEST"

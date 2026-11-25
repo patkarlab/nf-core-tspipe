@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tools/verify_install.sh -- check a host before running the frozen pipeline (v1.0.0).
+# tools/verify_install.sh -- check a host before running the frozen pipeline.
 #
 # Verifies: Nextflow and Java, the container runtime, every image named in
 # docs/release/image_checksums.md5, and every reference the resolved profile points at (existence,
@@ -7,6 +7,7 @@
 #
 # Usage (from the repo root, on the target host):
 #   bash tools/verify_install.sh -profile clinical23,singularity -c conf/twist_apply.config
+#   bash tools/verify_install.sh -profile site,singularity -c conf/twist_apply.config     (conf/site.config)
 # Any arguments are passed to `nextflow config`, so use the same profile and overlays as the run.
 #
 # Exit 0 when everything checks out, 1 otherwise. Nothing is written outside /tmp.
@@ -21,15 +22,12 @@ note() { printf "[%-4s] %s\n" "$1" "$2"; [ "$1" = "FAIL" ] && fail=1; return 0; 
 echo "=== 1. toolchain"
 nf=$(nextflow -version 2>/dev/null | grep -oE "version [0-9.]+" | awk '{print $2}')
 [ -n "$nf" ] && note OK "nextflow $nf" || note FAIL "nextflow not found"
-case "$nf" in 25.10.*) : ;; *) note WARN "release v1.0.0 was validated on Nextflow 25.10.4" ;; esac
+case "$nf" in 25.10.*) : ;; *) note WARN "the release was validated on Nextflow 25.10.4" ;; esac
 jv=$(java -version 2>&1 | head -1)
 [ -n "$jv" ] && note OK "$jv" || note FAIL "java not found"
-export PATH=/soft/apptainer/1.5.1/bin:$PATH
-if command -v apptainer >/dev/null; then note OK "$(apptainer --version)"
-elif command -v singularity >/dev/null; then note OK "$(singularity --version)"
-else note FAIL "no apptainer/singularity on PATH"; fi
-command -v squashfuse >/dev/null && note OK "squashfuse present (.sif can be mounted)" \
-    || note WARN "no squashfuse here; compute nodes may also lack it - sandboxes (tools/make_sandboxes.sh) are the safe form"
+# The container runtime is checked after the configuration is resolved (section 2): a site whose
+# runtime is not on the default PATH says where it is in its profile's beforeScript, and that is
+# the PATH a task will have. (PORTABLE_V1: this script used to add one site's apptainer path itself.)
 
 echo "=== 2. resolved configuration"
 CFG=/tmp/verify_cfg_$$.txt
@@ -61,6 +59,24 @@ if [ -n "$PARAMS_FILE" ]; then
 fi
 CACHE=$(grep -E "^singularity.cacheDir" "$CFG" | head -1 | cut -d= -f2- | tr -d " '\"")
 note OK "image cache: ${CACHE:-<unset>}"
+# every reference path of the resolved configuration that still points at the development host
+if [[ " ${POST[*]} " != *"gandalf"* ]]; then
+    stray=$(grep -E "^params\.[A-Za-z_]+ = '(/goast|/home/hemat)" "$CFG" | cut -d' ' -f1 | sed 's/^params\.//' | tr '\n' ' ')
+    [ -z "$stray" ] && note OK "no parameter points at the development host (/goast, /home/hemat)" \
+        || note FAIL "parameters still pointing at the development host: $stray"
+fi
+
+echo "=== 2b. container runtime"
+RT_DIR=$(grep -E "^process.beforeScript" "$CFG" | head -1 | grep -oE "PATH=[^:'\"]+" | head -1 | cut -d= -f2)
+if [ -n "$RT_DIR" ]; then
+    [ -d "$RT_DIR" ] && { export PATH="$RT_DIR:$PATH"; note OK "runtime directory from the profile's beforeScript: $RT_DIR"; } \
+        || note FAIL "the profile's beforeScript adds $RT_DIR to PATH, which does not exist on this host"
+fi
+if command -v apptainer >/dev/null; then note OK "$(apptainer --version)"
+elif command -v singularity >/dev/null; then note OK "$(singularity --version)"
+else note FAIL "no apptainer/singularity on PATH"; fi
+command -v squashfuse >/dev/null && note OK "squashfuse present (.sif can be mounted)" \
+    || note WARN "no squashfuse here; compute nodes may also lack it - sandboxes (tools/make_sandboxes.sh) are the safe form"
 
 echo "=== 3. images"
 while read -r md5 name; do
@@ -74,12 +90,29 @@ while read -r md5 name; do
 done < "$CHECKSUMS"
 
 echo "=== 4. references"
+HMF_ROOT=$(grep -E "^params\.hmf_root " "$CFG" | head -1 | cut -d= -f2- | sed "s/^ *//; s/^'//; s/'$//")
+[ "$HMF_ROOT" = "null" ] && HMF_ROOT=""
+[ -z "$HMF_ROOT" ] && HMF_ROOT=$(grep -E "^params\.hmf_resources " "$CFG" | head -1 | cut -d= -f2- | sed "s/^ *//; s/^'//; s/'$//")
 while IFS=$'\t' read -r param gpath type size md5; do
     [ "$param" = "param" ] && continue
     # vestigial on a containerised install: the modules call the in-image binaries
     case "$param" in legacy_root|legacy_python_env|filt3r_bin|filt3r_ref|getitd_path|vardict_bin) continue ;; esac
     val=$(grep -E "^params\.$param " "$CFG" | head -1 | cut -d= -f2- | sed "s/^ *//; s/^'//; s/'$//")
-    [ -z "$val" ] && { note WARN "params.$param not set in this profile"; continue; }
+    if [ -z "$val" ] || [ "$val" = "null" ]; then
+        # PORTABLE_V1: the hmftools reference files are found under the site's hmf_root by the workflow
+        # (workflows/tspipe.nf) unless a parameter names one individually; same relative paths here.
+        case "$param" in
+            hmf_resources)   rel="" ;;
+            hmf_loci)        rel="/dna/copy_number/AmberGermlineSites.38.tsv.gz" ;;
+            hmf_gc_profile)  rel="/dna/copy_number/GC_profile.1000bp.38.cnp" ;;
+            hmf_ensembl_dir) rel="/common/ensembl_data" ;;
+            hmf_hotspots)    rel="/dna/variants/KnownHotspots.somatic.38.vcf.gz" ;;
+            *)               rel="-" ;;
+        esac
+        if [ "$rel" != "-" ] && [ -n "$HMF_ROOT" ]; then val="$HMF_ROOT$rel"
+        elif [ "$rel" != "-" ]; then note FAIL "params.hmf_root is not set: the site profile must say where the hmftools resource bundle is ($param)"; continue
+        else note WARN "params.$param not set in this profile"; continue; fi
+    fi
     case "$val" in
         /opt/*) note OK "$param -> $val (inside the image)"; continue ;;
         /*) : ;;

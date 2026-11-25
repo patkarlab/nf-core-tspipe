@@ -105,6 +105,13 @@ workflow TSPIPE {
     if (!params.reference) { error "Missing --reference (hg38 FASTA)"  }
     if (!params.bed)       { error "Missing --bed (panel BED)"         }
     if (!params.exonwise_bed) { error "Missing --exonwise_bed (Exonwise hg38 BED for per-exon coverage)" }
+    // MARKER PORTABLE_V1 (preflight): the reporting stage reads the GATK CNV / consensus block, which
+    // only a panel overlay switches on (cnv_gatk_pon). A launch without one used to stop with
+    // "Access to 'GATK_CNV_CALLING.out' is undefined since the workflow has not been invoked".
+    if( !(params.containsKey('cnv_gatk_pon') && params.cnv_gatk_pon) ) {
+        error "[PREFLIGHT] no panel configuration is loaded. The reporting stage needs the copy-number results that a " +
+              "panel overlay switches on; launch with `-c conf/twist_apply.config` (Twist myeloid panel). Nothing was run."
+    }
     validateSamplesheet(params.input)   // MARKER HARDEN_Q3_V1: fail before any task is submitted
 
     // Channels for fixed references shared across processes.
@@ -338,16 +345,35 @@ workflow TSPIPE {
         }
 
         // HMF_PURPLE_V1: hmftools AMBER -> COBALT -> PURPLE (tumour-only, targeted) as
-        // consensus arm H. Gated on the panel's COBALT normalisation asset existing.
-        def hmf_norm_path = params.containsKey('hmf_target_norm') ? params.hmf_target_norm : "${projectDir}/assets/${params.panel}/hmftools/target_regions.cobalt_normalisation.twist_myeloid.38.tsv"
-        def hmf_enabled = params.containsKey('hmf_resources') && params.hmf_resources && file(hmf_norm_path).exists()
-        if( params.containsKey('hmf_resources') && params.hmf_resources && !hmf_enabled )
+        // consensus arm H. Gated on the panel's COBALT normalisation asset: the panel overlay
+        // names it (hmf_target_norm), and it must exist.
+        // MARKER PORTABLE_V1: the hmftools resource bundle is site data. The site profile gives its
+        // root (params.hmf_root) and the four reference files are found under it, unless one is
+        // named individually (hmf_loci, hmf_gc_profile, hmf_ensembl_dir, hmf_hotspots: a params
+        // file written for v1.0.x does that and keeps working). hmf_resources is the earlier name
+        // of the root. Until v1.0.2 these paths were written into conf/twist_apply.config with the
+        // development host's location, and a site that passed no params file failed at AMBER.
+        def hmf_wanted = params.containsKey('hmf_target_norm') && params.hmf_target_norm
+        def hmf_norm_path = hmf_wanted ? params.hmf_target_norm : "${projectDir}/assets/${params.panel}/hmftools/target_regions.cobalt_normalisation.twist_myeloid.38.tsv"
+        def hmf_enabled = hmf_wanted && file(hmf_norm_path).exists()
+        if( hmf_wanted && !hmf_enabled )
             log.warn "[HMF] normalisation asset not found: ${hmf_norm_path}; arm H disabled for this run"
         if( hmf_enabled ) {
-            ch_hmf_loci      = Channel.value(file(params.hmf_loci,        checkIfExists: true))
-            ch_hmf_gc        = Channel.value(file(params.hmf_gc_profile,  checkIfExists: true))
-            ch_hmf_ensembl   = Channel.value(file(params.hmf_ensembl_dir, checkIfExists: true))
-            ch_hmf_hotspots  = Channel.value(file(params.hmf_hotspots,    checkIfExists: true))
+            def hmf_root = (params.containsKey('hmf_root') && params.hmf_root) ? params.hmf_root
+                : ((params.containsKey('hmf_resources') && params.hmf_resources) ? params.hmf_resources : null)
+            def hmfPath = { String name, String rel ->
+                if( params.containsKey(name) && params[name] )
+                    return params[name].toString()
+                if( !hmf_root )
+                    error "[HMF] the panel configuration asks for the hmftools arm, but this site does not say where the hmftools " +
+                          "resource bundle is (needed for ${name}). Set params.hmf_root in the site profile " +
+                          "(conf/site_template.config shows where), or pass --hmf_root <directory>."
+                return "${hmf_root}/${rel}".toString()
+            }
+            ch_hmf_loci      = Channel.value(file(hmfPath('hmf_loci',        'dna/copy_number/AmberGermlineSites.38.tsv.gz'),      checkIfExists: true))
+            ch_hmf_gc        = Channel.value(file(hmfPath('hmf_gc_profile',  'dna/copy_number/GC_profile.1000bp.38.cnp'),           checkIfExists: true))
+            ch_hmf_ensembl   = Channel.value(file(hmfPath('hmf_ensembl_dir', 'common/ensembl_data'),                                checkIfExists: true))
+            ch_hmf_hotspots  = Channel.value(file(hmfPath('hmf_hotspots',    'dna/variants/KnownHotspots.somatic.38.vcf.gz'),       checkIfExists: true))
             ch_hmf_target    = Channel.value(file(params.hmf_target_bed,  checkIfExists: true))
             ch_hmf_norm      = Channel.value(file(hmf_norm_path,          checkIfExists: true))
             ch_hmf_drivers   = Channel.value(file(params.hmf_driver_panel, checkIfExists: true))

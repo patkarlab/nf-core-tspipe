@@ -14,8 +14,9 @@
 #     resolve external names. A run whose head process sat on a compute node on 2026-09-09
 #     produced reports with silently empty annotation sections. Do not submit this script with
 #     qsub; run it on ln1 and let PBS receive the computational tasks.
-#   * the panel overlay and the site parameter file must both be present, or the run fails at
-#     AMBER with a missing hmftools resource.
+#   * the panel overlay must be present. The site parameter file is passed when it exists; it is no
+#     longer required (PORTABLE_V1: the hmftools reference paths, which it used to redirect, now
+#     follow hmf_root in conf/clinical23.config).
 #
 # Usage, from the pipeline directory on ln1:
 #     bash tools/launch_clinical23.sh <samplesheet.csv> <run name> [extra nextflow args]
@@ -32,7 +33,10 @@ RUN=${2:-}
 shift 2 2>/dev/null || true
 EXTRA=("$@")
 
-PIPELINE_DIR=${PIPELINE_DIR:-$HOME/pipelines/nf-core-tspipe-v1.0.0}
+# PORTABLE_V1: the checkout this launcher belongs to. The default used to be the directory name of
+# the first release ($HOME/pipelines/nf-core-tspipe-v1.0.0), so the launcher of a later release
+# started from its own checkout would still have run the pipeline of that directory.
+PIPELINE_DIR=${PIPELINE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
 SCRATCH=${SCRATCH:-/scratch/patkarlab-clinical}
 PROFILE=${PROFILE:-clinical23,singularity}
 PANEL_CONFIG=${PANEL_CONFIG:-conf/twist_apply.config}
@@ -62,7 +66,12 @@ cd "$PIPELINE_DIR" || die "pipeline directory not found: $PIPELINE_DIR"
 # ---- inputs --------------------------------------------------------------------------------
 [ -f "$SAMPLESHEET" ] || die "samplesheet not found: $SAMPLESHEET"
 [ -f "$PANEL_CONFIG" ] || die "panel overlay not found: $PANEL_CONFIG"
-[ -f "$PARAMS_FILE" ]  || die "site parameter file not found: $PARAMS_FILE (it redirects the hmftools reference paths; without it the run fails at AMBER)"
+PARAMS_ARGS=()
+if [ -f "$PARAMS_FILE" ]; then
+    PARAMS_ARGS=(-params-file "$PARAMS_FILE")
+else
+    log "note: no site parameter file ($PARAMS_FILE); the site profile's values are used"
+fi
 
 missing=0
 while IFS=, read -r sample f1 f2 rest; do
@@ -109,7 +118,7 @@ log "space on $SCRATCH: ${avail} GB available, approximately ${need} GB needed f
 log "pipeline   $PIPELINE_DIR ($(git describe --tags 2>/dev/null || echo 'not a git checkout'))"
 log "samples    $n from $SAMPLESHEET"
 log "profile    $PROFILE"
-log "overlays   $PANEL_CONFIG, $PARAMS_FILE"
+log "overlays   $PANEL_CONFIG${PARAMS_ARGS[1]:+, ${PARAMS_ARGS[1]}}"
 log "outdir     $OUTDIR"
 log "workdir    $WORKDIR"
 log "log        $LOG"
@@ -121,7 +130,7 @@ setsid nextflow run . \
     -w "$WORKDIR" \
     -profile "$PROFILE" \
     -c "$PANEL_CONFIG" \
-    -params-file "$PARAMS_FILE" \
+    "${PARAMS_ARGS[@]}" \
     -ansi-log false \
     "${EXTRA[@]}" \
     > "$LOG" 2>&1 < /dev/null &

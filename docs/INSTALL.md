@@ -11,6 +11,14 @@ For operational reference once the pipeline is installed, see
 `docs/usage_pon.md` (panel-of-normals build). For the gandalf-flavoured
 move-from-here checklist, see `docs/deployment.md`.
 
+The controlled installation procedure for the clinical release is
+`docs/sops/SOP-TSPIPE-001.md` (sections 6 and 7). This guide was written
+before release 1.0.0 and several of its sections still describe the
+arrangement on the development server at that time; where the two
+differ, the standard operating procedure is the one to follow. The
+quick start and the section "Site configuration" below describe the
+current way of configuring a server (the `site` profile, November 2026).
+
 ## Pipeline summary
 
 Per sample, in order:
@@ -49,26 +57,29 @@ reference tree:
 git clone git@github.com:patkarlab/nf-core-tspipe.git
 cd nf-core-tspipe
 
-# 2. Copy the template site config and edit it
-cp conf/site_template.config conf/mysite.config
-$EDITOR conf/mysite.config            # set paths for your server
+# 2. Copy the template site configuration and edit it. The copy is ignored by
+#    git; no tracked file of the pipeline is changed to install on a server.
+cp conf/site_template.config conf/site.config
+$EDITOR conf/site.config              # set site_root and whatever differs on your server
 
-# 3. Register the profile in nextflow.config (add a mysite { ... } block)
+# 3. Check the installation: images, references, checksums
+bash tools/verify_install.sh -profile site,singularity -c conf/twist_apply.config
 
-# 4. Bring up the VariantValidator REST stack (see section "VariantValidator
-#    REST stack" below; required for the annotation pipeline)
-cd /path/to/rest_variantValidator && docker compose up -d
-
-# 5. Build a samplesheet
+# 4. Build a samplesheet
 tools/make_samplesheet.sh /path/to/fastq_dir --output /tmp/today.csv
 
-# 6. Run
+# 5. Run (the panel overlay is required; the run stops at once without it)
 nextflow run . \
     --input /tmp/today.csv \
     --outdir /data/nfcore_runs/$(date +%Y%m%d_%H%M%S) \
-    -profile mysite,singularity \
+    -profile site,singularity \
+    -c conf/twist_apply.config \
     -resume
 ```
+
+VariantValidator is reached at the public service by default
+(`vv_url` in the site configuration); a local REST stack is optional
+and is described further down.
 
 The rest of this document expands each of those steps.
 
@@ -290,110 +301,62 @@ the workflow rather than the bash scripts for new PoN builds.
 
 ## Site configuration
 
-Two configs ship in `conf/` that are relevant to a new install:
-
-- **`conf/site_template.config`** — purpose-built starting point for a
-  new server. Has placeholder paths, sensible conservative defaults
-  (`max_cpus=16`, `max_memory=128.GB`), and walks through both
-  containers-only (Strategy A) and local-install (Strategy B)
-  configurations as commented blocks. This is what to copy.
-- **`conf/gandalf.config`** — the working site config for the
-  development host. Useful as a reference example (sized for
-  192 cores / 1.5 TB, with the local-install Strategy B fully wired
-  up), but not what you want to copy verbatim onto a new server.
-
-To create a new site config:
+Everything that differs between servers is kept in one file, the site
+configuration, and that file is not part of the tracked pipeline. A new
+server is configured without editing `nextflow.config` or any other file
+of the checkout, so a release checkout stays identical to its tag.
 
 ```bash
-cp conf/site_template.config conf/mysite.config
-$EDITOR conf/mysite.config
+cp conf/site_template.config conf/site.config
+$EDITOR conf/site.config
 ```
 
-Register the new profile in `nextflow.config` `profiles { ... }`:
+`conf/site.config` is ignored by git. The file can also be kept outside
+the checkout, for example with the reference data, and named in the
+environment: `export TSPIPE_SITE_CONFIG=/path/to/mysite.config`. Either
+way the profile to select is `site`:
 
-```groovy
-profiles {
-    ...
-    mysite {
-        includeConfig 'conf/mysite.config'
-    }
-}
+```bash
+bash tools/verify_install.sh -profile site,singularity -c conf/twist_apply.config
+nextflow run . -profile site,singularity -c conf/twist_apply.config \
+    --input samplesheet.csv --outdir /path/to/results -w /path/to/work
 ```
 
-The placeholder paths in `site_template.config` are grouped by purpose,
-each with a `// ----` comment header. Fill in each block in order:
+The template is laid out in the order in which it is filled in. The
+first line, `site_root`, is the directory under which the template
+expects the reference data, the container images and the
+VariantValidator cache; on most servers it is the only line that has
+to change. Below it come the reference genome and the adapter file,
+the Broad bundle files, the VEP cache and the ANNOVAR tables, and
+`hmf_root`, the directory of the hmftools resource bundle. The four
+hmftools reference files are found under `hmf_root` by the workflow
+and need no entries of their own. The resource ceilings (`max_cpus`,
+`max_memory`, `max_time`) must not exceed what one node can give. The
+execution block is written for a single server; a commented block
+shows the same for a cluster, and `conf/clinical23.config` is a worked
+PBS Pro example. The last block names the directory of the container
+images and the directories a task must be able to read and write.
 
-| Block | What to set |
-|---|---|
-| Root directory | `pipeline_root` — base for your `references/`, `bedfiles/`, `software/` subtrees |
-| Reference + panel | `reference`, `bed`, `exonwise_bed`, `pindel_bed`, `adapters` |
-| Broad-bundle VCFs | `dbsnp_vcf`, `mills_vcf`, `gnomad_af_only` (with their `.tbi` indexes alongside) |
-| Annotation databases | `vep_cache`, `annovar_script`, `annovar_db` |
-| SNV blacklist | `snv_blacklist` — optional, defaults to no blacklist filtering |
-| CNV resources | Leave commented out unless overriding the shipped `assets/<panel>/` PoN |
-| Annotation references | Leave commented out unless overriding the shipped `assets/references/` files |
-| FLT3 ensemble | `flt3_container` — `'singularity'` or `'docker'` to match your runtime |
-| Resource ceilings | `max_memory`, `max_cpus`, `max_time` — `check_max()` in `conf/base.config` clamps requests at these |
-| Executor envelope | `executor { cpus, memory, queueSize }` — should match your hardware |
-| Container runtime | Leave `singularity { ... }` enabled; flip to `docker { enabled = true }` and disable singularity if Docker is your runtime |
+A site configuration holds paths, the executor and resource limits,
+and the settings of the container runtime, and nothing else. Calling
+and filtering thresholds, tool arguments and the panel definition are
+identical on every server and live in `conf/modules.config`, in the
+panel overlay `conf/twist_apply.config` and under `assets/`
+(SOP-TSPIPE-001, section 11). The panel interval lists, the panels of
+normals, the blacklists and the CAVA catalog come from the checkout
+itself and need no entry in the site configuration.
 
-For a worked example, see `conf/gandalf.config` — the local-install
-Strategy B is fully wired there (conda envs, per-process tool-path
-overrides for VARDICT/STRELKA/PLATYPUS/GETITD/FILT3R).
+The two servers the release was qualified on keep their named
+profiles, `gandalf` and `clinical23`, and their own launchers. They are
+examples to read, not files to copy: both contain paths that exist
+only on those servers.
 
-### Conda-on-host vs all-containers
-
-`conf/site_template.config` ships as Strategy A (containers-only) by
-default: every module's `container` directive is picked up by
-Singularity (or Docker), and there is no `process.beforeScript` or
-host-path machinery. **This is the recommended path for a new site.**
-
-If your host already has the conda envs installed (the
-`targeted-seq` env with fastp, bwa-mem2, samtools, gatk4, abra2,
-cnvkit, freebayes, vardict, varscan, somaticseq, plus a py2 env for
-Strelka and Platypus), Strategy B is faster on first run because no
-containers need to be pulled. To switch to Strategy B in your site
-config:
-
-- Uncomment the `conda { enabled = false }`, `env { ... }`, and
-  `process { ... }` block at the bottom of `site_template.config`.
-- Fill in the conda env paths and the per-tool helper paths
-  (`vardict_helpers_dir`, the FLT3 `getitd_path` / `filt3r_bin` /
-  `filt3r_ref` ext-vars).
-
-Reference: `conf/gandalf.config` is a complete Strategy B example.
-
-### Modules that genuinely need host execution
-
-Three modules cannot be containerised today and must run on host:
-
-| Module | Why |
-|---|---|
-| `VARIANT_VALIDATOR` | Needs to reach `http://localhost:5001` (the VV REST stack) |
-| `ONCOVI` | Needs `${pipeline_root}/software/oncovi/` on the host filesystem |
-| `FLT3_TO_VARIANTS` | Grouped with the above for consistency |
-
-`conf/modules.config:278-284` pins these three to `executor =
-'local'`. They invoke three scripts from the production
-`targeted-seq-pipeline` tree:
-
-```
-${TARGETED_SEQ_ENV}/bin/python
-${PRODUCTION_TREE}/scripts/15_oncovi.py
-${PRODUCTION_TREE}/scripts/17_variant_validator.py
-${PRODUCTION_TREE}/scripts/17b_flt3_to_variants.py
-```
-
-`tools/run_pipeline.sh:120-128` checks all four paths in preflight.
-The launcher's hardcoded path is `/home/hemat/targeted-seq-pipeline/`,
-which on gandalf is a symlink resolving to
-`/goast/hemat_data/targeted-seq-pipeline`. On a new server, either
-clone the production tree and recreate the symlink, or edit the
-launcher to point at your install location.
-
-The pipeline cannot complete without these three modules; building
-a containerised replacement is a known TODO at
-`conf/modules.config:277`.
+Every tool runs from the container images listed in
+`docs/release/image_checksums.md5`. No process needs a conda
+environment, a program installed on the host, or the older
+`targeted-seq-pipeline` tree; earlier versions of this guide described
+three modules that ran on the host from that tree, which has not been
+the case since release 1.0.0.
 
 ---
 
@@ -609,12 +572,15 @@ cd /path/to/nf-core-tspipe
 nextflow run . \
     --input /tmp/today.csv \
     --outdir /data/nfcore_runs/$(date +%Y%m%d_%H%M%S) \
-    -profile mysite,singularity \
+    -profile site,singularity \
+    -c conf/twist_apply.config \
     -resume
 ```
 
-Profiles compose left-to-right. `mysite` brings paths and host-tuned
-resources; `singularity` selects the container runtime.
+Profiles compose left-to-right. `site` brings the paths and resource
+limits of `conf/site.config`; `singularity` selects the container
+runtime. The panel overlay given with `-c` is required: without it the
+run stops before any task with a message naming the missing overlay.
 
 ### Production launcher
 
@@ -656,18 +622,18 @@ prompts: `tools/run_pipeline.sh -stub -resume` works.
 | Profile | Sets | When to use |
 |---|---|---|
 | `gandalf` | gandalf-specific paths and conda-on-host shortcut | On gandalf only |
-| `<yoursite>` | Your site config | Any other server |
+| `site` | `conf/site.config`, or the file named in `TSPIPE_SITE_CONFIG` | Any other server |
 | `singularity` | `singularity.enabled=true` | Production runtime |
 | `docker` | `docker.enabled=true` | Workstation, or no Singularity |
 | `slurm` | `process.executor='slurm'` | SLURM cluster |
 | `conda` | `conda.enabled=true` | Slowest, most fragile; not recommended |
 
-Combine site + runtime: `-profile mysite,singularity` or
-`-profile mysite,slurm,singularity`.
+Combine site + runtime: `-profile site,singularity`. The executor
+(local, SLURM, PBS Pro) is set in the site configuration itself.
 
 There is also a `test` profile, but it references missing
 `assets/test/` fixtures and is broken. Use `gandalf,singularity -stub`
-(or `mysite,singularity -stub`) for structural validation instead.
+(or `site,singularity -stub`) for structural validation instead.
 
 ### Resuming and stubbing
 
@@ -686,7 +652,7 @@ nextflow run . -entry BUILD_PON \
     --reference /data/refs/Homo_sapiens_assembly38.masked.fasta \
     --bed /data/bedfiles/MYOPOOL_240125_UBTF_hg38.bed \
     --outdir /data/nfcore_runs/pon_$(date +%Y%m%d_%H%M%S) \
-    -profile mysite,singularity \
+    -profile site,singularity \
     -resume
 ```
 
@@ -824,9 +790,11 @@ affected samples consult the per-caller outputs under `work/`
 
 `-profile test` references `${projectDir}/assets/test/*` files that
 do not exist. Use `gandalf,singularity -stub` (or
-`mysite,singularity -stub`) with a real 1-sample samplesheet for
+`site,singularity -stub`) with a real 1-sample samplesheet for
 structural validation. Stubs short-circuit the missing-data
-dependency.
+dependency. `tests/stub/run_stub_site.sh` does this for a throw-away
+site built from the template and needs neither reference data nor
+container images.
 
 ### Cross-filesystem hardlink errors
 

@@ -36,8 +36,12 @@ set -euo pipefail
 # CONFIGURATION (override via environment variables before invocation)
 # ======================================================================
 
-# VV REST endpoint
-VV_URL="${VV_URL:-http://localhost:5001}"
+# VV REST endpoint. PORTABLE_V1: the default is the endpoint the pipeline itself uses
+# (params.vv_url, the public service since 2026-09-03). It used to be http://localhost:5001, the
+# local Docker stack: the preflight then tested, and tried to restart, a service the run does not
+# call, and said nothing about the one it does. Set VV_URL=http://localhost:5001 together with
+# --vv_url http://localhost:5001 to use the local stack.
+VV_URL="${VV_URL:-https://rest.variantvalidator.org}"
 
 # Test variant exercised on the health probe.
 # COL1A1 c.589G>T — single SNV in a canonical MANE transcript. Stable.
@@ -52,7 +56,8 @@ VV_PROBE_TIMEOUT="${VV_PROBE_TIMEOUT:-10}"
 VV_WARMUP_SECONDS="${VV_WARMUP_SECONDS:-90}"
 
 # Nextflow run parameters — override these to launch a different batch
-PIPELINE_DIR="${PIPELINE_DIR:-/goast/hemat_data/nf-core-tspipe}"
+# PORTABLE_V1: the checkout this script is in (was the development tree's path on gandalf)
+PIPELINE_DIR="${PIPELINE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 SAMPLESHEET="${SAMPLESHEET:-samplesheet.csv}"
 OUTDIR="${OUTDIR:-test_run/$(date +%Y%m%d_%H%M%S)}"
 PROFILE="${PROFILE:-gandalf,singularity}"

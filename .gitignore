@@ -61,3 +61,6 @@ work/
 test_run/
 tspipe_samplesheets/
 containers/tspipe-host/src/
+
+# A server's own profile (PORTABLE_V1, `-profile site`): site data, never part of a release
+/conf/site.config
