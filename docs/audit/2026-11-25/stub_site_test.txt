@@ -1,0 +1,33 @@
+ok   1a configuration resolves for -profile site,singularity with the Twist overlay
+ok   1b no setting points at another site
+ok   1c hmftools root comes from the site profile
+ok   1d the image is assigned (containers.config applied without the site file including it)
+ok   1e blacklist is the checkout's validated file
+ok   1f in-image python for the annotation steps
+ok   2a stub run of the whole workflow completes (115 tasks)
+ok   2b CNV_BAF_CNLOH ran (2)
+ok   2b CNV_CONSENSUS_MULTI ran (2)
+ok   2b CHROM_PAGES ran (2)
+ok   2b HMF_AMBER ran (2)
+ok   2b HMF_COBALT ran (2)
+ok   2b HMF_PURPLE ran (2)
+ok   2b PURECN ran (2)
+ok   2b DECON ran (2)
+ok   2b DASHBOARD ran (1)
+ok   2b RUN_BUNDLE ran (1)
+ok   2c no task script or wrapper names a path of another site
+ok   2d a report per sample and the run bundle are published
+ok   3a no hmftools root: stops before any task
+ok   3b ... and says to set params.hmf_root
+ok   3c no panel overlay: stops before any task
+ok   3d ... and names conf/twist_apply.config
+ok   3e a site profile that does not exist is named in the error
+ok   4  a parameter file naming the hmftools files one by one (v1.0.x) still drives a complete run
+ok   5a gandalf: hmftools root as released
+ok   5b gandalf: container runtime options as released
+ok   5c gandalf: default output directory as released
+ok   5d clinical-23: hmftools root on its own storage, without a parameter file
+ok   5e clinical-23: no parameter points at the development host
+
+stub site test passed
+exit 0

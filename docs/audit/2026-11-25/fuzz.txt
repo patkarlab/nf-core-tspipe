@@ -1,0 +1,4 @@
+400 rounds (seed 1), 714 planted events, 0 rounds failed
+exit 0
+400 rounds (seed 2), 710 planted events, 0 rounds failed
+exit 0

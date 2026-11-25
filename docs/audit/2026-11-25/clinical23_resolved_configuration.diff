@@ -1,0 +1,37 @@
+2c2
+< dag.file = '/goast/hemat_data/nfcore_runs/default/pipeline_info/pipeline_dag_<timestamp>.svg'
+---
+> dag.file = '<checkout>/results/pipeline_info/pipeline_dag_<timestamp>.svg'
+22a23
+> params.baf_het_loss = true
+63d63
+< params.hmf_ensembl_dir = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/common/ensembl_data'
+65,67d64
+< params.hmf_gc_profile = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/GC_profile.1000bp.38.cnp'
+< params.hmf_hotspots = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/variants/KnownHotspots.somatic.38.vcf.gz'
+< params.hmf_loci = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/AmberGermlineSites.38.tsv.gz'
+69,70c66
+< params.hmf_resources = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8'
+< params.hmf_root = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8'
+---
+> params.hmf_root = '/scratch/patkarlab-clinical/tspipe_release/refs/hmftools/hmf_pipeline_resources.38_v3.0.0--8'
+77c73
+< params.legacy_root = '/home/hemat/targeted-seq-pipeline'
+---
+> params.legacy_root = null
+88c84
+< params.outdir = '/goast/hemat_data/nfcore_runs/default'
+---
+> params.outdir = '<checkout>/results'
+228c224
+< report.file = '/goast/hemat_data/nfcore_runs/default/pipeline_info/execution_report_<timestamp>.html'
+---
+> report.file = '<checkout>/results/pipeline_info/execution_report_<timestamp>.html'
+236c232
+< timeline.file = '/goast/hemat_data/nfcore_runs/default/pipeline_info/execution_timeline_<timestamp>.html'
+---
+> timeline.file = '<checkout>/results/pipeline_info/execution_timeline_<timestamp>.html'
+239c235
+< trace.file = '/goast/hemat_data/nfcore_runs/default/pipeline_info/execution_trace_<timestamp>.txt'
+---
+> trace.file = '<checkout>/results/pipeline_info/execution_trace_<timestamp>.txt'

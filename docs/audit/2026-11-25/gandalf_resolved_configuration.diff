@@ -1,0 +1,14 @@
+21a22
+> params.baf_het_loss = true
+65d65
+< params.hmf_ensembl_dir = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/common/ensembl_data'
+67,69d66
+< params.hmf_gc_profile = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/GC_profile.1000bp.38.cnp'
+< params.hmf_hotspots = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/variants/KnownHotspots.somatic.38.vcf.gz'
+< params.hmf_loci = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8/dna/copy_number/AmberGermlineSites.38.tsv.gz'
+71d67
+< params.hmf_resources = '/goast/hemat_data/references/hmftools/hmf_pipeline_resources.38_v3.0.0--8'
+79c75
+< params.legacy_root = '/home/hemat/targeted-seq-pipeline'
+---
+> params.legacy_root = null

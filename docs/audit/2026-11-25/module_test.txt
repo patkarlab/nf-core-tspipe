@@ -1,0 +1,9 @@
+ok   module, defaults: 11q called CNLOH
+ok   module, defaults: confidence HIGH
+ok   module, defaults: evidence het_loss_residual
+ok   module writes the sites table
+ok   module command line carries no --no-het-loss
+ok   module, baf_het_loss false: 11q as BAF_V2 (INDETERMINATE)
+ok   module, baf_het_loss false: --no-het-loss on the command line
+module test passed
+exit 0

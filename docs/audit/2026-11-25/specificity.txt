@@ -1,0 +1,45 @@
+unmodified samples, 200 replicates per level, sex female, contamination 0.0, depth scale 1.0, seed 1000
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/200  0     NA:200                        -                            0                    
+0.00   BAF_HETLOSS_V1    0/200  0     NA:200                        -                            0                    0 / 0
+
+unmodified samples, 200 replicates per level, sex male, contamination 0.0, depth scale 1.0, seed 5000
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/200  0     NA:200                        -                            0                    
+0.00   BAF_HETLOSS_V1    0/200  0     NA:200                        -                            0                    0 / 0
+
+unmodified samples, 100 replicates per level, sex female, contamination 0.02, depth scale 1.0, seed 9000
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/100  0     NA:100                        -                            0                    
+0.00   BAF_HETLOSS_V1    0/100  0     NA:100                        -                            0                    0 / 0
+
+unmodified samples, 100 replicates per level, sex female, contamination 0.05, depth scale 1.0, seed 9000
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/100  0     NA:100                        -                            0                    
+0.00   BAF_HETLOSS_V1    0/100  0     NA:100                        -                            0                    0 / 0
+
+unmodified samples, 100 replicates per level, sex female, contamination 0.1, depth scale 1.0, seed 9000
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/100  0     NA:100                        -                            18                   
+0.00   BAF_HETLOSS_V1    0/100  0     NA:100                        -                            18                   0 / 0
+
+unmodified samples, 100 replicates per level, sex female, contamination 0.2, depth scale 1.0, seed 9000
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/100  0     NA:100                        -                            30                   
+0.00   BAF_HETLOSS_V1    0/100  0     NA:100                        -                            30                   0 / 0
+
+unmodified samples, 100 replicates per level, sex male, contamination 0.0, depth scale 0.25, seed 12000
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/100  0     NA:100                        -                            0                    
+0.00   BAF_HETLOSS_V1    0/100  0     NA:100                        -                            0                    0 / 0
+
+unmodified samples, 100 replicates per level, sex male, contamination 0.0, depth scale 0.1, seed 12000
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/100  0     NA:100                        -                            0                    
+0.00   BAF_HETLOSS_V1    0/100  0     NA:100                        -                            0                    0 / 0
+
+unmodified samples, 100 replicates per level, sex male, contamination 0.0, depth scale 0.05, seed 12000
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/100  0     NA:100                        -                            1                    
+0.00   BAF_HETLOSS_V1    0/100  0     NA:100                        -                            1                    0 / 0
+

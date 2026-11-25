@@ -1,0 +1,48 @@
+ok   1a sample without events: no call
+ok   1b sample without events: BAF_V2 columns identical with and without the new test
+ok   1c summary keeps the 18 BAF_V2 columns in place and appends the new ones
+ok   1d ... and its residual rate on the control arms is low on every autosomal arm, no second-genome warning
+ok   2a BAF_V2 misses an 11q cnLOH at 90 % (arm INDETERMINATE, no call anywhere)
+ok   2b the new test calls it: 11q CNLOH, HIGH, arm, residual mode
+ok   2c clonal fraction read back as 0.90 (0.88-0.92)
+ok   2d 11q is the only arm with a call
+ok   2e every other arm row is unchanged in its BAF_V2 columns
+ok   2f stretch runs over the arm (ev_ends both) and starts beyond the centromere
+ok   3a 13q cnLOH at 60 %: called by the BAF_V2 statistic (evidence shift)
+ok   3b ... with every BAF_V2 column of every arm identical
+ok   4a 11q at 100 %: ROH (not CNLOH), complete mode, f written as 1.000 with a lower bound
+ok   4b 11q lost in every cell: DEL, HIGH
+ok   5a loss of chromosome 7 in 95 % of the cells: BAF_V2 has no call
+ok   5b ... the new test: DEL HIGH on 7p and 7q, scope chromosome
+ok   7  chrX is not tested: Xp and Xq keep the BAF_V2 verdict and carry no het-loss columns
+ok   6a distal 11q from 90 Mb at 90 %: CNLOH, LOW, scope segment, running to the end of the arm
+ok   6b ... stretch starts within 3 Mb of 90 Mb and the fraction is that of the stretch (0.88-0.92)
+ok   6c 11q from 70 Mb (most of the arm): arm-level CNLOH, HIGH, stretch not reaching the centromere side
+ok   6d the last 10 Mb of 11q only: too few loci, no call
+ok   8a 5 % of a second genotype: no heterozygosity-loss call on any arm
+ok   8b ... the residual rate on the control arms is high on every arm and the second-genome warning is printed
+ok   8c 11q at 100 % in the contaminated sample: ROH, and no lower bound of the fraction is claimed
+ok   9  background without n_het_like / n_pass_depth: warning, test skipped, BAF_V2 result
+ok   10a 11q cnLOH: every 11q gene gets b_call CNLOH, consensus CNLOH at TIER_2 (B alone)
+ok   10b ... and no gene elsewhere is touched
+ok   10c allelic_state of CBL names arm, verdict and fraction
+ok   10d JSON site rows carry the site class as a seventh element
+ok   10e segment (LOW): ATM inside the stretch is named with coordinates but gets no vote
+ok   10f ... SF1 (64.8 Mb) is reported as outside the stretch
+ok   10g arm-level call from 70 Mb: CBL gets the CNLOH vote, SF1 (64.8 Mb, outside the stretch) does not
+ok   10h ROH: shown as b_call ROH with the lower bound, casts no vote (consensus NEUTRAL)
+ok   10i ROH without a bound: allelic_state says the fraction is not measurable
+ok   11a dashboard parser: 11q row with basis, observed / expected het loci and extent; one HIGH call
+ok   11b dashboard parser: an 18-column summary from before the change still parses (new fields blank)
+ok   11g dashboard parser: second-genome flag set for the contaminated sample only, absent on an old summary
+ok   11h dashboard parser: ROH without a bound is shown as 'not measurable', not as 1.000
+ok   11c TP53 block helper: basis text for a heterozygosity-loss row, empty for a BAF_V2 row
+ok   12a run comparison: the 11q call and its genes are listed as explained, nothing else differs, exit 0
+ok   12b ... a changed verdict on an arm the test did not call is reported as unexplained, exit 1
+ok   13 rescan of an earlier run: lists the 11q arm of the one affected sample and writes nothing into the run
+ok   11d genome-wide figure written from the new JSON
+ok   11e 17p cnLOH at 90 %: CNLOH HIGH (the TP53 arm)
+ok   11f 17p page written from the new JSON
+
+45 checks, 0 failed
+exit 0

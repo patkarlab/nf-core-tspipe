@@ -1,0 +1,133 @@
+11q cnloh, 20 replicates per level, sex female, contamination 0.0, depth scale 1.0, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.00   BAF_V2            0/20   0     NEUTRAL:20                    -                            0                    
+0.00   BAF_HETLOSS_V1    0/20   0     NEUTRAL:20                    -                            0                    0 / 0
+0.20   BAF_V2           20/20   4     CNLOH:20                      0.189 (0.173-0.218)          0                    
+0.20   BAF_HETLOSS_V1   20/20   4     CNLOH:20                      0.189 (0.173-0.218)          0                    0 / 0
+0.40   BAF_V2           20/20   20    CNLOH:20                      0.393 (0.371-0.413)          0                    
+0.40   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.393 (0.371-0.413)          0                    0 / 0
+0.60   BAF_V2           20/20   20    CNLOH:20                      0.595 (0.568-0.619)          0                    
+0.60   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.595 (0.568-0.619)          0                    0 / 0
+0.70   BAF_V2           20/20   20    CNLOH:20                      0.699 (0.676-0.721)          0                    
+0.70   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.699 (0.676-0.721)          0                    0 / 0
+0.75   BAF_V2           20/20   20    CNLOH:20                      0.749 (0.728-0.775)          0                    
+0.75   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.749 (0.728-0.775)          0                    0 / 0
+0.80   BAF_V2           20/20   20    CNLOH:20                      0.792 (0.766-0.815)          0                    
+0.80   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.800 (0.781-0.815)          0                    16 / 0
+0.85   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.85   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.850 (0.841-0.861)          0                    0 / 0
+0.90   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.90   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.898 (0.893-0.907)          0                    0 / 0
+0.95   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.95   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.946 (0.940-0.951)          0                    0 / 0
+0.98   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.98   BAF_HETLOSS_V1   20/20   20    ROH:20                        1.000 (1.000-1.000)          0                    0 / 0
+1.00   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+1.00   BAF_HETLOSS_V1   20/20   20    ROH:20                        1.000 (1.000-1.000)          0                    0 / 0
+
+17p cnloh, 20 replicates per level, sex female, contamination 0.0, depth scale 1.0, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.60   BAF_V2           20/20   20    CNLOH:20                      0.593 (0.581-0.607)          0                    
+0.60   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.593 (0.581-0.607)          0                    0 / 0
+0.80   BAF_V2           20/20   20    CNLOH:20                      0.778 (0.764-0.792)          0                    
+0.80   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.798 (0.789-0.803)          0                    20 / 0
+0.85   BAF_V2           20/20   19    CNLOH:20                      0.789 (0.413-0.898)          0                    
+0.85   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.849 (0.843-0.851)          0                    20 / 0
+0.90   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.90   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.897 (0.893-0.903)          0                    0 / 0
+0.95   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.95   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.944 (0.941-0.948)          0                    0 / 0
+1.00   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+1.00   BAF_HETLOSS_V1   20/20   20    ROH:20                        1.000 (1.000-1.000)          0                    0 / 0
+
+9p cnloh, 20 replicates per level, sex female, contamination 0.0, depth scale 1.0, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.60   BAF_V2           20/20   20    CNLOH:20                      0.592 (0.544-0.615)          0                    
+0.60   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.592 (0.544-0.615)          0                    0 / 0
+0.80   BAF_V2           17/20   17    CNLOH:17 INDETERMINATE:3      0.788 (0.777-0.818)          0                    
+0.80   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.792 (0.777-0.820)          0                    3 / 0
+0.85   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.85   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.851 (0.833-0.865)          0                    0 / 0
+0.90   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.90   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.896 (0.887-0.910)          0                    0 / 0
+0.95   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.95   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.944 (0.937-0.953)          0                    0 / 0
+1.00   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+1.00   BAF_HETLOSS_V1   20/20   20    ROH:20                        1.000 (1.000-1.000)          0                    0 / 0
+
+20q cnloh, 20 replicates per level, sex female, contamination 0.0, depth scale 1.0, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.60   BAF_V2           19/20   19    CNLOH:19 INDETERMINATE:1      0.597 (0.570-0.625)          0                    
+0.60   BAF_HETLOSS_V1   19/20   19    CNLOH:19 INDETERMINATE:1      0.597 (0.570-0.625)          0                    0 / 0
+0.80   BAF_V2            9/20   9     CNLOH:9 INDETERMINATE:11      0.802 (0.779-0.830)          0                    
+0.80   BAF_HETLOSS_V1   16/20   16    CNLOH:16 INDETERMINATE:4      0.816 (0.779-0.833)          0                    0 / 0
+0.85   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.85   BAF_HETLOSS_V1   19/20   19    CNLOH:19 INDETERMINATE:1      0.855 (0.825-0.873)          0                    0 / 0
+0.90   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.90   BAF_HETLOSS_V1   20/20   19    CNLOH:20                      0.898 (0.883-0.912)          0                    0 / 0
+0.95   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.95   BAF_HETLOSS_V1   20/20   17    CNLOH:18 ROH:2                0.945 (0.938-1.000)          0                    0 / 0
+1.00   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+1.00   BAF_HETLOSS_V1   20/20   17    ROH:20                        1.000 (1.000-1.000)          0                    0 / 0
+
+7q del, 20 replicates per level, sex male, contamination 0.0, depth scale 1.0, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.50   BAF_V2           20/20   20    DEL:20                        0.329 (0.311-0.346)          0                    
+0.50   BAF_HETLOSS_V1   20/20   20    DEL:20                        0.329 (0.311-0.346)          0                    0 / 0
+0.80   BAF_V2           20/20   20    DEL:20                        0.660 (0.649-0.677)          0                    
+0.80   BAF_HETLOSS_V1   20/20   20    DEL:20                        0.660 (0.649-0.677)          0                    0 / 0
+0.90   BAF_V2           20/20   20    DEL:20                        0.804 (0.783-0.848)          0                    
+0.90   BAF_HETLOSS_V1   20/20   20    DEL:20                        0.821 (0.797-0.832)          0                    20 / 0
+0.95   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.95   BAF_HETLOSS_V1   20/20   20    DEL:20                        0.904 (0.895-0.915)          0                    0 / 0
+1.00   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+1.00   BAF_HETLOSS_V1   20/20   20    DEL:20                        1.000 (1.000-1.000)          0                    0 / 0
+
+8q gain, 20 replicates per level, sex female, contamination 0.0, depth scale 1.0, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.50   BAF_V2           20/20   20    GAIN:20                       0.200 (0.167-0.218)          0                    
+0.50   BAF_HETLOSS_V1   20/20   20    GAIN:20                       0.200 (0.167-0.218)          0                    0 / 0
+1.00   BAF_V2           20/20   20    GAIN:20                       0.331 (0.312-0.361)          0                    
+1.00   BAF_HETLOSS_V1   20/20   20    GAIN:20                       0.331 (0.312-0.361)          0                    0 / 0
+
+11q cnloh, 20 replicates per level, sex female, contamination 0.05, depth scale 1.0, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.80   BAF_V2           20/20   20    CNLOH:20                      0.744 (0.720-0.783)          0                    
+0.80   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.744 (0.720-0.783)          0                    0 / 0
+0.90   BAF_V2            1/20   1     CNLOH:1 INDETERMINATE:19      0.793 (0.793-0.793)          0                    
+0.90   BAF_HETLOSS_V1    2/20   2     CNLOH:1 INDETERMINATE:18 ROH:1  0.897 (0.793-1.000)          0                    0 / 0
+0.95   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.95   BAF_HETLOSS_V1   17/20   17    INDETERMINATE:3 ROH:17        1.000 (1.000-1.000)          0                    0 / 0
+1.00   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+1.00   BAF_HETLOSS_V1   20/20   20    ROH:20                        1.000 (1.000-1.000)          0                    0 / 0
+
+11q cnloh, 20 replicates per level, sex female, contamination 0.0, depth scale 0.25, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.90   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.90   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.895 (0.885-0.914)          0                    0 / 0
+0.95   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.95   BAF_HETLOSS_V1   20/20   20    CNLOH:9 ROH:11                1.000 (0.928-1.000)          0                    0 / 0
+1.00   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+1.00   BAF_HETLOSS_V1   20/20   20    ROH:20                        1.000 (1.000-1.000)          0                    0 / 0
+
+11q cnloh, 20 replicates per level, sex female, contamination 0.0, depth scale 0.1, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.90   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.90   BAF_HETLOSS_V1   12/20   12    CNLOH:2 INDETERMINATE:8 ROH:10  1.000 (0.861-1.000)          0                    0 / 0
+0.95   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+0.95   BAF_HETLOSS_V1   20/20   20    ROH:20                        1.000 (1.000-1.000)          0                    0 / 0
+1.00   BAF_V2            0/20   0     INDETERMINATE:20              -                            0                    
+1.00   BAF_HETLOSS_V1   20/20   20    ROH:20                        1.000 (1.000-1.000)          0                    0 / 0
+
+11q cnloh on chr11:90000000-135086622, 20 replicates per level, sex female, contamination 0.0, depth scale 1.0, seed 20261125
+level  detector         called  HIGH  verdicts                      f_estimate median (min-max)  calls on other arms  BAF_V2 calls altered / other arm rows altered
+0.60   BAF_V2           20/20   20    CNLOH:20                      0.553 (0.522-0.585)          0                    
+0.60   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.553 (0.522-0.585)          0                    0 / 0
+0.80   BAF_V2           14/20   14    CNLOH:14 NEUTRAL:6            0.749 (0.334-0.778)          0                    
+0.80   BAF_HETLOSS_V1   17/20   14    CNLOH:17 NEUTRAL:3            0.754 (0.334-0.825)          0                    3 / 0
+0.90   BAF_V2            0/20   0     INDETERMINATE:4 NEUTRAL:16    -                            0                    
+0.90   BAF_HETLOSS_V1   20/20   0     CNLOH:20                      0.898 (0.893-0.912)          0                    0 / 0
+0.95   BAF_V2            0/20   0     INDETERMINATE:5 NEUTRAL:15    -                            0                    
+0.95   BAF_HETLOSS_V1   19/20   0     CNLOH:19 NEUTRAL:1            0.944 (0.939-0.948)          0                    0 / 0
+1.00   BAF_V2            0/20   0     INDETERMINATE:5 NEUTRAL:15    -                            0                    
+1.00   BAF_HETLOSS_V1    0/20   0     INDETERMINATE:5 NEUTRAL:15    -                            0                    0 / 0

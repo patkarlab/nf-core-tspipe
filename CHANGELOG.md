@@ -9,6 +9,73 @@ follows [semantic versioning](https://semver.org/).
 The v1.1 working line. Nothing here is part of a tagged release. Items deferred from 1.0.0 are
 listed under "Deferred to 1.1" below.
 
+### Fixed
+
+Per-arm B-allele detector, marker `BAF_HETLOSS_V1`. An arm whose loss of heterozygosity was
+present in more than about 80 percent of the cells, or whose deletion was present in more than
+about 89 percent, came out `INDETERMINATE`: the detector looked only at sites with an allele
+fraction between 0.10 and 0.90, and such an arm has none left. A heterozygosity-loss test now
+judges every autosomal arm on its heterozygous loci against the number expected from the normals,
+and on its residual sites. The arm is called with its clonal fraction where the residual sites
+account for the missing heterozygous loci; it is reported as `ROH`, without a vote in the
+consensus, where nothing is left to measure; and a run over part of an arm is reported with its
+coordinates as a low-confidence call. An arm the existing statistic calls keeps its result unless
+its heterozygous loci are significantly depleted. Checked on synthetic samples only; validation on
+patient data is outstanding. See `docs/memos/memo21_high_fraction_loss_of_heterozygosity.md`,
+`docs/sops/baf_het_loss.md` and `docs/audit/2026-11-25/`.
+
+Site configuration, marker `PORTABLE_V1`. The hmftools reference paths were written into the panel
+overlay with their location on the development server, where no site profile could redirect them;
+`nextflow.config` carried paths of that server as defaults; and a further server had to register
+its profile in `nextflow.config`, a file of the release. The site profile now names the hmftools
+resource bundle in `hmf_root`, the defaults are neutral, and the new profile `site` reads
+`conf/site.config`, which git ignores, so that a server is configured without editing a tracked
+file. A parameter file written for v1.0.x keeps working. See
+`docs/memos/memo22_site_paths_and_review_findings.md`.
+
+A launch without a panel overlay stopped with a workflow construction error. It now stops before
+any task with a message that names `conf/twist_apply.config`.
+
+`launch_tspipe.sh` tested the local VariantValidator stack although the pipeline uses the public
+service; it now tests the endpoint the pipeline uses. The launchers default to the checkout they
+are in.
+
+### Changed
+
+`<sample>.baf.summary.tsv` keeps its 18 columns in place and gains 14; `verdict` can read `ROH` and
+`scope` can read `segment`. `<sample>.baf.sites.tsv` gains `site_class`, and the site rows of the
+consensus JSON gain the same value as a seventh element. The consensus gives a verdict of the
+heterozygosity-loss test only to genes inside its run. The dashboard (builder 0.5.4-hetloss), the
+genome-wide figure, the chromosome pages and the 17p page show the basis of such a call, and the
+dashboard warns when a sample carries a second genome. The parameter `baf_het_loss`, default
+`true`, switches the test; `false` restores the previous verdicts.
+
+Golden regression: because of the added columns the B-allele summaries of two runs are no longer
+identical line by line. `tools/compare_baf_arms.py` compares them on the columns that existed
+before and fails on any difference the new test does not account for.
+
+The default output directory is `results` under the place of launch; it was a path of the
+development server. `tools/launch_clinical23.sh` passes the site parameter file when it exists and
+no longer requires it.
+
+### Added
+
+`tests/baf/`: a simulator of synthetic samples, a regression test, a module test, a fuzz test and
+a clone-fraction titration of the per-arm detector, with a mode that plants events in a real
+sample. `tests/stub/run_stub_site.sh`: a throw-away site built from the template and a stub run of
+the whole workflow. `tools/rescan_baf_arms.py`: the current detector over the stored files of
+earlier runs, for a look-back. The profile `site` and a rewritten `conf/site_template.config`.
+
+### On main since v1.0.2 without an entry
+
+Recorded here from the code on 25 November 2026 so that they are not overlooked at the next
+release; see section 5 of memo 22. Commit 438d308, labelled as documentation, also changed the
+variant filter (marker `HOTSPOT_EXEMPT_V1`: `LOW_CALLERS` and `LOW_DEPTH` exempt every hotspot
+residue of `assets/myeloid_hotspots.tsv` with a non-synonymous consequence, where only the U2AF1
+hotspots were exempt), the NPM1 line of that table, and the variant browser of the dashboard
+(marker `DASH_CEBPA_BZIP_V1`, builder 0.5.3-cebpa). These have no audit record and are in no
+release. Releases v1.0.1 and v1.0.2 have no entry in this file either.
+
 ## [1.0.0] — 2026-09-10
 
 Clinical freeze. Frozen on the development host on 2026-09-10, deployed to the clinical HPC and
