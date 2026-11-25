@@ -1,13 +1,20 @@
 /*
- * modules/local/cnv_baf_cnloh.nf  (BAF_V1 17p; BAF_V2 genome-wide per arm, 2026-09-09)
+ * modules/local/cnv_baf_cnloh.nf  (BAF_V1 17p; BAF_V2 genome-wide per arm, 2026-09-09;
+ * MARKER BAF_HETLOSS_V1 heterozygosity-loss test, 2026-11-25)
  *
- * Per-arm BAF-shift / cnLOH / allelic-imbalance detector. V1 text follows for the method. Corrects per-site sample allele
- * fractions against the male-cohort background (baf_background.tsv,
- * informative sites), computes the mirrored-BAF deviation across
- * sample-het sites, estimates the clonal fraction from the shift, and
- * classifies NEUTRAL / CNLOH_17P / DEL_17P / INDETERMINATE using the
- * 17p denoised copy-ratio median. Thresholds are params (v1 heuristics;
- * pending validation on known del(17p) / cnLOH material).
+ * Per-arm BAF-shift / cnLOH / allelic-imbalance detector (bin/baf_cnloh_detect.py; the method
+ * is in its header). Corrects per-site sample allele fractions against the cohort background
+ * (baf_background.tsv, informative sites), computes the mirrored-BAF deviation across the
+ * sample's heterozygous sites, estimates the clonal fraction from the shift, and classifies
+ * each arm NEUTRAL / CNLOH / DEL / GAIN / IMBALANCE / INDETERMINATE using the arm's denoised
+ * copy-ratio median.
+ *
+ * BAF_HETLOSS_V1: an event in more than about 80 % of the cells (89 % for a deletion) moves the
+ * arm's heterozygous sites below 0.10 / above 0.90, where the statistic above no longer sees
+ * them and the arm came out INDETERMINATE. Such an arm is now judged on its heterozygous loci
+ * observed against expected and on the residual sites (verdicts as above, plus ROH when
+ * heterozygosity is absent at neutral copy ratio). On by default; params.baf_het_loss = false
+ * restores the BAF_V2 verdicts exactly.
  */
 
 process CNV_BAF_CNLOH {
@@ -30,6 +37,8 @@ process CNV_BAF_CNLOH {
         """
 
     script:
+        // BAF_HETLOSS_V1: on unless a config sets baf_het_loss = false (an overlay that does not define it leaves it on)
+        def het_loss_arg = (params.baf_het_loss == false) ? '--no-het-loss' : ''
         """
         baf_cnloh_detect.py \\
             --allelic ${allelic} \\
@@ -42,6 +51,7 @@ process CNV_BAF_CNLOH {
             --f-min ${params.baf_f_min} \\
             --cr-del ${params.baf_cr_del} \\
             --cr-gain ${params.baf_cr_gain} \\
+            ${het_loss_arg} \\
             --out-prefix ${meta.id}.baf
         """
 }

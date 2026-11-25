@@ -19,6 +19,13 @@ Arms merged at gene level:
                     the verdict of the chromosome arm it lies on -- b_call LOSS
                     for DEL, CNLOH for CNLOH, GAIN for GAIN; allelic_state carries
                     '<arm>:<verdict> f=<clonal fraction>'.
+                    MARKER BAF_HETLOSS_V1: a verdict from the heterozygosity-loss
+                    test (evidence het_loss_*) applies only to genes inside its
+                    stretch (ev_lo/ev_hi/ev_ends); a gene elsewhere on the arm
+                    gets b_call NA. ROH (heterozygosity absent at neutral copy
+                    number: constitutional or fully clonal, not distinguishable)
+                    is shown as b_call ROH and casts no vote. LOW confidence,
+                    which includes every call over part of an arm, casts no vote.
     P  PureCN    -- p_call GAIN/LOSS when the fit is trusted (status OK,
                     not flagged); p_C == 2 with p_loh true is cnLOH support.
     E  DECoN     -- optional --decon-genes TSV (gene, e_call, e_bf); the
@@ -57,7 +64,8 @@ JSON schema v3 (single payload for the three-view report):
   "segments": {"cnvkit": [...], "gatk": [...], "intersect": [...]},
   "tracks":   {"denoised_bins": [[chrom,start,end,log2]...],
                "cnr_bins":      [[chrom,start,end,gene,log2,depth,weight]...],
-               "baf_sites":     [[chrom,pos,depth,af_raw,af_adj,het]...]}
+               "baf_sites":     [[chrom,pos,depth,af_raw,af_adj,het,site_class]...]}
+                                (site_class het|res|hom, BAF_HETLOSS_V1; absent on older site tables)
 }
 """
 
@@ -220,6 +228,39 @@ def strip_chr(chrom):
     """CMX_ANNOT_V1: 'chr17' -> '17'; other names unchanged."""
     c = str(chrom).strip()
     return c[3:] if c.lower().startswith("chr") else c
+
+
+def baf_stretch(row):
+    """BAF_HETLOSS_V1: genomic interval a heterozygosity-loss verdict applies to, or None.
+
+    The arm row carries the first and last position of the stretch (ev_lo, ev_hi) and the
+    end(s) of the arm it runs to (ev_ends: both | start | end | none); towards such an end the
+    interval is extended to the arm boundary of the region column. Returns (lo, hi, partial)
+    where partial is True when the stretch stops short of an end of the arm. None for rows of
+    the BAF_V2 statistic and for tables without these columns."""
+    if not str(row.get("evidence", "")).startswith("het_loss"):
+        return None
+    m = re.match(r"chr\w+:(\d+)-(\d+)", row.get("region", ""))
+    try:
+        ev_lo, ev_hi = int(row.get("ev_lo")), int(row.get("ev_hi"))
+    except (TypeError, ValueError):
+        return None
+    if not m:
+        return None
+    ends = row.get("ev_ends", "both")
+    lo = int(m.group(1)) if ends in ("both", "start") else ev_lo
+    hi = int(m.group(2)) if ends in ("both", "end") else ev_hi
+    return lo, hi, ends != "both"
+
+
+def baf_f_text(row):
+    """BAF_HETLOSS_V1: 'f=0.902', or the lower bound 'f>=0.960' when heterozygosity is absent
+    ('f not measurable' when the detector could give no bound: second genome in the sample)."""
+    if row.get("evidence") == "het_loss_complete":
+        if row.get("f_lower") not in (None, "", "NA"):
+            return "f>=%s" % row.get("f_lower")
+        return "f not measurable"
+    return "f=%s" % row.get("f_estimate", "NA")
 
 
 def read_cytobands(path):
@@ -540,17 +581,27 @@ def main():
         bv = br.get("verdict", "NA") if br else "NA"
         b_low = bool(br) and br.get("confidence", "") == "LOW"   # BAF_V2: a LOW-confidence arm casts no B vote
         b_call = {"DEL_17P": "LOSS", "CNLOH_17P": "CNLOH", "DEL": "LOSS", "CNLOH": "CNLOH",
-                  "GAIN": "GAIN", "NEUTRAL": "NEUTRAL"}.get(bv, "NA")
-        if b_low:
+                  "GAIN": "GAIN", "NEUTRAL": "NEUTRAL", "ROH": "ROH"}.get(bv, "NA")   # BAF_HETLOSS_V1: ROH is shown, never a vote
+        stretch = baf_stretch(br) if br else None   # BAF_HETLOSS_V1
+        b_outside = stretch is not None and overlap(g["start"], g["end"], stretch[0], stretch[1]) <= 0
+        if b_low or b_outside:
             b_call = "NA"
+        where = ""
+        if stretch is not None and stretch[2]:
+            where = " %s:%.2f-%.2f Mb" % (g["chrom"], int(br["ev_lo"]) / 1e6, int(br["ev_hi"]) / 1e6)
         if br is None:
             allelic = "NA"
         elif bv == "INDETERMINATE":
             allelic = "%s:INDETERMINATE (n_het %s)" % (br.get("arm", "?"), br.get("n_het", "?"))
         elif bv in ("NEUTRAL", "NA"):
             allelic = "%s:%s" % (br.get("arm", "?"), bv)
+        elif b_outside:
+            allelic = "%s:outside the %s%s stretch%s" % (br.get("arm", "?"), bv, "?" if b_low else "", where)
+        elif bv == "ROH":
+            allelic = "%s:ROH %s (heterozygosity absent; constitutional or fully clonal, no vote)" % (
+                br.get("arm", "?"), baf_f_text(br))
         else:
-            allelic = "%s:%s%s f=%s%s" % (br.get("arm", "?"), bv, "?" if b_low else "", br.get("f_estimate", "NA"),
+            allelic = "%s:%s%s %s%s%s" % (br.get("arm", "?"), bv, "?" if b_low else "", baf_f_text(br), where,
                                           " (low confidence, no vote)" if b_low else "")
 
         depth = {"K": k_call if k_call in ("GAIN", "LOSS") else None,
@@ -676,7 +727,8 @@ def main():
     site_hdr, site_rows = read_tsv(args.baf_sites)
     baf_sites = [[r["contig"], int(r["position"]), int(r["depth"]),
                   float(r["af_raw"]), float(r["af_adj"]),
-                  r["sample_het"] == "true"] for r in site_rows]
+                  r["sample_het"] == "true"] + ([r["site_class"]] if "site_class" in r else [])   # BAF_HETLOSS_V1
+                 for r in site_rows]
 
     payload = {
         "schema": "twist_cnv_consensus4/v4",

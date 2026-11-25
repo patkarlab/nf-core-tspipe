@@ -48,6 +48,7 @@ FACT_FIELDS = (
     "p_call", "p_C", "p_loh", "e_call",
     "h_call", "h_cn_min", "h_cn_max", "h_macn_min", "h_loh",
     "baf_verdict", "baf_confidence", "baf_f", "baf_n_het", "baf_scope", "baf_cr",
+    "baf_evidence",   # MARKER BAF_HETLOSS_V1: shift | het_loss_residual | het_loss_complete | ""
     "purity", "purple_status", "purple_trusted", "purecn_purity",
 )
 
@@ -178,6 +179,27 @@ def _consensus_json(sample_dir, sample):
         return {}
 
 
+def _baf_basis(r):
+    """MARKER BAF_HETLOSS_V1: how the arm verdict was reached when it comes from the heterozygosity-loss
+    test ('' for the BAF_V2 statistic): observed / expected heterozygous loci, the lower bound of the
+    fraction when nothing is left to measure, and the stretch when it stops short of the arm."""
+    evidence = _clean(r.get("evidence", ""))
+    if not evidence.startswith("het_loss"):
+        return ""
+    bits = ["heterozygosity absent" if evidence == "het_loss_complete" else "heterozygosity lost, residual signal"]
+    if _clean(r.get("het_loci", "")) and _clean(r.get("het_loci_expected", "")):
+        bits.append("%s heterozygous loci where %s expected" % (_clean(r.get("het_loci")), _clean(r.get("het_loci_expected"))))
+    if evidence == "het_loss_complete":
+        bound = _clean(r.get("f_lower", ""))
+        bits.append("fraction at least %s" % _fmt(bound, 2) if bound and bound != "NA" else "fraction not measurable")
+    lo, hi = _num(r.get("ev_lo")), _num(r.get("ev_hi"))
+    if lo is not None and hi is not None and _clean(r.get("ev_ends", "both")) != "both":
+        bits.append("over %.1f-%.1f Mb" % (lo / 1e6, hi / 1e6))
+    if _clean(r.get("verdict", "")) == "ROH":
+        bits.append("constitutional or fully clonal, not distinguishable in this sample")
+    return "; ".join(bits)
+
+
 def _baf_row(sample_dir, sample, cj):
     rows = None
     for cand in (sample_dir / "cnv" / "baf" / ("%s.baf.summary.tsv" % sample),
@@ -197,6 +219,7 @@ def _baf_row(sample_dir, sample, cj):
                 "n_informative": _clean(r.get("n_informative", "")), "n_covered": _clean(r.get("n_covered", "")),
                 "cr": _fmt(r.get("cr_median_log2", ""), 2), "n_cr_bins": _clean(r.get("n_cr_bins", "")),
                 "dev": _fmt(r.get("median_mirrored_dev", ""), 3), "noise_floor": _fmt(r.get("noise_floor", ""), 3),
+                "evidence": _clean(r.get("evidence", "")), "basis": _baf_basis(r),   # BAF_HETLOSS_V1
             }
     return None
 
@@ -333,7 +356,7 @@ def _facts(variants, cnv, baf, purity):
         "h_macn_min": c.get("h_macn_min", ""), "h_loh": _norm(c.get("h_loh", "")),
         "baf_verdict": b.get("verdict", ""), "baf_confidence": b.get("confidence", ""),
         "baf_f": b.get("f", ""), "baf_n_het": b.get("n_het", ""), "baf_scope": b.get("scope", ""),
-        "baf_cr": b.get("cr", ""),
+        "baf_cr": b.get("cr", ""), "baf_evidence": b.get("evidence", ""),
         "purity": purity.get("purple", ""), "purple_status": purity.get("purple_status", ""),
         "purple_trusted": purity.get("purple_trusted", ""), "purecn_purity": purity.get("purecn", ""),
     }
@@ -379,6 +402,8 @@ def _observations(variants, cnv, baf, purity):
             s += " f %s" % baf["f"]
         s += " (%s het sites, confidence %s, scope %s, copy ratio %s)" % (
             baf.get("n_het") or "?", baf.get("confidence") or "?", baf.get("scope") or "?", baf.get("cr") or "?")
+        if baf.get("basis"):   # BAF_HETLOSS_V1
+            s += " [%s]" % baf["basis"]
         obs.append(s + ".")
     pur = []
     if purity.get("purple"):

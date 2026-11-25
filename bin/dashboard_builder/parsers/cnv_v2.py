@@ -71,6 +71,66 @@ def _round(v, nd=2):
         return v
 
 
+BAF_BASIS = {"shift": "shift of the heterozygous sites",
+             "het_loss_residual": "heterozygosity lost, residual signal",
+             "het_loss_complete": "heterozygosity absent"}
+
+
+def _baf_arm(r):
+    """One row of the BAF-by-arm table. MARKER BAF_HETLOSS_V1: basis of the verdict, heterozygous
+    loci observed / expected, the stretch of a heterozygosity-loss call and, where nothing is
+    left to measure, the lower bound of the fraction in place of an estimate. All blank on
+    summaries written before BAF_HETLOSS_V1."""
+    evidence = r.get("evidence", "") or ""
+    f = r.get("f_estimate", "")
+    if evidence == "het_loss_complete":
+        # no bound when the detector could give none (second genome in the sample)
+        f = ">=" + _round(r.get("f_lower"), 2) if r.get("f_lower", "NA") not in ("", "NA", None) else "not measurable"
+    het_loci = ""
+    if r.get("het_loci", "NA") not in ("", "NA", None) and r.get("het_loci_expected", "NA") not in ("", "NA", None):
+        het_loci = "%s / %s" % (r.get("het_loci"), r.get("het_loci_expected"))
+    extent = ""
+    if evidence.startswith("het_loss"):
+        try:
+            lo, hi = int(r.get("ev_lo")), int(r.get("ev_hi"))
+            chrom = (r.get("region", "") or "").split(":")[0]
+            extent = "%s:%.1f-%.1f Mb" % (chrom, lo / 1e6, hi / 1e6)
+            if r.get("ev_ends", "both") == "both":
+                extent += " (the arm)"
+        except (TypeError, ValueError):
+            extent = ""
+    cr = r.get("cr_median_log2", "")
+    if r.get("scope", "") == "segment" and r.get("ev_cr_log2", "NA") not in ("", "NA", None):
+        cr = "%s (stretch %s)" % (cr, r.get("ev_cr_log2"))
+    return {"arm": r.get("arm", ""), "n_het": r.get("n_het", ""), "f": f, "cr": cr,
+            "verdict": r.get("verdict", ""), "confidence": r.get("confidence", ""), "scope": r.get("scope", ""),
+            "basis": BAF_BASIS.get(evidence, ""), "het_loci": het_loci, "n_residual": r.get("n_residual", ""),
+            "extent": extent, "evidence": evidence}
+
+
+SECOND_GENOME_RATE = 0.10   # the same value as in bin/baf_cnloh_detect.py
+
+
+def _second_genome(rows):
+    """MARKER BAF_SECOND_GENOME_V1: median over the tested arms of residual_rate_ctrl, the share of
+    the homozygous loci of the sample's other arms that carry a residual second allele. A high
+    value on every arm alike is the pattern of a second genome in the sample (contamination,
+    chimerism after transplant), for which the per-arm verdicts are unreliable.
+    -> (percentage as text, flag); (None, False) on summaries without the column."""
+    vals = []
+    for r in rows:
+        try:
+            vals.append(float(r.get("residual_rate_ctrl", "")))
+        except (TypeError, ValueError):
+            continue
+    if not vals:
+        return None, False
+    vals.sort()
+    mid = len(vals) // 2
+    med = vals[mid] if len(vals) % 2 else 0.5 * (vals[mid - 1] + vals[mid])
+    return "%.0f" % (100.0 * med), med >= SECOND_GENOME_RATE
+
+
 def parse(sample_dir, sample):
     sample_dir = Path(sample_dir)
     v2 = sample_dir / "cnv"
@@ -126,10 +186,9 @@ def parse(sample_dir, sample):
             except (OSError, ValueError):
                 baf_rows = None
     if baf_rows:
-        out["baf_arms"] = [{"arm": r.get("arm", ""), "n_het": r.get("n_het", ""), "f": r.get("f_estimate", ""),
-                            "cr": r.get("cr_median_log2", ""), "verdict": r.get("verdict", ""),
-                            "confidence": r.get("confidence", ""), "scope": r.get("scope", "")} for r in baf_rows]
+        out["baf_arms"] = [_baf_arm(r) for r in baf_rows]
         out["baf_calls"] = [r for r in out["baf_arms"] if r["verdict"] not in ("NEUTRAL", "INDETERMINATE", "") and r["confidence"] == "HIGH"]
+        out["baf_residual_pct"], out["baf_second_genome"] = _second_genome(baf_rows)
     bp = v2 / "baf" / ("%s.baf.png" % sample)
     if bp.exists():
         out["baf_plot"] = _rel(bp, sample_dir)

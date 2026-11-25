@@ -38,7 +38,7 @@ import sys
 
 CEN = {"chr17": (22700000, 27400000)}
 VERDICT_COLOUR = {"NEUTRAL": "#7f7f7f", "DEL": "#c0392b", "CNLOH": "#2471a3", "GAIN": "#1e8449",
-                  "IMBALANCE": "#8e44ad", "INDETERMINATE": "#bdbdbd"}
+                  "IMBALANCE": "#8e44ad", "INDETERMINATE": "#bdbdbd", "ROH": "#b9770e"}
 
 
 def read_tsv(path):
@@ -208,6 +208,15 @@ def main():
     conf = (arm_row or {}).get("confidence", "NA")
     f_est = num((arm_row or {}).get("f_estimate"))
     n_het = (arm_row or {}).get("n_het", "?")
+    # MARKER BAF_HETLOSS_V1: a verdict from the heterozygosity-loss test carries its stretch (ev_lo-ev_hi);
+    # the residual sites inside it are the arm's heterozygous sites, now below 0.10 / above 0.90
+    evidence = str((arm_row or {}).get("evidence", ""))
+    stretch = None
+    if evidence.startswith("het_loss"):
+        ev_lo, ev_hi = num((arm_row or {}).get("ev_lo")), num((arm_row or {}).get("ev_hi"))
+        if ev_lo is not None and ev_hi is not None:
+            stretch = (ev_lo, ev_hi)
+    partial = stretch is not None and (arm_row or {}).get("ev_ends", "both") != "both"
     cr_med = num((arm_row or {}).get("cr_median_log2"))
     colour = VERDICT_COLOUR.get(verdict, "#7f7f7f")
 
@@ -335,11 +344,23 @@ def main():
 
     # ---- BAF ----
     het_x, het_y, het_m, hom_x, hom_y = [], [], [], [], []
+    out_x, out_y, out_m = [], [], []   # BAF_HETLOSS_V1: het sites outside the stretch (balanced)
+    n_res_in = 0
     for s in sites:
         pos, af, is_het = s[1], s[3], bool(s[5])
-        if is_het:
-            het_x.append(pos / 1e6); het_y.append(af)
-            het_m.append("o" if classify(pos, windows, backbone) == "window" else "^")
+        cls = s[6] if len(s) > 6 else ("het" if is_het else "hom")
+        marker = "o" if classify(pos, windows, backbone) == "window" else "^"
+        if stretch is not None:
+            inside = stretch[0] <= pos <= stretch[1]
+            if inside and (cls != "hom" or evidence == "het_loss_complete"):
+                het_x.append(pos / 1e6); het_y.append(af); het_m.append(marker)
+                n_res_in += 1 if cls == "res" else 0
+            elif is_het:
+                out_x.append(pos / 1e6); out_y.append(af); out_m.append(marker)
+            else:
+                hom_x.append(pos / 1e6); hom_y.append(af)
+        elif is_het:
+            het_x.append(pos / 1e6); het_y.append(af); het_m.append(marker)
         else:
             hom_x.append(pos / 1e6); hom_y.append(af)
     ax_baf.scatter(hom_x, hom_y, s=5, c="#d9d9d9", linewidths=0, zorder=1)
@@ -348,33 +369,57 @@ def main():
         ys = [y for y, mm in zip(het_y, het_m) if mm == m]
         if xs:
             ax_baf.scatter(xs, ys, s=16 if m == "o" else 22, c=colour, marker=m, linewidths=0.3, edgecolors="white", zorder=3)
+        xs = [x for x, mm in zip(out_x, out_m) if mm == m]
+        ys = [y for y, mm in zip(out_y, out_m) if mm == m]
+        if xs:
+            ax_baf.scatter(xs, ys, s=16 if m == "o" else 22, c=VERDICT_COLOUR["NEUTRAL"], marker=m, linewidths=0.3,
+                           edgecolors="white", zorder=3)
     if f_est is not None and f_est == f_est and verdict not in ("NEUTRAL", "INDETERMINATE", "NA"):
-        ax_baf.axhspan(0.5 - f_est / 2, 0.5 + f_est / 2, color=colour, alpha=0.12, zorder=0)
-        ax_baf.axhline(0.5 - f_est / 2, color=colour, lw=0.8, ls="--", zorder=2)
-        ax_baf.axhline(0.5 + f_est / 2, color=colour, lw=0.8, ls="--", zorder=2)
+        if partial:   # the band only over the stretch
+            ax_baf.fill_between([stretch[0] / 1e6, stretch[1] / 1e6], 0.5 - f_est / 2, 0.5 + f_est / 2,
+                                color=colour, alpha=0.12, zorder=0, linewidth=0)
+            for y in (0.5 - f_est / 2, 0.5 + f_est / 2):
+                ax_baf.plot([stretch[0] / 1e6, stretch[1] / 1e6], [y, y], color=colour, lw=0.8, ls="--", zorder=2)
+        else:
+            ax_baf.axhspan(0.5 - f_est / 2, 0.5 + f_est / 2, color=colour, alpha=0.12, zorder=0)
+            ax_baf.axhline(0.5 - f_est / 2, color=colour, lw=0.8, ls="--", zorder=2)
+            ax_baf.axhline(0.5 + f_est / 2, color=colour, lw=0.8, ls="--", zorder=2)
     ax_baf.axhline(0.5, color="#999999", lw=0.7, zorder=0)
     for pos, vaf, lab, verd in variants:
         ax_baf.scatter([pos / 1e6], [vaf / 100.0], marker="D", s=46, c="#e60000", edgecolors="black", linewidths=0.6, zorder=5)
         ax_baf.annotate("%s %s VAF %.1f%%%s" % (args.gene, lab, vaf, "" if verd == "PASS" else " (%s)" % verd),
                         (pos / 1e6, vaf / 100.0), xytext=(6, 6), textcoords="offset points", fontsize=7.5, color="#b30000",
                         bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="#e60000", lw=0.6, alpha=0.9))
-    ax_baf.set_ylim(-0.02, 1.02)
+    # BAF_HETLOSS_V1: label and legend sit in a strip above 1.0 -- inside the data range they covered the
+    # 0.9-1.0 band, which is where the upper residual sites of a near-complete LOH lie
+    ax_baf.set_ylim(-0.02, 1.27)
+    ax_baf.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    ax_baf.axhline(1.0, color="#cfcfcf", lw=0.5, zorder=0)
     ax_baf.set_ylabel("ALT fraction")
     baf_label = "BAF_V2 %s: %s%s" % (args.arm, verdict, ("?" if conf == "LOW" else ""))
-    if f_est is not None and f_est == f_est:
+    f_lower = num((arm_row or {}).get("f_lower"))
+    if evidence == "het_loss_complete":
+        has_bound = f_lower is not None and f_lower == f_lower   # none when a second genome is present
+        baf_label += "  f>=%.2f" % f_lower if has_bound else "  f not measurable"
+    elif f_est is not None and f_est == f_est:
         baf_label += "  f=%.2f" % f_est
-    baf_label += "  (%s het sites, %s)" % (n_het, conf)
+    if stretch is not None:
+        baf_label += "  (%s)\nheterozygosity lost%s: %d residual sites, %s het sites" % (
+            conf, " over %.1f-%.1f Mb" % (stretch[0] / 1e6, stretch[1] / 1e6) if partial else "", n_res_in, n_het)
+    else:
+        baf_label += "  (%s het sites, %s)" % (n_het, conf)
+    site_word = "het or residual" if stretch is not None else "het"
     handles = [Line2D([0], [0], marker="o", color="w", markerfacecolor=colour, markersize=6,
-                      label="het, SNP window - colour = BAF_V2 verdict (%s)" % verdict),
-               Line2D([0], [0], marker="^", color="w", markerfacecolor=colour, markersize=6, label="het, backbone site"),
+                      label="%s, SNP window - colour = BAF_V2 verdict (%s)" % (site_word, verdict)),
+               Line2D([0], [0], marker="^", color="w", markerfacecolor=colour, markersize=6, label="%s, backbone site" % site_word),
                Line2D([0], [0], marker="o", color="w", markerfacecolor="#d9d9d9", markersize=5, label="homozygous")]
     if verdict not in ("NEUTRAL", "INDETERMINATE", "NA") and f_est is not None:
         handles.append(Patch(facecolor=colour, alpha=0.2, label="0.5 +/- f/2"))
     if variants:
         handles.append(Line2D([0], [0], marker="D", color="w", markerfacecolor="#e60000", markeredgecolor="black", markersize=6,
                               label="%s variant VAF" % args.gene))
-    ax_baf.legend(handles=handles, fontsize=7, loc="upper right", ncol=len(handles), frameon=False)
-    ax_baf.text(0.01, 0.97, baf_label, transform=ax_baf.transAxes, fontsize=8, va="top", ha="left", color=colour,
+    ax_baf.legend(handles=handles, fontsize=7, loc="upper right", ncol=3 if len(handles) > 3 else len(handles), frameon=False)
+    ax_baf.text(0.01, 0.975, baf_label, transform=ax_baf.transAxes, fontsize=8, va="top", ha="left", color=colour,
                 bbox=dict(boxstyle="round,pad=0.25", fc="white", ec=colour, lw=0.6))
 
     # ---- PURPLE ----

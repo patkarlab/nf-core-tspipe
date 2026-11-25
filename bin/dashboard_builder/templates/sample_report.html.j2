@@ -577,7 +577,7 @@
                   <tr><td class="label">GATK (G)</td><td class="value">{{ _t.cnv.g_call or '-' }}{% if _t.cnv.g_seg_log2 %} &middot; log2 {{ _t.cnv.g_seg_log2 }}{% endif %}</td></tr>
                   {% endif %}
                   {% if _t.baf %}
-                  <tr><td class="label">BAF_V2 17p arm (B)</td><td class="value">{{ _t.baf.verdict or '-' }}{% if _t.baf.f %} &middot; f {{ _t.baf.f }}{% endif %} &middot; {{ _t.baf.n_het or '?' }} het sites &middot; {{ _t.baf.confidence }} &middot; scope {{ _t.baf.scope or '?' }}{% if _t.baf.cr %} &middot; copy ratio {{ _t.baf.cr }}{% endif %}</td></tr>
+                  <tr><td class="label">BAF_V2 17p arm (B)</td><td class="value">{{ _t.baf.verdict or '-' }}{% if _t.baf.f %} &middot; f {{ _t.baf.f }}{% endif %} &middot; {{ _t.baf.n_het or '?' }} het sites &middot; {{ _t.baf.confidence }} &middot; scope {{ _t.baf.scope or '?' }}{% if _t.baf.cr %} &middot; copy ratio {{ _t.baf.cr }}{% endif %}{% if _t.baf.basis %} &middot; {{ _t.baf.basis|e }}{% endif %}</td></tr>
                   {% else %}
                   <tr><td class="label">BAF_V2 17p arm (B)</td><td class="value">not available</td></tr>
                   {% endif %}
@@ -637,7 +637,7 @@
                 <tr><td class="text-nowrap"><code>flags</code></td><td>letters of the arms that voted: K G B P E H</td></tr>
                 <tr><td class="text-nowrap"><code>k_call, k_cn, k_log2</code></td><td>K = CNVkit (read depth vs the sex-matched panel of normals): call, integer copy number, segment log2 ratio</td></tr>
                 <tr><td class="text-nowrap"><code>g_call, g_seg_log2</code></td><td>G = GATK ModelSegments (read depth, same PoN): call, segment log2 ratio</td></tr>
-                <tr><td class="text-nowrap"><code>b_call</code></td><td>B = B-allele frequency per chromosome arm (BAF_V2): LOSS, CNLOH, GAIN or NEUTRAL from the arm the gene lies on; <code>allelic_state</code> gives arm, verdict and clonal fraction</td></tr>
+                <tr><td class="text-nowrap"><code>b_call</code></td><td>B = B-allele frequency per chromosome arm (BAF_V2): LOSS, CNLOH, GAIN or NEUTRAL from the arm the gene lies on; <code>allelic_state</code> gives arm, verdict and clonal fraction. ROH = heterozygosity absent on the arm at neutral copy number (constitutional or fully clonal; shown, no vote). NA on a called arm = the gene lies outside the stretch of the call, or the call is LOW confidence</td></tr>
                 <tr><td class="text-nowrap"><code>p_call, p_C</code></td><td>P = PureCN: call and absolute copy number; advisory only when the purity fit is flagged</td></tr>
                 <tr><td class="text-nowrap"><code>e_call, e_bf</code></td><td>E = DECoN (exon-level, multi-exon deletions): call and Bayes factor</td></tr>
                 <tr><td class="text-nowrap"><code>h_call, h_cn_min, h_cn_max, h_loh</code></td><td>H = PURPLE (hmftools, purity/ploidy adjusted): call, minimum and maximum copy number over the gene, LOH flag; advisory on low purity</td></tr>
@@ -696,18 +696,26 @@
           {% set _baf_called = ctx.cnv.baf_arms | rejectattr('verdict', 'in', ['NEUTRAL', 'INDETERMINATE', '']) | list %}
           <h5 class="mt-2">BAF by chromosome arm
             {% if ctx.cnv.baf_calls %}<span class="badge bg-warning text-dark ms-1">{{ ctx.cnv.baf_calls|length }} arm(s) with a call</span>
+            {% elif _baf_called %}<span class="badge bg-secondary ms-1">{{ _baf_called|length }} low-confidence call(s), no vote</span>
             {% else %}<span class="badge bg-success ms-1">all arms balanced</span>{% endif %}
           </h5>
           <p class="text-muted small mb-2">Mirrored B-allele deviation over the sample's heterozygous catalog sites (CNV backbone plus the 17p windows), per arm; the noise floor is the sample's own balanced arms. DEL / GAIN use the arm's denoised copy ratio; CNLOH is a shift at neutral copy number; INDETERMINATE means too few heterozygous sites (acrocentric p arms, chrX in males). A call marked ? is LOW confidence (fewer than 20 heterozygous sites or a deviation under 1.5 x the noise floor) and casts no vote in the consensus.</p>
+          {# MARKER BAF_HETLOSS_V1 #}
+          <p class="text-muted small mb-2">Heterozygosity-loss test: when the abnormal clone makes up more than about 80 % of the cells (89 % for a deletion), the heterozygous sites of the arm fall below 0.10 / above 0.90 and no longer count as heterozygous. The arm is then judged on its heterozygous loci observed against those expected from the normals (a locus is a group of catalog sites within 20 kb, counted once; sites that are heterozygous in more than three quarters of the normals are paralogue differences and are left out, which is why an arm can list a few het sites and no het locus). <em>Heterozygosity lost, residual signal</em>: the minor allele is still measurable (2-10 %), so the sample is a mixture and the clonal fraction is read from those sites; the verdict follows the copy ratio (CNLOH, DEL, GAIN). <em>Heterozygosity absent</em>: nothing is left to measure; at neutral copy ratio the verdict is ROH (region of homozygosity) and the fraction is given as a lower bound. ROH is the picture of a constitutional homozygous arm (parental relatedness, constitutional uniparental disomy) and equally of an acquired loss in every cell; the two cannot be told apart in this sample, so ROH casts no vote. A call with scope <em>segment</em> covers the stretch given under Extent, is advisory in this version (LOW, no vote), and applies to the genes inside the stretch only.</p>
+          {# MARKER BAF_SECOND_GENOME_V1 #}
+          {% if ctx.cnv.baf_second_genome %}
+          <div class="alert alert-warning py-2 small mb-2" style="max-width: 1150px;" role="alert">A residual second allele is present at {{ ctx.cnv.baf_residual_pct|e }} % of the homozygous loci, on every arm alike. This is the pattern of a second genome in the sample: contamination, or chimerism after a transplant. The verdicts below are unreliable for such a sample: a real event can be missed and a balanced arm can be called.</div>
+          {% endif %}
           {% if _baf_called %}
-          <div class="table-responsive" style="max-width: 900px;">
+          <div class="table-responsive" style="max-width: 1150px;">
             <table class="table table-sm small mb-2">
-              <thead class="table-light"><tr><th>Arm</th><th>Het sites</th><th>Clonal fraction</th><th>Copy ratio (log2)</th><th>Verdict</th><th>Confidence</th><th>Scope</th></tr></thead>
+              <thead class="table-light"><tr><th>Arm</th><th>Het sites</th><th>Het loci observed / expected</th><th>Clonal fraction</th><th>Copy ratio (log2)</th><th>Verdict</th><th>Confidence</th><th>Scope</th><th>Basis</th><th>Extent</th></tr></thead>
               <tbody>
               {% for a in _baf_called %}
                 <tr class="{% if a.confidence == 'HIGH' %}table-warning{% else %}table-light{% endif %}">
-                  <td><strong>{{ a.arm }}</strong></td><td>{{ a.n_het }}</td><td>{{ a.f }}</td><td>{{ a.cr }}</td>
+                  <td><strong>{{ a.arm }}</strong></td><td>{{ a.n_het }}</td><td>{{ a.het_loci|default('', true)|e }}</td><td>{{ a.f|e }}</td><td>{{ a.cr|e }}</td>
                   <td><strong>{{ a.verdict }}{% if a.confidence == 'LOW' %}?{% endif %}</strong></td><td>{{ a.confidence }}</td><td>{{ a.scope }}</td>
+                  <td>{{ a.basis|default('', true)|e }}</td><td class="text-nowrap">{{ a.extent|default('', true)|e }}</td>
                 </tr>
               {% endfor %}
               </tbody>
@@ -718,13 +726,13 @@
           {% endif %}
           <details class="small mb-3">
             <summary class="text-muted">Show all {{ ctx.cnv.baf_arms|length }} arms</summary>
-            <div class="table-responsive mt-2" style="max-width: 900px;">
+            <div class="table-responsive mt-2" style="max-width: 1150px;">
               <table class="table table-sm table-striped small mb-0">
-                <thead class="table-light"><tr><th>Arm</th><th>Het sites</th><th>Clonal fraction</th><th>Copy ratio (log2)</th><th>Verdict</th><th>Confidence</th><th>Scope</th></tr></thead>
+                <thead class="table-light"><tr><th>Arm</th><th>Het sites</th><th>Het loci observed / expected</th><th>Residual sites</th><th>Clonal fraction</th><th>Copy ratio (log2)</th><th>Verdict</th><th>Confidence</th><th>Scope</th></tr></thead>
                 <tbody>
                 {% for a in ctx.cnv.baf_arms %}
-                  <tr{% if a.verdict in ('DEL','CNLOH','GAIN','IMBALANCE') and a.confidence == 'HIGH' %} class="table-warning"{% endif %}>
-                    <td>{{ a.arm }}</td><td>{{ a.n_het }}</td><td>{{ a.f }}</td><td>{{ a.cr }}</td>
+                  <tr{% if a.verdict in ('DEL','CNLOH','GAIN','IMBALANCE','ROH') and a.confidence == 'HIGH' %} class="table-warning"{% endif %}>
+                    <td>{{ a.arm }}</td><td>{{ a.n_het }}</td><td>{{ a.het_loci|default('', true)|e }}</td><td>{{ a.n_residual|default('', true)|e }}</td><td>{{ a.f|e }}</td><td>{{ a.cr|e }}</td>
                     <td>{{ a.verdict }}{% if a.confidence == 'LOW' %}?{% endif %}</td><td>{{ a.confidence }}</td><td>{{ a.scope }}</td>
                   </tr>
                 {% endfor %}

@@ -8,6 +8,11 @@ One genome-wide figure in genomic coordinates, three tracks sharing the x axis:
   2. BAF     -- every catalog site (tracks.baf_sites): heterozygous sites coloured by the arm's
                 BAF_V2 verdict (DEL red, CNLOH blue, GAIN green, IMBALANCE purple, balanced grey),
                 homozygous sites light grey; legend.
+                MARKER BAF_HETLOSS_V1: where the verdict comes from the heterozygosity-loss test
+                (arm row evidence het_loss_*), the residual sites inside its stretch (ev_lo-ev_hi)
+                carry the verdict colour -- they are the arm's heterozygous sites, moved to below
+                0.10 / above 0.90 -- and on a ROH arm (heterozygosity absent, ochre) every
+                site does. A call over part of an arm is written with its coordinates in the title.
   3. PURPLE  -- total (blue) and minor-allele (orange) copy number per segment from
                 <purple-dir>/<sample>.purple.cnv.somatic.tsv; capped at --max-cn.
 Centromeres shaded; chromosome labels on the bottom axis; arm calls in the title.
@@ -44,7 +49,7 @@ CENTROMERE_HG38 = {
     "chr19": (24200000, 28100000), "chr20": (25700000, 30400000), "chr21": (10900000, 13000000),
     "chr22": (13700000, 17400000), "chrX": (58100000, 61000000)}
 VERDICT_COLOUR = {"NEUTRAL": "#9e9e9e", "DEL": "#c0392b", "CNLOH": "#2471a3", "GAIN": "#1e8449",
-                  "IMBALANCE": "#8e44ad", "INDETERMINATE": "#bdbdbd"}
+                  "IMBALANCE": "#8e44ad", "INDETERMINATE": "#bdbdbd", "ROH": "#b9770e"}
 
 
 def norm_chrom(c):
@@ -85,6 +90,30 @@ def fmt(x, nd=2):
         return "NA"
 
 
+def stretch_of(row):
+    """BAF_HETLOSS_V1: (first, last) position of a heterozygosity-loss stretch, or None for other arm rows."""
+    if not str(row.get("evidence", "")).startswith("het_loss"):
+        return None
+    try:
+        return int(row.get("ev_lo")), int(row.get("ev_hi"))
+    except (TypeError, ValueError):
+        return None
+
+
+def call_text(row):
+    """'11q CNLOH f=0.90'; a complete loss with its lower bound, a segment with its coordinates."""
+    if row.get("evidence") == "het_loss_complete":
+        has_bound = row.get("f_lower") not in (None, "", "NA")
+        f_txt = "f>=%s" % fmt(row.get("f_lower")) if has_bound else "f not measurable"
+    else:
+        f_txt = "f=%s" % fmt(row.get("f_estimate"))
+    txt = "%s %s%s %s" % (row.get("arm"), row.get("verdict"), "?" if row.get("confidence") == "LOW" else "", f_txt)
+    span = stretch_of(row)
+    if span and row.get("scope") == "segment":
+        txt += " [%.1f-%.1f Mb]" % (span[0] / 1e6, span[1] / 1e6)
+    return txt
+
+
 def main():
     ap = argparse.ArgumentParser(description="GENOME_V2 genome-wide depth / BAF / PURPLE overview")
     ap.add_argument("--sample", required=True)
@@ -109,7 +138,8 @@ def main():
     sites = []
     for s in tracks.get("baf_sites", []):
         try:
-            sites.append((norm_chrom(s[0]), int(s[1]), float(s[3]), bool(s[5])))
+            cls = s[6] if len(s) > 6 else ("het" if s[5] else "hom")   # BAF_HETLOSS_V1 site class when present
+            sites.append((norm_chrom(s[0]), int(s[1]), float(s[3]), bool(s[5]), cls))
         except (ValueError, TypeError, IndexError):
             continue
     arms = {}
@@ -156,19 +186,30 @@ def main():
     a0.set_ylabel("depth\nlog2 copy ratio")
 
     # 2. BAF
-    for c, pos, af, het in sites:
+    for c, pos, af, het, cls in sites:
         if c not in off:
             continue
         arm = arm_of(c, pos)
-        v = arms.get((c, arm), {}).get("verdict", "NEUTRAL") if arm else "NEUTRAL"
-        a1.scatter(off[c] + pos / 1e6, af, s=6, linewidths=0, c=VERDICT_COLOUR.get(v, "#9e9e9e") if het else "#e0e0e0")
+        row = arms.get((c, arm), {}) if arm else {}
+        v = row.get("verdict", "NEUTRAL")
+        span = stretch_of(row)
+        if span:   # BAF_HETLOSS_V1: the stretch's residual sites (every site on a ROH arm) carry the verdict colour
+            coloured = span[0] <= pos <= span[1] and (cls != "hom" or row.get("evidence") == "het_loss_complete")
+            if het and not coloured:
+                v, coloured = "NEUTRAL", True   # a het site outside the stretch is a balanced one
+        else:
+            coloured = het
+        a1.scatter(off[c] + pos / 1e6, af, s=6, linewidths=0, c=VERDICT_COLOUR.get(v, "#9e9e9e") if coloured else "#e0e0e0")
     a1.axhline(0.5, color="#555555", lw=0.6)
     a1.set_ylim(0, 1)
     a1.set_ylabel("BAF\nALT allele fraction")
     a1.legend(handles=[Line2D([0], [0], marker="o", color="w", markerfacecolor=col, markersize=6, label=lab) for lab, col in [
         ("DEL", VERDICT_COLOUR["DEL"]), ("CNLOH", VERDICT_COLOUR["CNLOH"]), ("GAIN", VERDICT_COLOUR["GAIN"]),
-        ("imbalance", VERDICT_COLOUR["IMBALANCE"]), ("balanced het", "#9e9e9e"), ("homozygous", "#e0e0e0")]],
-        loc="upper right", ncol=6, fontsize=7, frameon=True, framealpha=0.9)
+        ("imbalance", VERDICT_COLOUR["IMBALANCE"]), ("ROH", VERDICT_COLOUR["ROH"]),
+        ("balanced het", "#9e9e9e"), ("homozygous", "#e0e0e0")]],
+        loc="upper left", bbox_to_anchor=(1.004, 1.0), borderaxespad=0.0, ncol=1, fontsize=7, frameon=True, framealpha=0.9)
+    # BAF_HETLOSS_V1: the legend sits beside the panel; inside it covered the 0.9-1.0 band of chr11-X,
+    # which is where the upper residual sites of a near-complete LOH lie
 
     # 3. PURPLE
     if a2 is not None:
@@ -198,7 +239,7 @@ def main():
     last.tick_params(axis="x", length=0)
     last.set_xlabel("chromosome")
 
-    calls = ["%s %s%s f=%s" % (r.get("arm"), r.get("verdict"), "?" if r.get("confidence") == "LOW" else "", fmt(r.get("f_estimate")))
+    calls = [call_text(r)
              for (c, arm), r in sorted(arms.items(), key=lambda kv: (CHROMS.index(kv[0][0]) if kv[0][0] in CHROMS else 99, kv[0][1]))
              if r.get("verdict") not in ("NEUTRAL", "INDETERMINATE", None)]
     a0.set_title("%s -- genome-wide: depth, BAF by arm%s  |  arm calls: %s" % (

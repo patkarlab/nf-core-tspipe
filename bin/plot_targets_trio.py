@@ -257,6 +257,28 @@ def read_allelic(path, min_depth, depth_at=None):
     return sites
 
 
+def read_residual_sites(json_path, seen):
+    """MARKER BAF_HETLOSS_V1: catalog sites the detector classed as residual (both alleles present, the
+    minor one between 2 % and 10 %) that the 0.05-0.95 window of read_allelic() leaves out. Without them
+    an LOH in more than 90 % of the cells shows as an empty BAF strip. From the consensus JSON
+    (tracks.baf_sites, 7th element 'res'); `seen` holds the (chrom, pos) already taken."""
+    out = []
+    try:
+        with open(json_path) as fh:
+            rows = json.load(fh).get("tracks", {}).get("baf_sites", [])
+    except (OSError, ValueError):
+        return out
+    for r in rows:
+        try:
+            if len(r) > 6 and r[6] == "res":
+                key = (norm_chrom(r[0]), int(r[1]))
+                if key not in seen:
+                    out.append((key[0], key[1], float(r[3]), int(r[2])))
+        except (ValueError, TypeError, IndexError):
+            continue
+    return out
+
+
 def read_background(path):
     """baf_background.tsv -> {(chrom, pos): median_depth} for positions with a cohort depth."""
     med = {}
@@ -614,6 +636,11 @@ def main():
     bg_median = read_background(args.background)
     depth_at = dict((k, None) for k in bg_median) if bg_median else None
     sites = read_allelic(allelic, args.min_depth, depth_at) if allelic and os.path.isfile(allelic) else []
+    if sites and cj and os.path.isfile(cj):   # BAF_HETLOSS_V1: residual sites below 0.05 / above 0.95
+        extra = read_residual_sites(cj, set((c, p) for c, p, _af, _dp in sites))
+        if extra:
+            sites += extra
+            print("[ok] %d residual catalog sites below 0.05 / above 0.95 added to the BAF panels" % len(extra))
     # per-window depth ratio for SNP windows: median over the window's positions of log2(sample / cohort median)
     win_depth = {}
     if depth_at:
