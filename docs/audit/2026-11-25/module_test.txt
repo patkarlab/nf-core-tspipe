@@ -3,7 +3,11 @@ ok   module, defaults: confidence HIGH
 ok   module, defaults: evidence het_loss_residual
 ok   module writes the sites table
 ok   module command line carries no --no-het-loss
+ok   module command line carries no advisory switch
 ok   module, baf_het_loss false: 11q as BAF_V2 (INDETERMINATE)
 ok   module, baf_het_loss false: --no-het-loss on the command line
+ok   module, both votes switched off: 11q still called CNLOH (an arm-level call is not affected)
+ok   module, baf_segment_votes false: --loh-segment-advisory on the command line
+ok   module, baf_roh_votes false: --roh-advisory on the command line
 module test passed
 exit 0

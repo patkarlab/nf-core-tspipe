@@ -124,10 +124,10 @@ level  detector         called  HIGH  verdicts                      f_estimate m
 0.60   BAF_V2           20/20   20    CNLOH:20                      0.553 (0.522-0.585)          0                    
 0.60   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.553 (0.522-0.585)          0                    0 / 0
 0.80   BAF_V2           14/20   14    CNLOH:14 NEUTRAL:6            0.749 (0.334-0.778)          0                    
-0.80   BAF_HETLOSS_V1   17/20   14    CNLOH:17 NEUTRAL:3            0.754 (0.334-0.825)          0                    3 / 0
+0.80   BAF_HETLOSS_V1   17/20   16    CNLOH:17 NEUTRAL:3            0.754 (0.334-0.825)          0                    3 / 0
 0.90   BAF_V2            0/20   0     INDETERMINATE:4 NEUTRAL:16    -                            0                    
-0.90   BAF_HETLOSS_V1   20/20   0     CNLOH:20                      0.898 (0.893-0.912)          0                    0 / 0
+0.90   BAF_HETLOSS_V1   20/20   20    CNLOH:20                      0.898 (0.893-0.912)          0                    0 / 0
 0.95   BAF_V2            0/20   0     INDETERMINATE:5 NEUTRAL:15    -                            0                    
-0.95   BAF_HETLOSS_V1   19/20   0     CNLOH:19 NEUTRAL:1            0.944 (0.939-0.948)          0                    0 / 0
+0.95   BAF_HETLOSS_V1   19/20   19    CNLOH:19 NEUTRAL:1            0.944 (0.939-0.948)          0                    0 / 0
 1.00   BAF_V2            0/20   0     INDETERMINATE:5 NEUTRAL:15    -                            0                    
 1.00   BAF_HETLOSS_V1    0/20   0     INDETERMINATE:5 NEUTRAL:15    -                            0                    0 / 0

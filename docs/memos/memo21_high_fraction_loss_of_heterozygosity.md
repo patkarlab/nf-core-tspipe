@@ -6,7 +6,7 @@ Pipeline: nf-core-tspipe, Twist myeloid panel
 
 Affects: every case analysed with releases v1.0.0 to v1.0.2, in which the per-arm B-allele detector (marker BAF_V2) has been in use since 9 September 2026
 
-Corrected in: branch `fix/high-fraction-loh-and-site-portability`, commit 002a274; not released
+Corrected in: commits 002a274 and b25554e, merged into `main` on 25 November 2026; not in a tagged release
 
 Status: corrected in code and checked on synthetic samples; validation on patient data, the look-back over earlier cases and the release under change control are outstanding
 
@@ -52,13 +52,15 @@ Every run keeps, for each sample, the two files the detector reads: the allelic 
 python3 tools/rescan_baf_arms.py --out /path/to/rescan_output /path/to/run1 /path/to/run2
 ```
 
-The script lists every arm that the new test calls and every sample that shows the pattern of a second genome. It writes to its own output directory and nothing into the runs. Its output is a screen for review and not a result: the detector it runs is not yet validated on patient data, and an arm listed as `ROH` can be constitutional. Whether a listed case needs an amended report is for the reporting pathologist to decide.
+The script lists every arm that the new test calls and every sample that shows the pattern of a second genome. It writes to its own output directory and nothing into the runs. Its output is a screen for review and not a result: the detector it runs is not yet validated on patient data, and an arm listed as `ROH` can be constitutional. Whether a listed case needs an amended report is for the reporting pathologist to decide. The same output shows how often a region of homozygosity or a call over part of an arm occurs in real samples, which is the evidence on which the decision that both vote can be reviewed.
 
 ## 6. The correction
 
 The steps of the detector that existed before are unchanged. A further step judges each autosomal arm on the number of its heterozygous loci against the number expected from the 48 normals, and on its residual sites, which are sites outside the heterozygous range where the minor allele is still measurable at 2 percent or more.
 
-Where the residual sites account for the missing heterozygous loci, the arm is called, the clonal fraction is read from those sites, and the verdict follows the copy ratio as before. Where nothing is left to measure, the verdict at a neutral copy ratio is `ROH`, a region of homozygosity, with a lower bound for the fraction. `ROH` casts no vote in the consensus, because a constitutional homozygous arm gives the same picture as an acquired loss in every cell. A run that covers only part of an arm is reported with its coordinates as a low-confidence call without a vote.
+Where the residual sites account for the missing heterozygous loci, the arm is called, the clonal fraction is read from those sites, and the verdict follows the copy ratio as before. Where nothing is left to measure, the verdict at a neutral copy ratio is `ROH`, a region of homozygosity, with a lower bound for the fraction; a constitutional homozygous arm gives the same picture as an acquired loss in every cell. A run that covers only part of an arm is reported with its coordinates.
+
+As first written, the last two findings were shown without a vote in the consensus. The custodian decided on 25 November 2026 that both vote (commit b25554e, marker BAF_HETLOSS_V1B). A region of homozygosity keeps its label and counts as copy-neutral loss of heterozygosity, rated `TIER_2` on its own. A call over part of an arm is rated like an arm-level call and votes for the genes inside its run. The parameters `baf_roh_votes` and `baf_segment_votes`, set to `false`, make either advisory again. A constitutionally homozygous arm will therefore appear in the consensus as copy-neutral loss of heterozygosity, and the gene table and the dashboard say that it is not excluded.
 
 The alternative of taking the arm call from the minor allele copy number of PURPLE was not used. PURPLE is already a separate vote in the consensus, and its fit is not trusted in every sample; the B-allele arm has to see the event in the allele fractions themselves if the two votes are to remain independent.
 
@@ -82,7 +84,7 @@ The titration has to be repeated with the events planted in a real sample, which
 
 The golden regression of section 7.10 expects the B-allele summaries of the reference run and of the new run to be identical. They can no longer be identical line by line, because the summary carries 14 additional columns in every sample. `tools/compare_baf_arms.py` compares them on the 18 columns that existed before, lists every arm the new test calls and fails on any other difference. Section 7.10 of the standard operating procedure and Part D of WI-TSPIPE-003 need a sentence to this effect in the revision that accompanies the release.
 
-The branch is based on `main`, which is three commits ahead of v1.0.2. The last of them is labelled as documentation but also changes the variant filter (marker HOTSPOT_EXEMPT_V1), the hotspot table and the dashboard. A comparison of a run of this branch against the reference run of v1.0.2 will show the effect of those changes on the variant tables as well. Memo 22 records this.
+Before this change `main` was already three commits ahead of v1.0.2. The last of them is labelled as documentation but also changes the variant filter (marker HOTSPOT_EXEMPT_V1), the hotspot table and the dashboard. A comparison of a run of `main` against the reference run of v1.0.2 will show the effect of those changes on the variant tables as well. Memo 22 records this.
 
 ## 9. Why it was not seen earlier
 

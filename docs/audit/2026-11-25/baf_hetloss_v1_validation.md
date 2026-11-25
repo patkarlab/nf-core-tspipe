@@ -4,7 +4,7 @@ This is the record behind `docs/sops/baf_het_loss.md` and `docs/memos/memo21_hig
 
 ## What was run
 
-The detector is `bin/baf_cnloh_detect.py` at commit 002a274. The titration tables in this directory were produced from a clean clone at commit 02aa42e; the detector, its module and the panel overlay are unchanged in the later commits of the branch. The test logs were produced from a clean clone at commit b1a5cbe.
+The detector is `bin/baf_cnloh_detect.py` at commit b25554e, which contains the test (commit 002a274) and the decision of the same day that two of its findings vote in the consensus. The titration tables and the test logs in this directory were produced from a clean clone at that commit. They replace the tables first recorded at commit 02aa42e, which remain in the history of this directory; between the two, the only difference is the confidence of the calls in the distal 11q series, described below.
 
 ```bash
 bash tests/baf/run_validation_set.sh <output directory> all      # events.txt, specificity.txt, titration_runs/
@@ -35,7 +35,7 @@ With 5 percent of a second genome mixed into the sample, an 11q event at 0.80 wa
 
 At a quarter of the usual depth, the 11q event at 0.90 was called in all replicates with a median fraction of 0.895. At 0.95, 9 replicates were called as `CNLOH` and 11 as `ROH`. At a tenth of the usual depth, the event at 0.90 was called as `CNLOH` in 2 replicates, as `ROH` in 10, and not called in 8.
 
-An event over the distal part of 11q, from 90 megabases to the end of the arm, was called by the corrected detector at 0.90 in all 20 replicates and at 0.95 in 19, as a segment with low confidence and with a median fraction of 0.898 and 0.944. The previous detector called none of these. At 1.00 neither called it; a complete loss over part of an arm is not called by design. At 0.60 and 0.80 the existing statistic called most replicates as an event of the whole arm, as it did before the change; at 0.80 the corrected detector added 3 segment calls to the 14 of the previous one and replaced the fraction in 3.
+An event over the distal part of 11q, from 90 megabases to the end of the arm, was called by the corrected detector at 0.90 in all 20 replicates and at 0.95 in 19, as a segment, with a median fraction of 0.898 and 0.944. Every one of these calls has high confidence under the rule that applies since the decision on votes, and therefore votes for the genes inside the run; as first written, all of them were low confidence by definition. The previous detector called none of these. At 1.00 neither called it; a complete loss over part of an arm is not called by design. At 0.60 and 0.80 the existing statistic called most replicates as an event of the whole arm, as it did before the change; at 0.80 the corrected detector added 3 segment calls to the 14 of the previous one, 2 of them with high confidence, and replaced the fraction in 3.
 
 In all of these series, no arm other than the planted one was called by either detector, and the corrected detector changed no row of any other arm.
 
@@ -45,11 +45,17 @@ The tables are in `specificity.txt`. In 200 female and 200 male synthetic sample
 
 With 10 percent of a second genome the previous detector called 18 arms in 100 samples, and with 20 percent 30 arms. The corrected detector called exactly the same arms. These calls come from the existing statistic and predate the change. The detector now warns of such a sample, and the dashboard shows the warning.
 
-Across all 1,300 samples without events, the corrected detector changed no row.
+Across all 1,300 samples without events, the corrected detector changed no row. In particular it made no call over part of an arm and reported no region of homozygosity in any of them, so the decision that both vote adds no false call on synthetic samples.
+
+## The decision on votes
+
+The vote of a region of homozygosity is given in the consensus and does not show in the tables of the detector, which are unchanged for those rows. Checks 10h and 10h2 of the regression test pin it down: a region of homozygosity on 11q gives the genes of that arm the consensus call `CNLOH` at `TIER_2` with the B call `ROH`, and with the detector's switch `--roh-advisory` it is shown with low confidence and gives no call. Checks 6a, 6a2, 10e, 10f and 10f2 do the same for a call over part of an arm, and checks 11i and 11j for the statement in the TP53 block of whether a call over part of 17p includes the gene.
+
+What the synthetic samples do not contain is a constitutionally homozygous arm, which the detector will report as a region of homozygosity and the consensus will count. How often that occurs in patients is not known from anything recorded here.
 
 ## Tests
 
-The regression test has 45 checks and all pass (`regression_tests.txt`). The module test has 7 checks and all pass (`module_test.txt`). The fuzz test ran 800 rounds with 1,424 planted events without a failure (`fuzz.txt`).
+The regression test has 50 checks and all pass (`regression_tests.txt`). The module test has 11 checks and all pass (`module_test.txt`). The fuzz test ran 800 rounds with 1,422 planted events without a failure, a quarter of the rounds with both advisory switches (`fuzz.txt`). The stub run of the whole workflow for a throw-away site passes (`stub_site_test.txt`).
 
 ## What the synthetic samples cannot show
 
@@ -67,7 +73,7 @@ The first step is the sample in which the defect was found. `tools/rescan_baf_ar
 
 The second step is the titration planted in a real sample. `tests/baf/run_validation_set.sh` with the argument `real` plants copy-neutral events on four arms, a deletion of 7q and a distal 11q event into the allelic counts of a sample without events, and compares both detectors. The base sample of the dilution study of 10 September 2026 is suitable for the arms it does not carry an event on. The expected result is that of the tables here: identical results up to 0.75, and calls with an accurate fraction from 0.80 to 0.95.
 
-The third step is the rescan of earlier runs described in memo 21. Besides serving the look-back, it measures specificity on real samples: every arm it lists should be explicable from the figure of that sample.
+The third step is the rescan of earlier runs described in memo 21. Besides serving the look-back, it measures specificity on real samples: every arm it lists should be explicable from the figure of that sample. It is also the evidence on which the decision on votes can be reviewed. The arms it lists as `ROH` show how often an arm without heterozygosity occurs and whether those cases look acquired or constitutional, and the calls it lists with scope `segment` show whether runs over part of an arm are real.
 
 The fourth step is the golden regression. The eight validation samples are run from a checkout of the branch as in Part D of WI-TSPIPE-003 and compared with the accepted reference run. `tools/compare_runs.py` will report every B-allele summary and sites table as different, because of the added columns. `tools/compare_baf_arms.py` is to be run on the same two directories; it must end with PASS, and every arm it lists as explained is to be reviewed. Because the branch is based on `main`, the variant tables can also differ from the reference run through the unreleased change to the variant filter recorded in memo 22.
 

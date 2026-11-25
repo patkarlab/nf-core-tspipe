@@ -6,7 +6,7 @@ Pipeline: nf-core-tspipe, Twist myeloid panel
 
 Affects: installation on any server other than gandalf and clinical-23; no effect on results
 
-Corrected in: branch `fix/high-fraction-loh-and-site-portability`, commit 02aa42e (marker PORTABLE_V1); not released
+Corrected in: commit 02aa42e (marker PORTABLE_V1), merged into `main` on 25 November 2026; not in a tagged release
 
 Status: corrected and checked by resolving the configuration and by a stub run of the whole workflow; the installation checks of SOP-TSPIPE-001 sections 7.9 and 7.10 on each server are outstanding
 

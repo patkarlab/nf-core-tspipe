@@ -15,7 +15,8 @@ ok   4b 11q lost in every cell: DEL, HIGH
 ok   5a loss of chromosome 7 in 95 % of the cells: BAF_V2 has no call
 ok   5b ... the new test: DEL HIGH on 7p and 7q, scope chromosome
 ok   7  chrX is not tested: Xp and Xq keep the BAF_V2 verdict and carry no het-loss columns
-ok   6a distal 11q from 90 Mb at 90 %: CNLOH, LOW, scope segment, running to the end of the arm
+ok   6a distal 11q from 90 Mb at 90 %: CNLOH, HIGH, scope segment, running to the end of the arm
+ok   6a2 ... with --loh-segment-advisory the same call is LOW, and nothing else in the row differs
 ok   6b ... stretch starts within 3 Mb of 90 Mb and the fraction is that of the stretch (0.88-0.92)
 ok   6c 11q from 70 Mb (most of the arm): arm-level CNLOH, HIGH, stretch not reaching the centromere side
 ok   6d the last 10 Mb of 11q only: too few loci, no call
@@ -27,15 +28,19 @@ ok   10a 11q cnLOH: every 11q gene gets b_call CNLOH, consensus CNLOH at TIER_2 
 ok   10b ... and no gene elsewhere is touched
 ok   10c allelic_state of CBL names arm, verdict and fraction
 ok   10d JSON site rows carry the site class as a seventh element
-ok   10e segment (LOW): ATM inside the stretch is named with coordinates but gets no vote
-ok   10f ... SF1 (64.8 Mb) is reported as outside the stretch
+ok   10e segment: ATM inside the stretch gets the CNLOH vote (TIER_2), with the coordinates in allelic_state
+ok   10f ... SF1 (64.8 Mb) is reported as outside the stretch and gets no vote
+ok   10f2 advisory segment (--loh-segment-advisory): ATM is named with coordinates but gets no vote
 ok   10g arm-level call from 70 Mb: CBL gets the CNLOH vote, SF1 (64.8 Mb, outside the stretch) does not
-ok   10h ROH: shown as b_call ROH with the lower bound, casts no vote (consensus NEUTRAL)
+ok   10h ROH: b_call ROH with the lower bound, counted as copy-neutral loss (consensus CNLOH, TIER_2)
+ok   10h2 advisory ROH (--roh-advisory): LOW, shown as ROH? and without a vote (consensus NEUTRAL)
 ok   10i ROH without a bound: allelic_state says the fraction is not measurable
 ok   11a dashboard parser: 11q row with basis, observed / expected het loci and extent; one HIGH call
 ok   11b dashboard parser: an 18-column summary from before the change still parses (new fields blank)
 ok   11g dashboard parser: second-genome flag set for the contaminated sample only, absent on an old summary
 ok   11h dashboard parser: ROH without a bound is shown as 'not measurable', not as 1.000
+ok   11i TP53 block: a 17p call that stops short of TP53 says so (baf_covers_gene no, no B call at the gene)
+ok   11j ... and a 17p call that includes TP53 gives baf_covers_gene yes with the B call at the gene
 ok   11c TP53 block helper: basis text for a heterozygosity-loss row, empty for a BAF_V2 row
 ok   12a run comparison: the 11q call and its genes are listed as explained, nothing else differs, exit 0
 ok   12b ... a changed verdict on an arm the test did not call is reported as unexplained, exit 1
@@ -44,5 +49,5 @@ ok   11d genome-wide figure written from the new JSON
 ok   11e 17p cnLOH at 90 %: CNLOH HIGH (the TP53 arm)
 ok   11f 17p page written from the new JSON
 
-45 checks, 0 failed
+50 checks, 0 failed
 exit 0

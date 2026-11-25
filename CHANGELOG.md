@@ -17,10 +17,13 @@ about 89 percent, came out `INDETERMINATE`: the detector looked only at sites wi
 fraction between 0.10 and 0.90, and such an arm has none left. A heterozygosity-loss test now
 judges every autosomal arm on its heterozygous loci against the number expected from the normals,
 and on its residual sites. The arm is called with its clonal fraction where the residual sites
-account for the missing heterozygous loci; it is reported as `ROH`, without a vote in the
-consensus, where nothing is left to measure; and a run over part of an arm is reported with its
-coordinates as a low-confidence call. An arm the existing statistic calls keeps its result unless
-its heterozygous loci are significantly depleted. Checked on synthetic samples only; validation on
+account for the missing heterozygous loci; it is reported as `ROH` where nothing is left to
+measure; and a run over part of an arm is reported with its coordinates. By decision of the
+custodian of 25 November 2026 (marker `BAF_HETLOSS_V1B`) both of the latter vote: `ROH` counts
+as copy-neutral loss of heterozygosity in the consensus, `TIER_2` on its own, although a
+constitutional homozygous arm is not excluded, and a call over part of an arm votes for the
+genes inside its run. An arm the existing statistic calls keeps its result unless its
+heterozygous loci are significantly depleted. Checked on synthetic samples only; validation on
 patient data is outstanding. See `docs/memos/memo21_high_fraction_loss_of_heterozygosity.md`,
 `docs/sops/baf_het_loss.md` and `docs/audit/2026-11-25/`.
 
@@ -45,10 +48,13 @@ are in.
 `<sample>.baf.summary.tsv` keeps its 18 columns in place and gains 14; `verdict` can read `ROH` and
 `scope` can read `segment`. `<sample>.baf.sites.tsv` gains `site_class`, and the site rows of the
 consensus JSON gain the same value as a seventh element. The consensus gives a verdict of the
-heterozygosity-loss test only to genes inside its run. The dashboard (builder 0.5.4-hetloss), the
-genome-wide figure, the chromosome pages and the 17p page show the basis of such a call, and the
-dashboard warns when a sample carries a second genome. The parameter `baf_het_loss`, default
-`true`, switches the test; `false` restores the previous verdicts.
+heterozygosity-loss test only to genes inside its run. The dashboard (builder
+0.5.5-hetloss-votes), the genome-wide figure, the chromosome pages and the 17p page show the
+basis of such a call, and the dashboard warns when a sample carries a second genome. The TP53 and
+17p block states whether a call over part of 17p includes TP53 (fact `baf_covers_gene`). Three
+parameters of the panel overlay, all `true` by default: `baf_het_loss` switches the test, and
+`false` restores the previous verdicts; `baf_roh_votes` and `baf_segment_votes`, set to `false`,
+make a region of homozygosity or a call over part of an arm advisory, shown without a vote.
 
 Golden regression: because of the added columns the B-allele summaries of two runs are no longer
 identical line by line. `tools/compare_baf_arms.py` compares them on the columns that existed
