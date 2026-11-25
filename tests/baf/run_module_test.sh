@@ -4,7 +4,8 @@
 # tests/baf/run_baf_tests.py calls bin/baf_cnloh_detect.py directly. This test goes through the
 # module instead, with the thresholds of conf/twist_apply.config: it fails if the module's command
 # line and the script's options have drifted apart, if an output the module declares is not
-# written, or if the baf_het_loss switch does not reach the script.
+# written, or if one of the three switches (baf_het_loss, baf_segment_votes, baf_roh_votes) does
+# not reach the script.
 #
 #   bash tests/baf/run_module_test.sh
 #
@@ -45,9 +46,15 @@ check "module, defaults: evidence het_loss_residual"  "$(awk -F'\t' '$2=="11q"{p
 d=$(dirname "$s")
 check "module writes the sites table"                 "$([ -s "$d/MODTEST.baf.sites.tsv" ] && echo yes || echo no)" "yes"
 check "module command line carries no --no-het-loss"  "$(grep -c -- '--no-het-loss' "$d/.command.sh" || true)" "0"
+check "module command line carries no advisory switch" "$(grep -c -e '--loh-segment-advisory' -e '--roh-advisory' "$d/.command.sh" || true)" "0"
 
 s=$(run_module off --baf_het_loss false)
 check "module, baf_het_loss false: 11q as BAF_V2 (INDETERMINATE)" "$(awk -F'\t' '$2=="11q"{print $15}' "$s")" "INDETERMINATE"
 check "module, baf_het_loss false: --no-het-loss on the command line" "$(grep -c -- '--no-het-loss' "$(dirname "$s")/.command.sh" || true)" "1"
+
+s=$(run_module advisory --baf_segment_votes false --baf_roh_votes false)
+check "module, both votes switched off: 11q still called CNLOH (an arm-level call is not affected)" "$(awk -F'\t' '$2=="11q"{print $15}' "$s")" "CNLOH"
+check "module, baf_segment_votes false: --loh-segment-advisory on the command line" "$(grep -c -- '--loh-segment-advisory' "$(dirname "$s")/.command.sh" || true)" "1"
+check "module, baf_roh_votes false: --roh-advisory on the command line" "$(grep -c -- '--roh-advisory' "$(dirname "$s")/.command.sh" || true)" "1"
 
 [ "$fail" = 0 ] && echo "module test passed" || { echo "module test FAILED"; exit 1; }

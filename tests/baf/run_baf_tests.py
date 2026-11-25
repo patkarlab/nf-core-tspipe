@@ -20,12 +20,15 @@ What the checks pin down:
   3. A fraction inside the het band (13q, 60 %): the verdict and every BAF_V2 column are untouched.
   4. Heterozygosity absent (11q, 100 %): ROH with a lower bound, not CNLOH; with a copy-number loss: DEL.
   5. Loss of a whole chromosome in 95 % of the cells: DEL on both arms, scope chromosome.
-  6. An event over part of an arm: scope segment, LOW, with the right start; over most of it: arm-level.
+  6. An event over part of an arm: scope segment with the right start, rated like an arm call
+     (LOW with --loh-segment-advisory); over most of the arm: arm-level.
   7. chrX is never tested (a male has no heterozygous site there by constitution).
   8. A contaminated sample (5 % of a second genotype): no heterozygosity-loss call, and the
      second-genome warning with a high residual_rate_ctrl; a clean sample has neither.
   9. A background table without the cohort frequencies: the test is skipped with a warning.
- 10. Consensus: genes inside the stretch get the B call, genes outside do not, ROH and LOW cast no vote.
+ 10. Consensus: genes inside the stretch get the B call, genes outside do not; a segment votes for
+     the genes inside it and a ROH counts as copy-neutral loss (BAF_HETLOSS_V1B); neither votes when
+     the detector is run with its advisory switch, and LOW never does.
  11. The genome-wide figure and the 17p page are written from the new JSON; the dashboard parser
      returns the new columns and still reads a summary written before BAF_HETLOSS_V1.
  12. tools/compare_baf_arms.py lists a heterozygosity-loss call as an explained difference between
@@ -229,9 +232,13 @@ def main():
     px = simulate(work, "cnloh11q_distal", events=["chr11:90000000-135086622:cnloh:0.90"])
     new, _, out_seg, _ = detect(px, "cnloh11q_distal", "new")
     r = new["11q"]
-    check("6a distal 11q from 90 Mb at 90 %: CNLOH, LOW, scope segment, running to the end of the arm",
-          (r["verdict"], r["confidence"], r["scope"], r["ev_ends"]) == ("CNLOH", "LOW", "segment", "end"),
+    check("6a distal 11q from 90 Mb at 90 %: CNLOH, HIGH, scope segment, running to the end of the arm",
+          (r["verdict"], r["confidence"], r["scope"], r["ev_ends"]) == ("CNLOH", "HIGH", "segment", "end"),
           str((r["verdict"], r["confidence"], r["scope"], r["ev_ends"])))
+    adv, _, out_seg_adv, _ = detect(px, "cnloh11q_distal", "advisory", ["--loh-segment-advisory"])
+    check("6a2 ... with --loh-segment-advisory the same call is LOW, and nothing else in the row differs",
+          adv["11q"]["confidence"] == "LOW"
+          and all(adv["11q"][k] == r[k] for k in r if k != "confidence"), adv["11q"]["confidence"])
     check("6b ... stretch starts within 3 Mb of 90 Mb and the fraction is that of the stretch (0.88-0.92)",
           87000000 <= int(r["ev_lo"]) <= 93000000 and 0.88 <= float(r["f_estimate"]) <= 0.92,
           "%s f=%s" % (r["ev_lo"], r["f_estimate"]))
@@ -300,22 +307,36 @@ def main():
     check("10d JSON site rows carry the site class as a seventh element",
           all(len(x) == 7 and x[6] in ("het", "res", "hom") for x in payload["tracks"]["baf_sites"]))
     genes, _, _ = consensus(work, name_seg, out_seg, px_seg + ".denoisedCR.tsv")
-    check("10e segment (LOW): ATM inside the stretch is named with coordinates but gets no vote",
+    check("10e segment: ATM inside the stretch gets the CNLOH vote (TIER_2), with the coordinates in allelic_state",
+          (genes["ATM"]["b_call"], genes["ATM"]["consensus_call"], genes["ATM"]["tier"]) == ("CNLOH", "CNLOH", "TIER_2")
+          and genes["ATM"]["allelic_state"].startswith("11q:CNLOH f=") and "Mb" in genes["ATM"]["allelic_state"],
+          "%s | %s | %s %s" % (genes["ATM"]["b_call"], genes["ATM"]["allelic_state"], genes["ATM"]["consensus_call"], genes["ATM"]["tier"]))
+    check("10f ... SF1 (64.8 Mb) is reported as outside the stretch and gets no vote",
+          genes["SF1"]["allelic_state"].startswith("11q:outside the CNLOH") and genes["SF1"]["b_call"] == "NA"
+          and genes["SF1"]["consensus_call"] == "NEUTRAL", "%s | %s" % (genes["SF1"]["allelic_state"], genes["SF1"]["consensus_call"]))
+    genes, _, _ = consensus(work, name_seg + "_advisory", out_seg_adv, px_seg + ".denoisedCR.tsv")
+    check("10f2 advisory segment (--loh-segment-advisory): ATM is named with coordinates but gets no vote",
           genes["ATM"]["b_call"] == "NA" and "CNLOH?" in genes["ATM"]["allelic_state"]
           and "Mb" in genes["ATM"]["allelic_state"] and genes["ATM"]["consensus_call"] == "NEUTRAL",
           "%s | %s | %s" % (genes["ATM"]["b_call"], genes["ATM"]["allelic_state"], genes["ATM"]["consensus_call"]))
-    check("10f ... SF1 (64.8 Mb) is reported as outside the stretch",
-          genes["SF1"]["allelic_state"].startswith("11q:outside the CNLOH"), genes["SF1"]["allelic_state"])
     genes, _, _ = consensus(work, name_most, out_most, px_most + ".denoisedCR.tsv")
     check("10g arm-level call from 70 Mb: CBL gets the CNLOH vote, SF1 (64.8 Mb, outside the stretch) does not",
           genes["CBL"]["b_call"] == "CNLOH" and genes["CBL"]["tier"] == "TIER_2"
           and genes["SF1"]["b_call"] == "NA" and genes["SF1"]["consensus_call"] == "NEUTRAL",
           "CBL %s %s | SF1 %s %s" % (genes["CBL"]["b_call"], genes["CBL"]["tier"], genes["SF1"]["b_call"], genes["SF1"]["consensus_call"]))
     genes, payload_roh, cmx_roh = consensus(work, name_roh, out_roh, px_roh + ".denoisedCR.tsv")
-    check("10h ROH: shown as b_call ROH with the lower bound, casts no vote (consensus NEUTRAL)",
-          genes["CBL"]["b_call"] == "ROH" and genes["CBL"]["consensus_call"] == "NEUTRAL"
-          and genes["CBL"]["allelic_state"].startswith("11q:ROH f>=0.9"),
-          "%s | %s | %s" % (genes["CBL"]["b_call"], genes["CBL"]["consensus_call"], genes["CBL"]["allelic_state"]))
+    check("10h ROH: b_call ROH with the lower bound, counted as copy-neutral loss (consensus CNLOH, TIER_2)",
+          (genes["CBL"]["b_call"], genes["CBL"]["consensus_call"], genes["CBL"]["tier"]) == ("ROH", "CNLOH", "TIER_2")
+          and genes["CBL"]["allelic_state"].startswith("11q:ROH f>=0.9")
+          and "constitutional homozygous arm is not excluded" in genes["CBL"]["allelic_state"],
+          "%s | %s %s | %s" % (genes["CBL"]["b_call"], genes["CBL"]["consensus_call"], genes["CBL"]["tier"], genes["CBL"]["allelic_state"]))
+    adv, _, out_roh_adv, _ = detect(px_roh, name_roh, "advisory", ["--roh-advisory"])
+    genes, _, _ = consensus(work, name_roh + "_advisory", out_roh_adv, px_roh + ".denoisedCR.tsv")
+    check("10h2 advisory ROH (--roh-advisory): LOW, shown as ROH? and without a vote (consensus NEUTRAL)",
+          (adv["11q"]["verdict"], adv["11q"]["confidence"]) == ("ROH", "LOW") and genes["CBL"]["b_call"] == "NA"
+          and genes["CBL"]["consensus_call"] == "NEUTRAL" and genes["CBL"]["allelic_state"].startswith("11q:ROH? f>=0.9"),
+          "%s %s | %s | %s | %s" % (adv["11q"]["verdict"], adv["11q"]["confidence"], genes["CBL"]["b_call"],
+                                    genes["CBL"]["consensus_call"], genes["CBL"]["allelic_state"]))
 
     genes, _, _ = consensus(work, name_croh, out_croh, px_croh + ".denoisedCR.tsv")
     check("10i ROH without a bound: allelic_state says the fraction is not measurable",
@@ -359,6 +380,24 @@ def main():
         check("11h dashboard parser: ROH without a bound is shown as 'not measurable', not as 1.000",
               row and row[0]["f"] == "not measurable", str(row[:1]))
         from parsers import tp53
+        covers = {}
+        for tag, region in (("p17_proximal", "chr17:10000000-22700000"), ("p17_distal", "chr17:0-12000000")):
+            px = simulate(work, tag, events=["%s:cnloh:0.90" % region])
+            arms_17, _, out_17, _ = detect(px, tag, "new")
+            _, _, cmx = consensus(work, tag, out_17, px + ".denoisedCR.tsv")
+            d = os.path.join(work, "tp53_" + tag)
+            os.makedirs(os.path.join(d, "cnv", "baf"), exist_ok=True)
+            os.makedirs(os.path.join(d, "cnv", "consensus"), exist_ok=True)
+            shutil.copy(out_17 + ".summary.tsv", os.path.join(d, "cnv", "baf", tag + ".baf.summary.tsv"))
+            shutil.copy(cmx + ".genes.tsv", os.path.join(d, "cnv", "consensus", tag + ".cnv_consensus4.genes.tsv"))
+            block = tp53.parse(d, tag, clinical={"rows": []})
+            covers[tag] = (arms_17["17p"]["verdict"], arms_17["17p"]["scope"], block["facts"]["baf_covers_gene"],
+                           block["facts"]["b_call"], "does not include TP53" in (block["baf"] or {}).get("basis", ""))
+        # the panel has no copy-ratio bins on proximal 17p, so the copy state of that stretch is open: IMBALANCE
+        check("11i TP53 block: a 17p call that stops short of TP53 says so (baf_covers_gene no, no B call at the gene)",
+              covers["p17_proximal"] == ("IMBALANCE", "segment", "no", "", True), str(covers["p17_proximal"]))
+        check("11j ... and a 17p call that includes TP53 gives baf_covers_gene yes with the B call at the gene",
+              covers["p17_distal"][0] == "CNLOH" and covers["p17_distal"][2:] == ("yes", "CNLOH", False), str(covers["p17_distal"]))
         check("11c TP53 block helper: basis text for a heterozygosity-loss row, empty for a BAF_V2 row",
               tp53._baf_basis({"evidence": "het_loss_complete", "het_loci": "0", "het_loci_expected": "89.8",
                                "f_lower": "0.960", "ev_lo": "354968", "ev_hi": "22693405", "ev_ends": "both",

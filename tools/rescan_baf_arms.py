@@ -10,7 +10,8 @@ Every run keeps the two files the detector reads, for every sample:
 
 so the question "which earlier samples have such an arm" can be answered in a few seconds per
 sample, without re-running the pipeline. This script runs bin/baf_cnloh_detect.py of this
-checkout on those files, with the thresholds of conf/twist_apply.config, and lists
+checkout on those files, with the thresholds and the two voting switches of
+conf/twist_apply.config, and lists
 
     - every arm called by the heterozygosity-loss test, and
     - every sample for which the detector warns of a second genome (contamination, chimerism).
@@ -40,6 +41,8 @@ OVERLAY = os.path.join(REPO, "conf", "twist_apply.config")
 # option of the detector <- parameter of the panel overlay, with the value used when the overlay cannot be read
 THRESHOLDS = [("--min-depth", "baf_min_depth", "20"), ("--min-het-sites", "baf_min_het_sites", "10"),
               ("--f-min", "baf_f_min", "0.10"), ("--cr-del", "baf_cr_del", "-0.15"), ("--cr-gain", "baf_cr_gain", "0.15")]
+# switch of the detector <- parameter of the panel overlay that, set to false, turns it on (BAF_HETLOSS_V1B)
+SWITCHES = [("--loh-segment-advisory", "baf_segment_votes"), ("--roh-advisory", "baf_roh_votes")]
 COLUMNS = ["run", "sample", "arm", "verdict", "confidence", "scope", "f_estimate", "f_lower", "evidence",
            "het_loci", "het_loci_expected", "residual_loci", "het_loss_p", "ev_lo", "ev_hi", "cr_median_log2",
            "residual_rate_ctrl"]
@@ -58,6 +61,11 @@ def overlay_thresholds():
         m = re.search(r"^\s*%s\s*=\s*(-?[0-9.]+)" % re.escape(param), text, re.M)
         values[param] = m.group(1) if m else default
         args += [option, values[param]]
+    for option, param in SWITCHES:
+        m = re.search(r"^\s*%s\s*=\s*(true|false)\b" % re.escape(param), text, re.M)
+        values[param] = m.group(1) if m else "true"
+        if values[param] == "false":
+            args.append(option)
     return args, values
 
 

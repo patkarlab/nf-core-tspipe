@@ -55,7 +55,7 @@ process CNV_CONSENSUS_MULTI {
         ].findAll().join(' ')   // CMX_ANNOT_V1
         """
         echo "[SEXSTRAT] ${meta.id}: sex=${meta.sex} stratum=${stratum} loo=${loo_use}"
-        # consensus rule version: CMX_V2_4; inputs CNV_RETIRE_7B; annotation CMX_ANNOT_V1; B arm BAF_HETLOSS_V1 (stretch, ROH shown without a vote) (bash comment; busts the task cache)
+        # consensus rule version: CMX_V2_4; inputs CNV_RETIRE_7B; annotation CMX_ANNOT_V1; B arm BAF_HETLOSS_V1B (stretch; ROH counts as copy-neutral LOH) (bash comment; busts the task cache)
         cnv_consensus_multi.py \\
             --sample ${meta.id} \\
             --sex ${meta.sex ?: 'unknown'} \\

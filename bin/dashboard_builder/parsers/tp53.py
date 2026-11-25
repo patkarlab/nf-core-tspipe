@@ -49,6 +49,7 @@ FACT_FIELDS = (
     "h_call", "h_cn_min", "h_cn_max", "h_macn_min", "h_loh",
     "baf_verdict", "baf_confidence", "baf_f", "baf_n_het", "baf_scope", "baf_cr",
     "baf_evidence",   # MARKER BAF_HETLOSS_V1: shift | het_loss_residual | het_loss_complete | ""
+    "baf_covers_gene",   # BAF_HETLOSS_V1B: yes | no for a heterozygosity-loss call (it can cover part of 17p only); "" otherwise
     "purity", "purple_status", "purple_trusted", "purecn_purity",
 )
 
@@ -357,6 +358,7 @@ def _facts(variants, cnv, baf, purity):
         "baf_verdict": b.get("verdict", ""), "baf_confidence": b.get("confidence", ""),
         "baf_f": b.get("f", ""), "baf_n_het": b.get("n_het", ""), "baf_scope": b.get("scope", ""),
         "baf_cr": b.get("cr", ""), "baf_evidence": b.get("evidence", ""),
+        "baf_covers_gene": b.get("covers_gene", ""),
         "purity": purity.get("purple", ""), "purple_status": purity.get("purple_status", ""),
         "purple_trusted": purity.get("purple_trusted", ""), "purecn_purity": purity.get("purecn", ""),
     }
@@ -428,6 +430,15 @@ def parse(sample_dir, sample, clinical=None, rules_path=None):
     cj = _consensus_json(sample_dir, sample)
     cnv = cnv_rows[0] if cnv_rows else None
     baf = _baf_row(sample_dir, sample, cj)
+    # BAF_HETLOSS_V1B: a heterozygosity-loss call can cover part of 17p only, and since that date it can
+    # carry a vote. The consensus row of the gene says whether the gene lies inside the stretch; the block
+    # states it, so that the arm line is not read as a statement about TP53 when the stretch stops short of it.
+    if baf and baf.get("evidence", "").startswith("het_loss") and cnv:
+        if str(cnv.get("allelic_state", "")).startswith("%s:outside the" % ARM):
+            baf["covers_gene"] = "no"
+            baf["basis"] = "; ".join(x for x in (baf.get("basis", ""), "the stretch does not include %s" % GENE) if x)
+        else:
+            baf["covers_gene"] = "yes"
     purity = _purity(sample_dir, sample, cj)
     facts = _facts(variants, cnv, baf, purity)
 

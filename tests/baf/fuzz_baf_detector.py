@@ -17,8 +17,9 @@ and checks the invariants that must hold whatever the sample:
     between 0 and 1; --no-het-loss never produces a heterozygosity-loss call;
   - an arm without a heterozygosity-loss call has exactly the BAF_V2 result (all 18 columns;
     the scope column may differ when the other arm of the chromosome was called);
-  - a heterozygosity-loss call has a stretch inside its arm, is never on chrX or chrY, is LOW
-    when it is a segment, and a ROH has no vote in the consensus;
+  - a heterozygosity-loss call has a stretch inside its arm and is never on chrX or chrY; a
+    ROH with a vote gives the consensus call CNLOH and nothing else; in the rounds run with
+    --loh-segment-advisory and --roh-advisory, every segment and every ROH is LOW;
   - the consensus never gives a B call to a gene outside the stretch (which counts up to the
     arm boundary at an end of the arm it runs to).
 
@@ -90,8 +91,11 @@ def check_round(work, i, rng):
         drop_lines(px + ".denoisedCR.tsv", lambda p: not (p[0] == gone and int(p[1]) > 60000000))
         what += "  [no copy-ratio bins on %s beyond 60 Mb]" % gone
 
+    advisory = rng.random() < 0.25      # a quarter of the rounds with both advisory switches
+    if advisory:
+        what += "  [--loh-segment-advisory --roh-advisory]"
     try:
-        new, new_raw, out_new, _ = T.detect(px, name, "new")
+        new, new_raw, out_new, _ = T.detect(px, name, "new", ["--loh-segment-advisory", "--roh-advisory"] if advisory else [])
         old, old_raw, _, _ = T.detect(px, name, "v2", ["--no-het-loss"])
     except SystemExit:
         return what, ["detector failed"]
@@ -119,8 +123,8 @@ def check_round(work, i, rng):
                 problems.append("%s: stretch %d-%d outside the arm %s" % (arm, lo, hi, r["region"]))
             if arm[:-1] in ("X", "Y"):
                 problems.append("%s: heterozygosity-loss call on a sex chromosome" % arm)
-            if r["scope"] == "segment" and r["confidence"] != "LOW":
-                problems.append("%s: segment with confidence %s" % (arm, r["confidence"]))
+            if advisory and r["confidence"] != "LOW" and (r["scope"] == "segment" or r["verdict"] == "ROH"):
+                problems.append("%s: %s %s with confidence %s under the advisory switches" % (arm, r["scope"], r["verdict"], r["confidence"]))
             if r["evidence"] == "het_loss_complete" and r["f_estimate"] != "1.000":
                 problems.append("%s: complete loss with f_estimate %s" % (arm, r["f_estimate"]))
         else:
@@ -144,8 +148,8 @@ def check_round(work, i, rng):
             continue
         if g["b_call"] not in ("NA", "NEUTRAL") and r["confidence"] != "HIGH":
             problems.append("%s: B call %s from a %s arm result" % (g["gene"], g["b_call"], r["confidence"]))
-        if g["b_call"] == "ROH" and g["consensus_call"] not in ("NEUTRAL", "BLACKLISTED"):   # depth arms are neutral here
-            problems.append("%s: ROH turned into consensus call %s" % (g["gene"], g["consensus_call"]))
+        if g["b_call"] == "ROH" and g["consensus_call"] not in ("CNLOH", "BLACKLISTED"):   # depth arms are neutral here
+            problems.append("%s: ROH vote gave consensus call %s" % (g["gene"], g["consensus_call"]))
         if r["evidence"].startswith("het_loss") and g["b_call"] not in ("NA", "NEUTRAL"):
             # towards an end of the arm that the stretch runs to, it counts up to the arm boundary
             arm_lo, arm_hi = [int(x) for x in r["region"].split(":")[1].split("-")]

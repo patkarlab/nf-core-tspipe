@@ -24,8 +24,11 @@ Arms merged at gene level:
                     stretch (ev_lo/ev_hi/ev_ends); a gene elsewhere on the arm
                     gets b_call NA. ROH (heterozygosity absent at neutral copy
                     number: constitutional or fully clonal, not distinguishable)
-                    is shown as b_call ROH and casts no vote. LOW confidence,
-                    which includes every call over part of an arm, casts no vote.
+                    is shown as b_call ROH and counts as a copy-neutral LOH vote
+                    (BAF_HETLOSS_V1B, decision of 25 Nov 2026; TIER_2 on its
+                    own). LOW confidence casts no vote; the detector writes LOW
+                    for a ROH or a call over part of an arm when it is run with
+                    --roh-advisory / --loh-segment-advisory.
     P  PureCN    -- p_call GAIN/LOSS when the fit is trusted (status OK,
                     not flagged); p_C == 2 with p_loh true is cnLOH support.
     E  DECoN     -- optional --decon-genes TSV (gene, e_call, e_bf); the
@@ -581,7 +584,7 @@ def main():
         bv = br.get("verdict", "NA") if br else "NA"
         b_low = bool(br) and br.get("confidence", "") == "LOW"   # BAF_V2: a LOW-confidence arm casts no B vote
         b_call = {"DEL_17P": "LOSS", "CNLOH_17P": "CNLOH", "DEL": "LOSS", "CNLOH": "CNLOH",
-                  "GAIN": "GAIN", "NEUTRAL": "NEUTRAL", "ROH": "ROH"}.get(bv, "NA")   # BAF_HETLOSS_V1: ROH is shown, never a vote
+                  "GAIN": "GAIN", "NEUTRAL": "NEUTRAL", "ROH": "ROH"}.get(bv, "NA")   # BAF_HETLOSS_V1B: ROH keeps its label and votes as cnLOH
         stretch = baf_stretch(br) if br else None   # BAF_HETLOSS_V1
         b_outside = stretch is not None and overlap(g["start"], g["end"], stretch[0], stretch[1]) <= 0
         if b_low or b_outside:
@@ -598,8 +601,9 @@ def main():
         elif b_outside:
             allelic = "%s:outside the %s%s stretch%s" % (br.get("arm", "?"), bv, "?" if b_low else "", where)
         elif bv == "ROH":
-            allelic = "%s:ROH %s (heterozygosity absent; constitutional or fully clonal, no vote)" % (
-                br.get("arm", "?"), baf_f_text(br))
+            allelic = "%s:ROH%s %s (heterozygosity absent; %s)" % (
+                br.get("arm", "?"), "?" if b_low else "", baf_f_text(br),
+                "low confidence, no vote" if b_low else "counted as copy-neutral loss, a constitutional homozygous arm is not excluded")
         else:
             allelic = "%s:%s%s %s%s%s" % (br.get("arm", "?"), bv, "?" if b_low else "", baf_f_text(br), where,
                                           " (low confidence, no vote)" if b_low else "")
@@ -610,7 +614,8 @@ def main():
                  "P": p_call if (p_trusted and p_call in ("GAIN", "LOSS")) else None,
                  "E": e_call if e_call in ("GAIN", "LOSS") else None,
                  "H": h_call if (h_trusted and h_call in ("GAIN", "LOSS")) else None}
-        cnloh_arms = [a for a, v in (("B", b_call == "CNLOH"), ("P", p_cnloh), ("H", h_cnloh)) if v]
+        # BAF_HETLOSS_V1B: a ROH (b_call is NA when its confidence is LOW) is a copy-neutral LOH vote
+        cnloh_arms = [a for a, v in (("B", b_call in ("CNLOH", "ROH")), ("P", p_cnloh), ("H", h_cnloh)) if v]
 
         depth_dirs = set(v for v in depth.values() if v)
         indep_dirs = set(v for v in indep.values() if v)

@@ -15,6 +15,10 @@
  * observed against expected and on the residual sites (verdicts as above, plus ROH when
  * heterozygosity is absent at neutral copy ratio). On by default; params.baf_het_loss = false
  * restores the BAF_V2 verdicts exactly.
+ *
+ * BAF_HETLOSS_V1B (decision of 25 Nov 2026): a call over part of an arm and an arm without
+ * heterozygosity (ROH) both vote in the consensus. params.baf_segment_votes = false and
+ * params.baf_roh_votes = false make either advisory again (LOW confidence, shown, no vote).
  */
 
 process CNV_BAF_CNLOH {
@@ -39,6 +43,9 @@ process CNV_BAF_CNLOH {
     script:
         // BAF_HETLOSS_V1: on unless a config sets baf_het_loss = false (an overlay that does not define it leaves it on)
         def het_loss_arg = (params.baf_het_loss == false) ? '--no-het-loss' : ''
+        // BAF_HETLOSS_V1B: both findings vote unless a config sets the parameter to false
+        def segment_arg  = (params.baf_segment_votes == false) ? '--loh-segment-advisory' : ''
+        def roh_arg      = (params.baf_roh_votes == false) ? '--roh-advisory' : ''
         """
         baf_cnloh_detect.py \\
             --allelic ${allelic} \\
@@ -51,7 +58,7 @@ process CNV_BAF_CNLOH {
             --f-min ${params.baf_f_min} \\
             --cr-del ${params.baf_cr_del} \\
             --cr-gain ${params.baf_cr_gain} \\
-            ${het_loss_arg} \\
+            ${het_loss_arg} ${segment_arg} ${roh_arg} \\
             --out-prefix ${meta.id}.baf
         """
 }

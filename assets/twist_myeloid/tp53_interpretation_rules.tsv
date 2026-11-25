@@ -25,19 +25,27 @@
 #   allelic_state     e.g. 17p:GAIN f=0.256
 #   k_call k_cn k_log2      CNVkit call, integer copy number, log2
 #   g_call g_seg_log2       GATK call, segment log2
-#   b_call                  BAF_V2 vote at the gene (GAIN | LOSS | CNLOH | NEUTRAL | NA)
+#   b_call                  BAF_V2 vote at the gene (GAIN | LOSS | CNLOH | ROH | NEUTRAL | NA); ROH counts as CNLOH in cnv_call
 #   p_call p_C p_loh        PureCN call, integer copy number, LOH (true | false)
 #   e_call                  DECoN call
 #   h_call h_cn_min h_cn_max h_macn_min h_loh   PURPLE call, total CN range, minor-allele CN, LOH (true | false)
-#   baf_verdict       BAF_V2 17p arm verdict: NEUTRAL | DEL | CNLOH | GAIN | IMBALANCE | INDETERMINATE
+#   baf_verdict       BAF_V2 17p arm verdict: NEUTRAL | DEL | CNLOH | GAIN | IMBALANCE | INDETERMINATE | ROH
+#                     (ROH, since BAF_HETLOSS_V1: no heterozygosity left on 17p at neutral copy number and nothing to
+#                     measure; an acquired loss in nearly every cell or a constitutional homozygous arm. A rule for
+#                     allelic loss that should cover it lists it:  baf_verdict in DEL,CNLOH,ROH)
 #   baf_confidence    HIGH | LOW | NA
-#   baf_f baf_n_het baf_scope baf_cr           clonal fraction, het sites, arm | chromosome, copy ratio log2
+#   baf_evidence      shift | het_loss_residual | het_loss_complete   (how the verdict was reached; empty when no call)
+#   baf_covers_gene   yes | no for a verdict from the heterozygosity-loss test, which can cover part of 17p only and
+#                     says whether TP53 lies inside the stretch; empty for a verdict on the whole arm. A rule on
+#                     baf_verdict should add  baf_covers_gene!=no  -- or use b_call / cnv_call, the values at TP53 itself.
+#   baf_f baf_n_het baf_scope baf_cr           clonal fraction (1.0 with ROH: a lower bound is on the card), het sites,
+#                                              arm | chromosome | segment, copy ratio log2
 #   purity            PURPLE purity;  purple_status (PASS | WARN_LOW_PURITY | FAIL_NO_TUMOR ...);  purple_trusted (TRUE | FALSE)
 #   purecn_purity     PureCN purity
 #
 # Examples of the syntax (commented out; wording is a placeholder, not a recommendation):
 #   n_variants>=2	<wording>	two or more TP53 variants
-#   n_variants>=1;baf_verdict in DEL,CNLOH;baf_confidence==HIGH	<wording>	variant with allelic loss of 17p
+#   n_variants>=1;baf_verdict in DEL,CNLOH;baf_confidence==HIGH;baf_covers_gene!=no	<wording>	variant with allelic loss of 17p
 #   n_variants>=1;max_vaf>=50	<wording>	variant with VAF at or above 50 %
 #   n_variants==0;cnv_call==NEUTRAL;baf_verdict==NEUTRAL	<wording>	nothing observed
 #   default	<wording>	fallback

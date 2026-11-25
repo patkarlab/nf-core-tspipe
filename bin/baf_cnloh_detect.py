@@ -5,7 +5,9 @@ BAF_V1 (7 Sep 2026) evaluated chr17 only. BAF_V2 (9 Sep 2026) evaluates every ch
 arm that carries informative sites in the cohort background (snp_sites.baf.bed v2 catalog,
 4,193 intervals; baf_background.tsv built from the 48 normals), with the same statistic.
 BAF_HETLOSS_V1 (25 Nov 2026) adds the test for an arm whose heterozygous sites have left the
-0.10-0.90 band altogether (step 7); steps 1-6 are unchanged.
+0.10-0.90 band altogether (step 7); steps 1-6 are unchanged. BAF_HETLOSS_V1B (same day, decision
+of the custodian): a call over part of an arm and an arm without heterozygosity (ROH) both vote
+in the consensus; --loh-segment-advisory and --roh-advisory restore the advisory behaviour.
 
 Method (unchanged from V1 per arm; thresholds are CLI args):
   1. Background: per-position median_alt_fraction, mad_alt_fraction, informative flag.
@@ -75,9 +77,13 @@ Method (unchanged from V1 per arm; thresholds are CLI args):
             confidence as in step 6 with the het and residual sites counted together. It
             replaces the step 5 verdict of the arm.
           - Shorter stretch: scope 'segment', verdict from the copy ratio of the bins inside
-            the stretch (ev_cr_log2), confidence LOW. A call over part of an arm is advisory
-            in this version (shown with '?', no vote in the consensus) and is only made
-            where steps 1-6 gave no call.
+            the stretch (ev_cr_log2), confidence by the same rule as the arm-level call. The
+            copy state needs at least --loh-segment-min-bins (10) bins inside the stretch;
+            with fewer it is left open and the verdict is IMBALANCE, which casts no vote. A
+            segment is only called where steps 1-6 gave no call, and the consensus gives
+            its vote to the genes inside the stretch only (BAF_HETLOSS_V1B). With
+            --loh-segment-advisory a call over part of an arm is advisory instead:
+            confidence LOW, shown with '?', no vote.
        f. Around 80-85 % a few sites still sit just inside the het band, between the residual
           ones, and there is no clean stretch. The arm is then called in residual mode when
           its het loci are fewer than expected, the median d of its het sites is >= 3 x
@@ -97,7 +103,10 @@ Method (unchanged from V1 per arm; thresholds are CLI args):
           copy ratio the verdict is ROH (region of homozygosity), not CNLOH: a constitutional
           stretch of homozygosity (parental relatedness, constitutional UPD) and an acquired
           LOH in every cell give exactly this picture and cannot be told apart in this
-          sample. ROH casts no vote in the consensus.
+          sample. ROH is HIGH confidence at het_loss_p <= 1e-6, and a HIGH ROH counts as
+          copy-neutral LOH in the consensus (TIER_2 on its own; BAF_HETLOSS_V1B) while
+          keeping its own label, so that the report still says what was observed. With
+          --roh-advisory every ROH is LOW: shown with '?', no vote.
        h. ev_lo / ev_hi: first and last position of the stretch; ev_ends says which end of
           the arm's loci it runs to (both, start, end, none). The consensus gives the verdict
           only to genes inside the stretch.
@@ -408,6 +417,16 @@ def main():
                     help="a stretch over at least this share of the arm's loci is an arm-level call, a shorter one a segment (default 0.8)")
     ap.add_argument("--loh-min-accounted", type=float, default=0.4,
                     help="residual mode needs het + excess residual loci to reach this share of the expected het loci (default 0.4)")
+    ap.add_argument("--loh-segment-min-bins", type=int, default=10,
+                    help="a call over part of an arm takes its copy state from the copy-ratio bins inside its stretch "
+                         "when there are at least this many; with fewer the verdict is IMBALANCE (default 10)")
+    # BAF_HETLOSS_V1B: both findings vote by default; these two restore the advisory behaviour
+    ap.add_argument("--loh-segment-advisory", action="store_true",
+                    help="a heterozygosity-loss call over part of an arm is advisory: confidence LOW, no vote "
+                         "(default: rated like an arm-level call, votes for the genes inside its stretch)")
+    ap.add_argument("--roh-advisory", action="store_true",
+                    help="an arm without heterozygosity at neutral copy ratio (ROH) is advisory: confidence LOW, no vote "
+                         "(default: HIGH at het_loss_p <= 1e-6, counted as copy-neutral LOH in the consensus)")
     ap.add_argument("--no-plot", action="store_true", help="do not write <prefix>.png (tests and titrations)")
     ap.add_argument("--out-prefix", required=True)
     args = ap.parse_args()
@@ -645,7 +664,10 @@ def main():
                 seg_hi = r["arm_hi"] if ends == "end" else ev_hi
                 seg_cr = [l for c_, s_, e_, l in bins if c_ == chrom and e_ > seg_lo and s_ < seg_hi]
                 ev_cr = statistics.median(seg_cr) if seg_cr else float("nan")
-                cr_use, has_cr = ev_cr, bool(seg_cr)
+                # BAF_HETLOSS_V1B: a segment can carry a vote, so its copy state has to rest on enough bins of
+                # its own -- the median of two or three bins crosses --cr-del / --cr-gain by noise alone. With
+                # fewer the copy state is left open: IMBALANCE, shown, no vote.
+                cr_use, has_cr = ev_cr, len(seg_cr) >= args.loh_segment_min_bins
             else:
                 cr_use, has_cr = r["cr_med"], bool(r["n_cr"])
             if not has_cr:
@@ -657,12 +679,13 @@ def main():
             else:
                 verdict = "CNLOH" if mode == "het_loss_residual" else "ROH"
 
-            if scope == "segment":
-                confidence = "LOW"    # advisory in this version: shown, no vote in the consensus
+            if scope == "segment" and args.loh_segment_advisory:
+                confidence = "LOW"    # advisory on request: shown, no vote in the consensus
             elif verdict in ("DEL", "GAIN"):
                 confidence = "HIGH"   # the copy ratio corroborates the loss of heterozygosity
             elif verdict == "ROH":
-                confidence = "HIGH" if v["p_loss"] <= ROH_HIGH_P else "LOW"
+                # BAF_HETLOSS_V1B: a HIGH ROH counts as copy-neutral LOH in the consensus
+                confidence = "HIGH" if (v["p_loss"] <= ROH_HIGH_P and not args.roh_advisory) else "LOW"
             elif mode == "het_loss_complete":
                 confidence = "LOW"    # IMBALANCE with nothing to measure and no copy ratio
             else:
