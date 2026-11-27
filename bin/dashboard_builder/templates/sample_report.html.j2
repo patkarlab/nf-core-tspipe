@@ -705,6 +705,9 @@
           {# MARKER BAF_SECOND_GENOME_V1 #}
           {% if ctx.cnv.baf_second_genome %}
           <div class="alert alert-warning py-2 small mb-2" style="max-width: 1150px;" role="alert">A residual second allele is present at {{ ctx.cnv.baf_residual_pct|e }} % of the homozygous loci, on every arm alike. This is the pattern of a second genome in the sample: contamination, or chimerism after a transplant. The verdicts below are unreliable for such a sample: a real event can be missed and a balanced arm can be called.</div>
+          {% elif ctx.cnv.baf_het_excess %}
+          {# MARKER BAF_SECOND_GENOME_V2 #}
+          <div class="alert alert-warning py-2 small mb-2" style="max-width: 1150px;" role="alert">This sample has {{ ctx.cnv.baf_het_ratio|e }} times the expected number of heterozygous loci, on the arms taken together. This is the pattern of a second genome in a large share of the cells: contamination, or chimerism after a transplant. The verdicts below are unreliable for such a sample: a real event can be missed and a balanced arm can be called.</div>
           {% endif %}
           {% if _baf_called %}
           <div class="table-responsive" style="max-width: 1150px;">

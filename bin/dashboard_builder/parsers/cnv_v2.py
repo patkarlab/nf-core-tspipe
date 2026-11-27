@@ -131,6 +131,33 @@ def _second_genome(rows):
     return "%.0f" % (100.0 * med), med >= SECOND_GENOME_RATE
 
 
+SECOND_GENOME_HET_RATIO = 1.35   # the same value as in bin/baf_cnloh_detect.py
+HET_RATIO_MIN_EXPECTED = 10.0    # --loh-min-expected of the detector
+HET_RATIO_MIN_ARMS = 5           # MIN_CONTROL_ARMS of the detector
+
+
+def _het_excess(rows):
+    """MARKER BAF_SECOND_GENOME_V2: the sample's observed/expected ratio of heterozygous loci before the
+    detector's 0.6-1.25 limit, median over the arms, recomputed from the summary (het_loci x
+    het_ratio_ctrl / het_loci_expected). A second genome in more than about a quarter of the cells
+    puts its alleles inside the het band, where the residual rate no longer shows it; the excess of
+    heterozygous loci does. -> (ratio as text, flag); (None, False) on summaries without the columns."""
+    vals = []
+    for r in rows:
+        try:
+            het, exp, ratio = float(r.get("het_loci", "")), float(r.get("het_loci_expected", "")), float(r.get("het_ratio_ctrl", ""))
+        except (TypeError, ValueError):
+            continue
+        if ratio > 0 and exp / ratio >= HET_RATIO_MIN_EXPECTED:
+            vals.append(het * ratio / exp)
+    if len(vals) < HET_RATIO_MIN_ARMS:
+        return None, False
+    vals.sort()
+    mid = len(vals) // 2
+    med = vals[mid] if len(vals) % 2 else 0.5 * (vals[mid - 1] + vals[mid])
+    return "%.2f" % med, med >= SECOND_GENOME_HET_RATIO
+
+
 def parse(sample_dir, sample):
     sample_dir = Path(sample_dir)
     v2 = sample_dir / "cnv"
@@ -189,6 +216,7 @@ def parse(sample_dir, sample):
         out["baf_arms"] = [_baf_arm(r) for r in baf_rows]
         out["baf_calls"] = [r for r in out["baf_arms"] if r["verdict"] not in ("NEUTRAL", "INDETERMINATE", "") and r["confidence"] == "HIGH"]
         out["baf_residual_pct"], out["baf_second_genome"] = _second_genome(baf_rows)
+        out["baf_het_ratio"], out["baf_het_excess"] = _het_excess(baf_rows)
     bp = v2 / "baf" / ("%s.baf.png" % sample)
     if bp.exists():
         out["baf_plot"] = _rel(bp, sample_dir)

@@ -117,6 +117,13 @@ Method (unchanged from V1 per arm; thresholds are CLI args):
           dashboard says so above the arm table. Such a sample can hide a real event from
           this test (the residual loci of the arm no longer stand out) and, at 10 % and
           more of a second genome, steps 1-6 call arms that are balanced.
+          BAF_SECOND_GENOME_V2: from about a quarter of the cells the alleles of the second
+          genome sit inside the het band (0.10-0.90) instead of among the residual sites, and
+          the residual rate is normal again. What shows then is an excess of heterozygous
+          loci: the sample's observed/expected ratio before the 0.6-1.25 limit (median over the
+          arms) is far above that of a single genome. On 32 patient samples of 27 Nov 2026
+          it was 1.10-1.22 in thirty and 1.47 and 1.62 in two, in which planted events up to
+          60 % of the cells went uncalled; the warning is also given at 1.35 and above.
      An arm that meets none of (e)-(g) keeps its step 5 verdict. Not covered: an event over
      part of an arm at a fraction below the het band's edge (steps 1-6 see it only when it
      covers more than half of the arm's het sites), and a complete loss over part of an arm
@@ -166,6 +173,7 @@ RESIDUAL_EXCESS_P = 1e-4          # Poisson P(residual loci or more | background
 ROH_HIGH_P = 1e-6                 # ROH is HIGH confidence at or below this het_loss_p
 MIN_CONTROL_ARMS = 5              # fewer control arms than this: the sample ratio is taken as 1
 SECOND_GENOME_RATE = 0.10         # background residual rate at or above this: warn that a second genome is present
+SECOND_GENOME_HET_RATIO = 1.35    # MARKER BAF_SECOND_GENOME_V2: unbounded observed/expected het-locus ratio at or above this: same warning
 
 
 def fail(msg):
@@ -748,6 +756,12 @@ def main():
     # a second genome in the sample (contamination, chimerism after transplant) shows as residual signal
     # at homozygous loci on every arm; allelic verdicts are then unreliable, with or without step 7
     rates = [r["res_rate"] for r in ordered if r["res_rate"] == r["res_rate"]]
+    raw_ratio = statistics.median(list(ratios.values())) if het_loss_on and len(ratios) >= MIN_CONTROL_ARMS else float("nan")
+    if raw_ratio >= SECOND_GENOME_HET_RATIO and not (rates and statistics.median(rates) >= SECOND_GENOME_RATE):
+        sys.stderr.write("[warn] {0}: {1:.2f} times the expected number of heterozygous loci, on the arms taken together "
+                         "(threshold {2:.2f}). This is the pattern of a second genome in a large share of the cells "
+                         "(contamination, chimerism after transplant). BAF verdicts for this sample are unreliable.\n".format(
+                             args.sample, raw_ratio, SECOND_GENOME_HET_RATIO))
     if rates and statistics.median(rates) >= SECOND_GENOME_RATE:
         sys.stderr.write("[warn] {0}: {1:.0f} % of the homozygous loci carry a residual second allele, on every arm alike "
                          "(threshold {2:.0f} %). This is the pattern of a second genome in the sample (contamination, "

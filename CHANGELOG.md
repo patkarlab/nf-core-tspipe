@@ -11,6 +11,7 @@ listed under "Deferred to 1.1" below.
 
 ### Fixed
 
+- **Second genome in a large share of the cells is now flagged (`BAF_SECOND_GENOME_V2`).** The warning for a second genome read only the rate of residual sites, which is normal again once the second genome exceeds about a quarter of the cells. The detector and the report now also warn when the sample has 1.35 times the expected number of heterozygous loci or more. Found on patient samples on 27 November 2026; no verdict, column or vote changes.
 Per-arm B-allele detector, marker `BAF_HETLOSS_V1`. An arm whose loss of heterozygosity was
 present in more than about 80 percent of the cells, or whose deletion was present in more than
 about 89 percent, came out `INDETERMINATE`: the detector looked only at sites with an allele

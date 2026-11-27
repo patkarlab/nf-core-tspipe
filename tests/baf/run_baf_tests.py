@@ -265,6 +265,17 @@ def main():
           rates and min(rates) > 0.10 and "second genome" in proc.stderr,
           "min %s | %s" % (min(rates) if rates else "NA", proc.stderr.strip()[:120]))
 
+    # BAF_SECOND_GENOME_V2: from about a quarter of the cells the second genome's alleles sit in the het band
+    px = simulate(work, "mixed40", extra=["--contamination", "0.40"])
+    new, _, out_mixed, proc = detect(px, "mixed40", "new")
+    rates = [float(r["residual_rate_ctrl"]) for r in new.values() if r["residual_rate_ctrl"] != "NA"]
+    check("8b2 40 % of a second genotype: residual rate below its threshold, warning given on the excess of heterozygous loci",
+          rates and max(rates) < 0.10 and "second genome" in proc.stderr and "heterozygous loci" in proc.stderr,
+          "max %s | %s" % (max(rates) if rates else "NA", proc.stderr.strip()[:120]))
+    check("8b3 ... and no heterozygosity-loss call on any arm",
+          not [a for a, r in new.items() if r["evidence"].startswith("het_loss")],
+          str([a for a, r in new.items() if r["evidence"].startswith("het_loss")]))
+
     px = simulate(work, "contaminated_roh", events=["11q:cnloh:1.0"], extra=["--contamination", "0.05"])
     new, _, out_croh, _ = detect(px, "contaminated_roh", "new")
     r = new["11q"]
@@ -370,6 +381,15 @@ def main():
             os.makedirs(os.path.join(d, "cnv", "baf"), exist_ok=True)
             shutil.copy(summary, os.path.join(d, "cnv", "baf", tag + ".baf.summary.tsv"))
             flags[tag] = cnv_v2.parse(d, tag).get("baf_second_genome")
+        d = os.path.join(work, "dash2_mixed40")
+        os.makedirs(os.path.join(d, "cnv", "baf"), exist_ok=True)
+        shutil.copy(out_mixed + ".summary.tsv", os.path.join(d, "cnv", "baf", "mixed40.baf.summary.tsv"))
+        ctx_mixed = cnv_v2.parse(d, "mixed40")
+        d = os.path.join(work, "dash2_" + name_11q)
+        check("11g2 dashboard parser: heterozygous-excess flag set for the 40 % mixture only, absent on an old summary",
+              ctx_mixed.get("baf_het_excess") is True and ctx_mixed.get("baf_second_genome") is False
+              and cnv_v2.parse(d, name_11q).get("baf_het_excess") is False and ctx_old.get("baf_het_excess") is False,
+              "%s %s" % (ctx_mixed.get("baf_het_ratio"), ctx_mixed.get("baf_het_excess")))
         check("11g dashboard parser: second-genome flag set for the contaminated sample only, absent on an old summary",
               flags["contaminated"] is True and flags[name_11q] is False and ctx_old.get("baf_second_genome") is False
               and ctx_old.get("baf_residual_pct") is None, str(flags))
