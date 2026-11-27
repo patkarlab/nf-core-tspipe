@@ -1,16 +1,18 @@
-# SOP-TSPIPE-001 — Targeted sequencing pipeline (nf-core-tspipe v1.0.0): installation, verification and operation
+# SOP-TSPIPE-001 — Targeted sequencing pipeline (nf-core-tspipe): installation, verification and operation
 
 | | |
 |---|---|
 | Document number | SOP-TSPIPE-001 |
-| Version | 1.0 |
-| Applies to software version | nf-core-tspipe v1.0.0 (git tag `v1.0.0`) |
+| Version | 1.2 |
+| Applies to software version | nf-core-tspipe branch `main` at commit `694512e` (27 November 2026): release `v1.0.2` and the changes made since, which are in no tagged release |
 | Effective date | |
 | Author | |
 | Reviewed by | |
 | Approved by | |
 | Review interval | Annually, or on any change to section 11 |
-| Supersedes | None |
+| Supersedes | Version 1.1 |
+
+**Status of this version.** At the custodian's request this version describes `main` as it stands, not a tagged release. The last qualified state is tag `v1.0.2`. The changes on `main` since that tag are listed in section 11.1; they have been checked as recorded there, and the golden regression of section 7.10 and a version tag are still outstanding for them. Paths and backup locations that carry `v1.0.0` in their name are the names in use and have not changed.
 
 ---
 
@@ -23,7 +25,7 @@ qualified installation, and so that any deviation is detectable.
 
 ## 2. Scope
 
-Applies to all installations of nf-core-tspipe v1.0.0 used for clinical reporting, and to all
+Applies to all installations of nf-core-tspipe used for clinical reporting, and to all
 personnel who install, qualify, operate or maintain those installations.
 
 Covers: dependencies and system requirements; installation; installation and operational
@@ -306,14 +308,19 @@ chmod 600 ~/.config/nf-core-tspipe/credentials.config
 
 ### 7.8 Create the site configuration
 
-Two artefacts are required.
+A site is configured without editing any file that git tracks (marker `PORTABLE_V1`, memo 22).
 
-**A site profile**, `conf/<site>.config`, registered in the `profiles` block of `nextflow.config`.
-Use `conf/clinical23.config` as the model. It must define, and must define nothing else:
+**The site profile.** The servers gandalf and clinical-23 have their own profiles,
+`conf/gandalf.config` and `conf/clinical23.config`, which are part of the repository. Any further
+server uses the profile `site`: copy `conf/site_template.config` to `conf/site.config`, which git
+ignores, or name the file in the environment variable `TSPIPE_SITE_CONFIG`, and launch with
+`-profile site,singularity`. In most cases one line, the root directory of the site, is set. The
+profile must define, and must define nothing else:
 
 | Setting | Guidance |
 |---|---|
 | Reference paths | As placed in section 7.6. |
+| `hmf_root` | The directory of the hmftools resource bundle. The workflow finds the reference files under it. |
 | `process.executor` | `local` for a single server; the scheduler name for a cluster. |
 | `process.queue` | Scheduler queue names, if applicable. |
 | `beforeScript` | Only if the container runtime is not on the default `PATH` in a batch job; export its absolute path. |
@@ -327,6 +334,10 @@ Use `conf/clinical23.config` as the model. It must define, and must define nothi
 Do not place calling thresholds, filtering parameters or tool arguments in a site profile
 (section 11).
 
+The defaults in `nextflow.config` no longer point at any server: the output directory defaults to
+a directory under the place of launch, and the Python environment and OncoVI default to their
+locations inside the container image.
+
 Two failure modes observed during commissioning, both silent:
 
 - A scheduler directive supplied through `clusterOptions` that contains a resource request causes
@@ -336,10 +347,10 @@ Two failure modes observed during commissioning, both silent:
   aborts the run. Size the local pool to the largest such request, or give those processes explicit
   smaller requests.
 
-**A site parameter file**, `params_<site>.yaml`, passed with `-params-file`. At minimum it carries
-the hmftools reference paths and the VariantValidator cache directory.
+**The panel overlay.** A run is launched with `-c conf/twist_apply.config`. A launch without a
+panel overlay stops before any task, with a message that names the overlay.
 
-Configuration precedence decides what this file is for, and it is not obvious:
+**A site parameter file** is no longer required. Configuration precedence is unchanged:
 
 | Source | Precedence |
 |---|---|
@@ -349,16 +360,14 @@ Configuration precedence decides what this file is for, and it is not obvious:
 | The site profile selected by `-profile` | overrides the defaults |
 | `nextflow.config` and `conf/modules.config` | defaults |
 
-A panel overlay is loaded **after** the site profile, so any parameter the overlay sets cannot be
-changed from a site profile — whatever the profile says is discarded. The hmftools reference paths
-in `conf/twist_apply.config` are of this kind: they are hardcoded to the development host, and a
-second site redirects them with its parameter file, not with its profile. A conditional guard in
-the overlay was tried and does not work: the guard evaluates before the profile's value is visible,
-so the overlay's default always wins (verified on clinical-23, 2026-09-11).
-
-The practical consequence is that a run without `-params-file` uses the development host's
-hmftools paths and fails at AMBER. The site launcher (section 8.3) always passes it, which is why
-runs are started through the launcher rather than by hand.
+Up to release `v1.0.2` the hmftools reference paths were written into the panel overlay with
+their location on the development host. An overlay is loaded after the site profile, so a second
+site could redirect them only with a parameter file, and a run without that file failed at AMBER.
+The overlay no longer sets them; they follow `hmf_root` of the site profile. A parameter file that
+names the files one by one, as `params_clinical23.yaml` does, still takes precedence, so the
+installation on clinical-23 runs as before with or without it. In the commands of this document
+`-params-file params_<site>.yaml` is therefore optional; where it is left out the launcher of
+clinical-23 says so in its log.
 
 ### 7.9 Installation qualification
 
@@ -368,8 +377,9 @@ bash tools/verify_install.sh -profile <site>,singularity \
 ```
 
 Checks the toolchain and versions; every image against `image_checksums.md5`; every reference
-against `reference_manifest.tsv` including checksums; the genome's companion files; and that the
-output locations are writable.
+against `reference_manifest.tsv` including checksums; the genome's companion files; the hmftools
+files under `hmf_root`; and that the output locations are writable. It fails when a parameter of a
+profile other than gandalf still points at a path of gandalf.
 
 **Acceptance criterion: the check reports `VERIFY PASSED`.** Warnings for images this configuration
 does not use, and for default paths belonging to another site, are acceptable. Retain the output.
@@ -406,9 +416,23 @@ python3 tools/compare_runs.py --a <accepted reference outdir> --b <path>/oq_<dat
    - `clinical/<sample>.somaticseq.clinical.final.tsv`
    - `clinical/<sample>.somaticseq.filtered.tsv`
    - `clinical/cnv/consensus/*.genes.tsv`
-   - `clinical/cnv/baf/*.summary.tsv`
    - the PURPLE, CNVkit, DECoN and GATK CNV tables
-3. Differences are confined to: log files containing timestamps (AMBER, COBALT, PURPLE, HsMetrics,
+3. The B-allele summaries and the consensus gene tables are compared with
+   `tools/compare_baf_arms.py`, and its result is `PASS`:
+
+   ```bash
+   python3 tools/compare_baf_arms.py --a <accepted reference outdir> --b <path>/oq_<date> \
+       --out <path>/oq_<date>_baf_comparison.txt
+   ```
+
+   From the heterozygosity-loss test on (marker `BAF_HETLOSS_V1`, memo 21) the summary
+   `clinical/cnv/baf/*.summary.tsv` carries 14 more columns than in a reference run made before
+   it, so the two cannot be identical line by line. The script compares the 18 earlier columns arm
+   by arm, the sites tables on their nine earlier columns, and the consensus gene tables gene by
+   gene. A difference on an arm that the new test calls is listed as explained and is reviewed by
+   the custodian; any other difference fails the qualification. Once a reference run made with
+   the new detector has been accepted, the summaries are again compared byte for byte.
+4. Other differences are confined to: log files containing timestamps (AMBER, COBALT, PURPLE, HsMetrics,
    quickcheck); files that embed a creation time (ZIP archives, PDF, `.rds`, HTML reports); and
    annotation caches holding responses from external services.
 
@@ -544,6 +568,19 @@ directory; QC metrics are within laboratory acceptance criteria; and the dashboa
 annotation sections (empty GeneBe, MobiDetails or OncoKB sections indicate a network or credential
 fault, not an absence of findings).
 
+Reading the B-allele findings of the copy-number tab (`main` since `v1.0.2`; method and limits in
+`docs/sops/baf_het_loss.md`):
+
+- An arm whose event is present in more than about 80 percent of the cells is called by the
+  heterozygosity-loss test. Releases up to `v1.0.2` reported such an arm as `INDETERMINATE`.
+- `ROH` means that heterozygosity is absent on the arm at a neutral copy ratio. It counts as
+  copy-neutral loss of heterozygosity in the consensus, but a constitutional homozygous arm gives
+  the same picture and is not excluded.
+- A call over part of an arm is shown with its coordinates and applies to the genes inside them.
+- A warning above the arm table says that the sample shows the pattern of a second genome,
+  contamination or chimerism after a transplant. The per-arm verdicts of such a sample are
+  unreliable: a real event can be missed and a balanced arm can be called.
+
 ### 8.7 Retention and cleanup
 
 Retain the output directory and the run log per section 13. Once outputs are verified and archived,
@@ -589,7 +626,8 @@ The task directory contains `.command.sh` (the exact command), `.command.log` (i
 | `terminated with an error exit status (137)` | Task killed, almost always for exceeding its memory allocation | Inspect `#PBS -l select=` in `.command.run`. If it names no `mem`, a resource request was suppressed by a configuration fault — escalate. Otherwise the task genuinely exceeded its limit — escalate for a resource review. |
 | `Process requirement exceeds available CPUs — req: N; avail: M` | A process on the `local` executor requests more CPUs than the local pool provides | Escalate. Indicates a process has moved between executors or the pool is undersized. |
 | `Unable to acquire lock on session` | A previous Nextflow is still exiting against the same work directory | Wait until no Nextflow process remains, then resume. |
-| `Unknown configuration profile` | The site profile is not registered in `nextflow.config` | Escalate. |
+| `Unknown configuration profile` | The profile name is misspelt, or the profile `site` was chosen and neither `conf/site.config` nor the file named in `TSPIPE_SITE_CONFIG` exists | Use `gandalf`, `clinical23` or `site`; for `site`, create the file per section 7.8. |
+| `[PREFLIGHT] no panel configuration is loaded` | The run was launched without `-c conf/twist_apply.config` | Nothing ran. Launch again with the panel overlay. |
 | VariantValidator task fails | External service unavailable or rate-limiting | Three automatic retries are configured. If it still fails, test with `curl -s -m 10 -o /dev/null -w '%{http_code}\n' https://rest.variantvalidator.org/`; if the service is down, resume later. Cached responses are not re-requested. |
 | Reports contain empty GeneBe / MobiDetails / CancerVar sections | The dashboard executed without internet access | Escalate — the head process or the dashboard step is running in the wrong place. Results are incomplete and must not be released. |
 | Reports contain no OncoKB annotation | Credentials absent or invalid | Verify `~/.config/nf-core-tspipe/credentials.config` per section 6.6. Re-run the dashboard step. |
@@ -619,7 +657,7 @@ invalidates the installation's qualification.
 
 The following were validated together and constitute the qualified state:
 
-1. The pipeline at tag `v1.0.0`, unmodified.
+1. The pipeline at a release tag, unmodified. The last qualified tag is `v1.0.2`.
 2. The fourteen container images, matching `docs/release/image_checksums.md5`. These cannot be
    reproduced; they are backed up per section 14.
 3. All calling and filtering thresholds in `conf/modules.config` — notably VarScan's
@@ -628,8 +666,9 @@ The following were validated together and constitute the qualified state:
    threshold and reported additional variants. Thresholds must never reside in a site profile.
 4. The reference data, matching `docs/release/reference_manifest.tsv`.
 5. Nextflow 25.10.4.
-6. The site launcher and the site parameter file. A run started by any other means may silently
-   use another site's configuration.
+6. The site profile and the launch command of the work instruction for the server (WI-TSPIPE-002
+   for clinical-23, WI-TSPIPE-003 for gandalf). A site parameter file is no longer required
+   (section 7.8). A run started by any other means may use another configuration.
 
 Any change to these requires: authorisation by the custodian; implementation on the development
 installation first; a golden regression per section 7.10 with the comparison report retained; a new
@@ -637,9 +676,26 @@ version tag; and an update to this SOP's revision history. Changes to site profi
 executors, resource limits — do not require re-validation of calling behaviour but do require the
 checks in sections 7.9 and 7.10 to be repeated.
 
+### 11.1 Changes on `main` since `v1.0.2`
+
+These are in no tagged release. A release cut from `main` includes all of them.
+
+| Change | Marker, record | State of checking |
+|---|---|---|
+| Variant filter: the filters LOW_CALLERS and LOW_DEPTH exempt every hotspot residue of `assets/myeloid_hotspots.tsv` with a non-synonymous consequence; the NPM1 line of that table; the variant browser of the report | `HOTSPOT_EXEMPT_V1`, `DASH_CEBPA_BZIP_V1`; commit 438d308; memo 22 section 5 | No validation record. Changes which variants reach the clinical table. |
+| Per-arm B-allele detector: heterozygosity-loss test for events in more than about 80 percent of the cells | `BAF_HETLOSS_V1`; memo 21; `docs/sops/baf_het_loss.md` | Synthetic validation in `docs/audit/2026-11-25/`. On 27 November 2026, 32 patient samples on gandalf: stored results reproduced on every arm but one, which the new test calls; titration with events planted in a patient sample. |
+| A region of homozygosity and a call over part of an arm vote in the consensus | `BAF_HETLOSS_V1B`; decision of the custodian, 25 November 2026 | As above. Neither finding occurred in the 32 patient samples. Either is made advisory again with `baf_roh_votes = false` or `baf_segment_votes = false` in the panel overlay. |
+| Warning for a second genome in the sample, by the rate of residual sites and by an excess of heterozygous loci | `BAF_SECOND_GENOME_V1`, `BAF_SECOND_GENOME_V2`; commit 694512e | Regression tests. The second criterion rests on 32 patient samples. No verdict changes. |
+| Site configuration without editing tracked files | `PORTABLE_V1`; memo 22 | Resolved configuration of both servers compared before and after; stub run of the whole workflow. Sections 7.9 and 7.10 not yet repeated on either server. |
+
+Outstanding before a tag: the golden regression of section 7.10 on gandalf and on clinical-23, the
+installation qualification of section 7.9 on both, a validation record for the variant filter
+change, and the release steps above.
+
 ## 12. Deploying to an additional server
 
-Follow section 7 in full. The following decisions are site-specific and must be recorded in the
+Follow section 7 in full. The server is configured in `conf/site.config` (section 7.8); no file of
+the release is edited. The following decisions are site-specific and must be recorded in the
 installation record:
 
 | Decision | Determined by |
@@ -650,7 +706,7 @@ installation record:
 | Resource ceilings | Largest single node |
 | Container runtime invocation | Whether the runtime is on the default `PATH` in a batch job |
 | Bind mounts | Every path a task reads or writes |
-| Reference data locations | Storage layout; must be identical across all nodes |
+| Reference data locations, including `hmf_root` | Storage layout; must be identical across all nodes |
 
 Everything else — pipeline, images, thresholds, reference content — is copied unchanged. A
 deployment is complete only when section 7.10 has passed and the comparison report is retained.
@@ -805,6 +861,8 @@ test, and record the outcome with the qualification records (section 13).
 | 1.0 | | | First issue. Covers nf-core-tspipe v1.0.0 as validated on two installations (2026-09-10 and 2026-09-11), including the image backup and archive procedure (section 14). |
 | 1.1 | | | Covers v1.0.1. Adds the configuration precedence rule and why a site parameter file, not a site profile, redirects a parameter set by a panel overlay (7.8); makes the site launcher the supported way to start a run, with the failure produced by using another site's launcher (8.3, A.3); adds the launcher and parameter file to the frozen configuration (11). |
 
+| 1.2 | 27 November 2026 | | Describes `main` at commit 694512e, not a tagged release (status note at the head of the document; section 11.1 lists the changes since `v1.0.2` and what is outstanding). Site configuration through the profile `site` and `hmf_root`, without a parameter file (7.8, 7.9, 10.2, 11, 12, Annex A). Golden regression: comparison of the B-allele summaries with `tools/compare_baf_arms.py` (7.10). Reading the B-allele findings (8.6). No entry was made for `v1.0.2`. |
+
 ## 16. Associated documents
 
 | Document | Location |
@@ -812,9 +870,12 @@ test, and record the outcome with the qualification records (section 13).
 | Release notes, including known findings and deferred items | `docs/RELEASE_NOTES.md` |
 | Container image checksums | `docs/release/image_checksums.md5` |
 | Reference data manifest | `docs/release/reference_manifest.tsv` |
-| Commissioning and validation records | `docs/audit/2026-09-10/`, `docs/audit/2026-09-11/` |
+| Commissioning and validation records | `docs/audit/2026-09-10/`, `docs/audit/2026-09-11/`, `docs/audit/2026-11-25/` |
 | Pipeline output specification | `docs/output.md` |
 | Panel and dashboard procedures | `docs/sops/` |
+| Per-arm B-allele detector, method and limits | `docs/sops/baf_het_loss.md` |
+| Memos on the changes since `v1.0.2` | `docs/memos/memo21_high_fraction_loss_of_heterozygosity.md`, `docs/memos/memo22_site_paths_and_review_findings.md` |
+| Work instructions | `docs/sops/WI-TSPIPE-002_running_an_analysis_clinical23.md`, `docs/sops/WI-TSPIPE-003_running_an_analysis_gandalf.md` |
 | clinical-23 installation and operating instructions | Annex A of this document |
 | Image backup and archive | `s3://hemat/tspipe_release/v1.0.0/`; see section 14 |
 | Clinical parameter decisions | `docs/clinical_decisions.md` |
@@ -903,6 +964,10 @@ vv_cache_dir: "/scratch/patkarlab-clinical/tspipe_release/vv_cache"
 
 (paths written in full in the file; abbreviated here for readability).
 
+From `PORTABLE_V1` on, `conf/clinical23.config` sets `hmf_root`, and the five hmftools entries of
+this file are no longer needed. They still take precedence where the file is passed, and they name
+the same files, so the installation runs identically with or without it.
+
 ### A.3 Running a Twist myeloid panel analysis
 
 **Step 1 — log in to ln1 as `patkarlab-clinical`.** Runs are launched from the login node, not
@@ -964,9 +1029,9 @@ setsid nextflow run . --input myrun.csv \
     > /tmp/myrun_20260915.log 2>&1 < /dev/null & disown
 ```
 
-`-params-file params_clinical23.yaml` is not optional: it redirects the hmftools reference paths,
-which the panel overlay hardcodes to the development host (section 7.8), and a run without it fails
-at AMBER.
+Up to release `v1.0.2`, `-params-file params_clinical23.yaml` is not optional: it redirects the
+hmftools reference paths, which the panel overlay of those releases hardcodes to the development
+host, and a run without it fails at AMBER. On `main` the file is optional (section 7.8).
 
 **Step 6 — confirm it started**, after about a minute:
 

@@ -34,7 +34,7 @@ src = PdfReader(sys.argv[1]); n = len(src.pages); out = PdfWriter()
 for i, page in enumerate(src.pages, start=1):
     buf = io.BytesIO(); c = canvas.Canvas(buf, pagesize=A4)
     c.setFont("Helvetica", 7); c.setFillGray(0.35)
-    c.drawString(40, 24, "SOP-TSPIPE-001 v1.0  |  nf-core-tspipe v1.0.0")
+    c.drawString(40, 24, "SOP-TSPIPE-001 v1.2  |  nf-core-tspipe main at 694512e (after v1.0.2)")
     c.drawRightString(A4[0] - 40, 24, "Page %d of %d" % (i, n))
     c.setStrokeGray(0.75); c.setLineWidth(0.4); c.line(40, 32, A4[0] - 40, 32)
     c.save(); buf.seek(0)
